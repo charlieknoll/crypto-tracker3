@@ -1,0 +1,16 @@
+<template>
+  <div style="min-width: 250px; display: inline-block;" class="q-mr-sm">
+    <base-select
+
+      v-model="store.selectedAccounts"
+      :options="accounts"
+      label="Accounts" />
+  </div>
+</template>
+<script setup>
+import { useAppStore } from "src/stores/app-store";
+import BaseSelect from "src/components/Base/BaseSelect.vue";
+
+const store = useAppStore();
+const accounts = store.accounts;
+</script>
