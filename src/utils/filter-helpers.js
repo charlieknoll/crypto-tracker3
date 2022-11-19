@@ -4,8 +4,8 @@ export const filterByAccounts = function (txs, selectedAccounts, useToFrom) {
     if (useToFrom) {
       txs = txs.filter((tx) => {
         return (
-          selectedAccounts.findIndex((a) => a == tx.toName) > -1 ||
-          selectedAccounts.findIndex((a) => a == tx.fromName) > -1
+          selectedAccounts.findIndex((a) => a == tx.toAccount) > -1 ||
+          selectedAccounts.findIndex((a) => a == tx.fromAccount) > -1
         );
       });
     } else {

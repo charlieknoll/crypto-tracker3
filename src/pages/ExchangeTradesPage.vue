@@ -22,7 +22,7 @@
       :columns="columns"
       @rowClick="edit">
       <template v-slot:top-right>
-        <q-toggle label="Transformed" v-model="transformed" class="q-pr-sm"></q-toggle>
+        <q-toggle label="Split" v-model="split" class="q-pr-sm"></q-toggle>
         <account-filter></account-filter>
         <asset-filter></asset-filter>
         <q-btn class="q-ml-lg" color="secondary" label="Add" @click="add" />
@@ -32,11 +32,11 @@
   </q-page>
 </template>
 <script setup>
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, watch } from "vue";
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AccountFilter from "src/components/AccountFilter.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
-import { fields } from "src/models/exchange-trades";
+import { fields, splitFields } from "src/models/exchange-trades";
 import { useColumns } from "src/use/useColumns";
 import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
 import exchangeTradesForm from "components/exchangeTradesForm.vue";
@@ -46,9 +46,10 @@ import { useAppStore } from "src/stores/app-store";
 import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter-helpers";
 const store = useExchangeTradesStore();
 
-const columns = useColumns(fields);
+const columns = ref(null);
+
 const $q = useQuasar();
-const transformed = ref(false)
+const split = ref(false)
 const error = ref("");
 const editing = ref(false);
 const record = reactive({});
@@ -58,9 +59,16 @@ const add = () => {
   editing.value = true;
 };
 const remove = () => {
-  error.value = "";
-  if (record.id) store.delete(record.id);
-  editing.value = false;
+  $q.dialog({
+    title: "Confirm",
+    message: "Are you sure you want to delete this record?",
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    error.value = "";
+    if (record.id) store.delete(record.id);
+    editing.value = false;
+  })
 };
 const clear = () => {
   const appStore = useAppStore();
@@ -88,10 +96,14 @@ const save = () => {
 const filtered = computed(() => {
   //return [{ id: 'test' }]
   const appStore = useAppStore();
-  let txs = store.records;
+  let txs = split.value ? store.split : store.records;
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByAccounts(txs, appStore.selectedAccounts);
   txs = filterByYear(txs, appStore.taxYear)
   return txs;
 });
+
+watch(() => {
+  columns.value = (split.value) ? useColumns(splitFields) : useColumns(fields)
+})
 </script>

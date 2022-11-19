@@ -17,6 +17,7 @@ import {
   upperCaseFields,
 } from "src/models/exchange-trades";
 import { multiplyCurrency } from "src/utils/number-helpers";
+import { getPrice } from "src/services/price-provider";
 
 const keyFunc = (r) =>
   hasValue(r.exchangeId) ? r.exchangeId : getId(r, keyFields);
@@ -26,7 +27,76 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
     records: useLocalStorage("exchange-trades", []),
     initValue: getInitValue(fields),
   }),
-  getters: {},
+  getters: {
+    split(state) {
+      let data = JSON.parse(JSON.stringify(state.records));
+      const mappedData = [];
+      for (const tx of data) {
+        //a nonUSD fee tx will always be a sell
+        //first get USDfee
+        let usdFee = 0.0;
+        if (tx.feeCurrency != "USD") {
+          const feeUSDPrice = getPrice(tx.feeCurrency, tx.date);
+          usdFee = multiplyCurrency([tx.fee, feeUSDPrice]);
+          const feeTx = Object.assign({}, tx);
+          feeTx.action = "SELL";
+          feeTx.id = "F-" + tx.id;
+          feeTx.price = feeUSDPrice;
+          feeTx.asset = tx.feeCurrency;
+          feeTx.amount = tx.fee;
+          feeTx.fee = 0.0;
+          feeTx.feeCurrency = "USD";
+          feeTx.currency = "USD";
+          feeTx.net = multiplyCurrency([feeTx.amount, feeTx.price]);
+          mappedData.push(feeTx);
+        } else {
+          usdFee = tx.fee;
+        }
+        tx.feeCurrency = "USD";
+        tx.fee = usdFee;
+        if (tx.currency != "USD") {
+          const currencyUSDPrice = getPrice(tx.currency, tx.date);
+          const currencyPrice = tx.price;
+          const id = tx.id;
+          const timestamp = tx.timestamp;
+
+          tx.price = currencyPrice * currencyUSDPrice;
+          tx.net = multiplyCurrency([tx.amount, tx.price]);
+          tx.id = (tx.action == "SELL" ? "S-" : "B-") + id;
+          tx.timestamp = timestamp + (tx.action == "BUY" ? 1 : 0);
+          tx.fee = tx.action == "SELL" ? usdFee : 0.0;
+          const currencyTx = Object.assign({}, tx);
+          currencyTx.action = tx.action == "SELL" ? "BUY" : "SELL";
+          currencyTx.id = (currencyTx.action == "SELL" ? "S-" : "B-") + id;
+          currencyTx.timestamp =
+            timestamp + (currencyTx.action == "BUY" ? 1 : 0);
+          currencyTx.price = currencyUSDPrice;
+          currencyTx.asset = tx.currency;
+          currencyTx.amount = tx.amount * currencyPrice;
+          currencyTx.net = currencyTx.price * currencyTx.amount;
+          currencyTx.fee = currencyTx.action == "SELL" ? usdFee : 0.0;
+          if (tx.action == "SELL") {
+            mappedData.push(tx);
+            mappedData.push(currencyTx);
+          } else {
+            mappedData.push(currencyTx);
+            mappedData.push(tx);
+          }
+        } else {
+          tx.id = (tx.action == "SELL" ? "S-" : "B-") + tx.id;
+          tx.amount = Math.abs(tx.amount);
+          tx.net = multiplyCurrency([tx.amount, tx.price]);
+          tx.fee = usdFee;
+          tx.feeCurrency = "USD";
+          mappedData.push(tx);
+        }
+      }
+      return mappedData.sort((a, b) => {
+        if (a.timestamp != b.timestamp) return a - b;
+        return a.exchangeId < b.exchangeId ? 1 : -1;
+      });
+    },
+  },
   actions: {
     set(upserted, recs) {
       const existing = recs ?? this.records;
@@ -51,7 +121,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
       if (dup) return "Duplicate record";
 
       upserted.id = keyFunc(upserted);
-      upserted.timestamp = getTimestamp(upserted.date);
+      upserted.timestamp = getTimestamp(upserted.date + "T" + upserted.time);
       if (!record) {
         existing.push(Object.assign({}, upserted));
       } else {
@@ -92,11 +162,11 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
         ).toUpperCase();
         const tx = {
           action,
-          timestamp: getTimestamp(op.Date),
           memo: op.Memo,
           price: parseFloat(op.Price),
           currency: op.Currency.toUpperCase(),
           date: op.Date.substring(0, 10),
+          time: op.Date.substring(11, 19),
           exchangeId: op.ExchangeId,
           amount: parseFloat(op.Volume),
           account,
@@ -121,7 +191,6 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
 
       for (let i = 0; i < mapped.length; i++) {
         const op = mapped[i];
-        //TODO set key id to allow reimport of data
         op.id = keyFunc(op);
         const errorMsg = this.set(op, recs);
         if (errorMsg != "")

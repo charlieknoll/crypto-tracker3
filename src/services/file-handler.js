@@ -3,6 +3,7 @@ import { useAddressStore } from "src/stores/address-store";
 import { useAppStore } from "src/stores/app-store";
 import { useChainStore } from "src/stores/chain-store";
 import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
+import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
 import { useSettingsStore } from "src/stores/settings-store";
 
@@ -70,8 +71,11 @@ function processAllDataFile(content) {
     }
   }
 
-  const exchangeTradesStore = useExchangeTradesStore();
-  exchangeTradesStore.$patch(backup.exchangeTrades);
+  const exchangeTrades = useExchangeTradesStore();
+  exchangeTrades.$patch(backup.exchangeTrades);
+
+  // const exchangeTrades = useExchangeTradesStore();
+  // exchangeTrades.$patch(backup.exchangeTrades);
 
   //addresses.$patch(backup.addresses);
   const app = useAppStore();
@@ -80,7 +84,8 @@ function processAllDataFile(content) {
     1 +
     addresses.records.length +
     chains.records.length +
-    openingPositions.records.length
+    openingPositions.records.length +
+    exchangeTrades.records.length
   );
 }
 export const processFile = async function (name, content) {
@@ -96,9 +101,10 @@ export const processFile = async function (name, content) {
   // if (name.substring(0, 9) == "addresses") {
   //   return processAddressFile(content);
   // }
-  // if (name.substring(0, 9) == "transfers") {
-  //   return processOffchainTransfersFile(content);
-  // }
+  if (name.substring(0, 9) == "transfers") {
+    const store = useOffchainTransfersStore();
+    return store.load(content);
+  }
   // if (name.substring(0, 6) == "prices") {
   //   return processPricesFile(content);
   // }

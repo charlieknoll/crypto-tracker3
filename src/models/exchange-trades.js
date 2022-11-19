@@ -17,18 +17,51 @@ import { currency } from "src/utils/number-helpers";
 
 const fields = [
   { name: "date", label: "Trade Date", key: 1 },
+  {
+    name: "time",
+    label: "Time",
+    key: 2,
+    required: false,
+  },
   { name: "id", required: false, showColumn: false },
   { name: "exchangeId", required: false, label: "Exchange Id" },
-  { name: "account", key: 3 },
-  { name: "asset", key: 5 },
-  { name: "action", key: 2, upperCase: true },
+  { name: "account", key: 4 },
+  { name: "asset", key: 6 },
+  { name: "action", key: 3, upperCase: true },
   { name: "amount", align: "right", key: 7 },
-  { name: "memo", required: false, showColumn: false, key: 6 },
+  { name: "memo", required: false, showColumn: false, key: 8 },
+  {
+    name: "price",
+    align: "right",
+    key: 7,
+  },
+  { name: "currency", key: 4, upperCase: true },
+  {
+    name: "fee",
+    align: "right",
+  },
+  { name: "feeCurrency", label: "Fee Currency", upperCase: true },
+];
+const splitFields = [
+  { name: "date", label: "Trade Date", key: 1 },
+  {
+    name: "time",
+    label: "Time",
+    key: 2,
+    required: false,
+  },
+  { name: "id", required: false, format: (v) => v.substring(0, 10) },
+
+  { name: "account", key: 4 },
+  { name: "asset", key: 6 },
+  { name: "action", key: 3, upperCase: true },
+  { name: "amount", align: "right", key: 7 },
+  { name: "memo", required: false, showColumn: false, key: 8 },
   {
     name: "price",
     align: "right",
     format: currency,
-    key: 6,
+    key: 7,
   },
   { name: "currency", key: 4, upperCase: true },
   {
@@ -36,7 +69,7 @@ const fields = [
     align: "right",
     format: currency,
   },
-  { name: "feeCurrency", label: "Fee Currency", upperCase: true },
+
   {
     required: false,
     name: "net",
@@ -48,4 +81,4 @@ const fields = [
 const keyFields = getKeyFields(fields);
 const requiredFields = getRequiredFields(fields);
 const upperCaseFields = getUpperCaseFields(fields);
-export { fields, keyFields, requiredFields, upperCaseFields };
+export { fields, splitFields, keyFields, requiredFields, upperCaseFields };

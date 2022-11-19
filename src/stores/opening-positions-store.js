@@ -83,7 +83,7 @@ export const useOpeningPositionsStore = defineStore("opening-positions", {
           account: op.Account,
           fee: parseFloat(op.Fee),
           asset: op.Symbol,
-          cost: multiplyCurrency(op.Price, op.Volume),
+          cost: multiplyCurrency([op.Price, op.Volume]),
         };
       });
       for (let i = 0; i < mappedOpeningData.length; i++) {

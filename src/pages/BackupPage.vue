@@ -17,6 +17,7 @@ import { useChainStore } from 'src/stores/chain-store';
 import { useAddressStore } from 'src/stores/address-store';
 import { useOpeningPositionsStore } from 'src/stores/opening-positions-store';
 import { useExchangeTradesStore } from 'src/stores/exchange-trades-store';
+import { useOffchainTransfersStore } from 'src/stores/offchain-transfers-store';
 
 const $q = useQuasar()
 
@@ -27,6 +28,7 @@ const downloadAll = async function () {
   const addresses = useAddressStore()
   const openingPositions = useOpeningPositionsStore()
   const exchangeTrades = useExchangeTradesStore()
+  const offchainTransfers = useOffchainTransfersStore()
 
   //const test = { ...mapState(settings) }
   const backup = {
@@ -34,7 +36,8 @@ const downloadAll = async function () {
     chains: chains.$state,
     addresses: addresses.$state,
     openingPositions: openingPositions.$state,
-    exchangeTrades: exchangeTrades.$state
+    exchangeTrades: exchangeTrades.$state,
+    offchainTransfers: offchainTransfers.$state,
 
   }
 

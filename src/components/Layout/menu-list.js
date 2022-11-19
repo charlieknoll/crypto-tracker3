@@ -6,16 +6,28 @@ export default [
     to: "/",
   },
   {
-    icon: "mdi-key-chain-variant",
-    label: "Addresses",
-    separator: false,
-    to: "/addresses",
-  },
-  {
     icon: "mdi-door-open",
     label: "Opening Positions",
     separator: false,
     to: "/opening-positions",
+  },
+  {
+    icon: "mdi-file-swap",
+    label: "Exchange Trades",
+    separator: false,
+    to: "/exchange-trades",
+  },
+  {
+    icon: "mdi-file-swap",
+    label: "Offchain Transfers",
+    separator: true,
+    to: "/offchain-transfers",
+  },
+  {
+    icon: "mdi-key-chain-variant",
+    label: "Addresses",
+    separator: false,
+    to: "/addresses",
   },
 
   {
@@ -27,21 +39,10 @@ export default [
   {
     icon: "mdi-swap-horizontal-variant",
     label: "Token Transactions",
-    separator: false,
+    separator: true,
     to: "/token-transactions",
   },
-  {
-    icon: "mdi-file-swap",
-    label: "Exchange Trades",
-    separator: false,
-    to: "/exchange-trades",
-  },
-  {
-    icon: "mdi-file-swap",
-    label: "Offchain Transfers",
-    separator: false,
-    to: "/offchain-transfers",
-  },
+
   {
     icon: "mdi-note-text-outline",
     label: "Running Balances",
@@ -91,7 +92,7 @@ export default [
     to: "/settings",
   },
   {
-    icon: "mdi-cog",
+    icon: "mdi-table-network",
     label: "Chains",
     separator: false,
     to: "/chains",

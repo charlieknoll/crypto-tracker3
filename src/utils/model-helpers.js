@@ -9,7 +9,8 @@ const hasValue = (v) => {
 const getInitValue = (fields) => {
   const result = {};
   fields.forEach((f) => {
-    result[f.name] = f.defaultValue;
+    result[f.name] =
+      typeof f.defaultValue === "function" ? f.defaultValue() : f.defaultValue;
   });
   return result;
 };
