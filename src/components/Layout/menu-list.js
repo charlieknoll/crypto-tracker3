@@ -20,8 +20,14 @@ export default [
   {
     icon: "mdi-file-swap",
     label: "Offchain Transfers",
-    separator: true,
+    separator: false,
     to: "/offchain-transfers",
+  },
+  {
+    icon: "mdi-currency-usd",
+    label: "Prices",
+    separator: true,
+    to: "/prices",
   },
   {
     icon: "mdi-key-chain-variant",

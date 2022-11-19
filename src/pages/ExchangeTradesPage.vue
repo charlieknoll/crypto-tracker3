@@ -17,6 +17,7 @@
       </q-card>
     </q-dialog>
     <transactions-table
+
       :title="'Exchange Trades'"
       :rows="filtered"
       :columns="columns"
@@ -32,7 +33,7 @@
   </q-page>
 </template>
 <script setup>
-import { ref, reactive, computed, watch } from "vue";
+import { ref, reactive, computed, watchEffect } from "vue";
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AccountFilter from "src/components/AccountFilter.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
@@ -44,9 +45,10 @@ import { useQuasar } from "quasar";
 
 import { useAppStore } from "src/stores/app-store";
 import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter-helpers";
+
 const store = useExchangeTradesStore();
 
-const columns = ref(null);
+const columns = ref(useColumns(fields));
 
 const $q = useQuasar();
 const split = ref(false)
@@ -103,7 +105,7 @@ const filtered = computed(() => {
   return txs;
 });
 
-watch(() => {
+watchEffect(() => {
   columns.value = (split.value) ? useColumns(splitFields) : useColumns(fields)
 })
 </script>

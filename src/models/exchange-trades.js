@@ -1,10 +1,11 @@
+import { useAppStore } from "src/stores/app-store";
 import {
   getKeyFields,
   getRequiredFields,
   getUpperCaseFields,
 } from "src/utils/model-helpers";
 import { currency } from "src/utils/number-helpers";
-
+import moment from "moment";
 //order of fields will set order of columns
 //name: used to generate column name and default header if "label" not provided
 //name: id must be set as name for one field
@@ -14,9 +15,14 @@ import { currency } from "src/utils/number-helpers";
 //showColumn: default true, will show column if set
 //format: used for column display
 //align: default "left"
-
+//console.log("exchange-trades fields");
 const fields = [
-  { name: "date", label: "Trade Date", key: 1 },
+  {
+    name: "date",
+    label: "Trade Date",
+    key: 1,
+    defaultValue: () => moment().format("YYYY-MM-DD"),
+  },
   {
     name: "time",
     label: "Time",
@@ -35,12 +41,23 @@ const fields = [
     align: "right",
     key: 7,
   },
-  { name: "currency", key: 4, upperCase: true },
+  {
+    name: "currency",
+    key: 4,
+    upperCase: true,
+    defaultValue: (app) => app.defaultCurrency,
+  },
   {
     name: "fee",
     align: "right",
+    defaultValue: 0.0,
   },
-  { name: "feeCurrency", label: "Fee Currency", upperCase: true },
+  {
+    name: "feeCurrency",
+    label: "Fee Currency",
+    upperCase: true,
+    defaultValue: "USD",
+  },
 ];
 const splitFields = [
   { name: "date", label: "Trade Date", key: 1 },

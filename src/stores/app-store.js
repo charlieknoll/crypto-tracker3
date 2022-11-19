@@ -12,6 +12,7 @@ export const useAppStore = defineStore("app", {
     taxYear: useLocalStorage("taxYear", new Date().getFullYear().toString()),
     defaultCurrency: useLocalStorage("defaultCurrency", "USD"),
     needsBackup: useLocalStorage("needsBackup", false),
+    needsPrices: useLocalStorage("prices", false),
     minStartYear: 2007,
     selectedAccounts: useLocalStorage("selectedAccounts", []),
     selectedAssets: useLocalStorage("selectedAssets", []),

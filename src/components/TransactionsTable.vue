@@ -59,6 +59,7 @@ const pagination = computed({
   },
 });
 const tableHeight = computed(() => {
+
   if ($q.screen.height == 0) return;
   const allRowsHeight = (props.data?.length ?? 0) * 28
   const maxHeight = $q.screen.sm

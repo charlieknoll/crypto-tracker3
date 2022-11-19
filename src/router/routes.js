@@ -39,6 +39,11 @@ const routes = [
         path: "offchain-transfers",
         component: () => import("src/pages/OffchainTransfersPage.vue"),
       },
+      {
+        name: "Prices",
+        path: "prices",
+        component: () => import("src/pages/PricesPage.vue"),
+      },
     ],
   },
 

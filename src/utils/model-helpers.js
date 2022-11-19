@@ -6,11 +6,13 @@ const hasValue = (v) => {
   return v && v?.toString().trim() != "";
 };
 
-const getInitValue = (fields) => {
+const getInitValue = (fields, app) => {
   const result = {};
   fields.forEach((f) => {
     result[f.name] =
-      typeof f.defaultValue === "function" ? f.defaultValue() : f.defaultValue;
+      typeof f.defaultValue === "function"
+        ? f.defaultValue(app)
+        : f.defaultValue;
   });
   return result;
 };

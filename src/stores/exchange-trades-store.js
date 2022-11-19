@@ -25,7 +25,7 @@ const keyFunc = (r) =>
 export const useExchangeTradesStore = defineStore("exchange-trades", {
   state: () => ({
     records: useLocalStorage("exchange-trades", []),
-    initValue: getInitValue(fields),
+    initValue: getInitValue(fields, useAppStore()),
   }),
   getters: {
     split(state) {
@@ -108,7 +108,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
       const record = existing.find((r) => {
         return r.id == upserted.id;
       });
-
+      upserted = setUpperCase(upserted, upperCaseFields);
       let dup;
       //Look for duplicate key if composite key updated or inserting
       if ((record && upserted.id != keyFunc(upserted)) || !record) {
@@ -116,7 +116,6 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           return r.id == keyFunc(upserted);
         });
       }
-      upserted = setUpperCase(upserted, upperCaseFields);
 
       if (dup) return "Duplicate record";
 

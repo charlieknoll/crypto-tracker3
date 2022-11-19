@@ -17,7 +17,7 @@ import moment from "moment";
 //format: used for column display
 //align: default "left"
 const app = useAppStore();
-
+//console.log("offchain-transfers fields");
 const fields = [
   {
     name: "date",

@@ -38,9 +38,11 @@
     show-if-above
     bordered
     content-class="bg-grey-1">
-    <q-list>
+    <q-list dense="">
       <template v-for="(menuItem, index) in menuList" :key="index">
+
         <q-item
+
           :to="menuItem.to"
           :active="menuItem.to === $route.path"
           active-class="bg-blue-3 text-grey-10"
@@ -92,3 +94,9 @@ useImportFiles(files)
 
 
 </script>
+<style>
+.q-list--dense > .q-item, .q-item--dense {
+    min-height: 32px;
+    padding: 6px 16px;
+}
+</style>
