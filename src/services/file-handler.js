@@ -5,6 +5,7 @@ import { useChainStore } from "src/stores/chain-store";
 import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
 import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
+import { usePricesStore } from "src/stores/prices-store";
 import { useSettingsStore } from "src/stores/settings-store";
 
 const waitFor = async function (fn, args, ms, interval) {
@@ -74,6 +75,12 @@ function processAllDataFile(content) {
   const exchangeTrades = useExchangeTradesStore();
   exchangeTrades.$patch(backup.exchangeTrades);
 
+  const offchainTransfers = useOffchainTransfersStore();
+  offchainTransfers.$patch(backup.offchainTransfers);
+
+  const prices = usePricesStore();
+  prices.$patch(backup.prices);
+
   // const exchangeTrades = useExchangeTradesStore();
   // exchangeTrades.$patch(backup.exchangeTrades);
 
@@ -85,7 +92,9 @@ function processAllDataFile(content) {
     addresses.records.length +
     chains.records.length +
     openingPositions.records.length +
-    exchangeTrades.records.length
+    exchangeTrades.records.length +
+    offchainTransfers.records.length +
+    prices.records.length
   );
 }
 export const processFile = async function (name, content) {
@@ -121,7 +130,7 @@ function showNotify(fileName) {
     group: false, // required to be updatable
     timeout: 0, // we want to be in control when it gets dismissed
     spinner: true,
-    message: `Processing ${fileName}}...`,
+    message: `Processing ${fileName}...`,
   });
   return notif;
 }
@@ -170,4 +179,6 @@ export const processFiles = async function (fileArray, cb) {
     );
   }
   console.log(`Import duration: ${Date.now() - start} ms`);
+  const prices = usePricesStore();
+  prices.getPrices();
 };

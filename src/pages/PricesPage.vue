@@ -84,6 +84,7 @@ const clear = () => {
 
 const edit = (evt, row, index) => {
   error.value = "";
+  Object.assign(record, {});
   Object.assign(record, row);
   editing.value = true;
 };

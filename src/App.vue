@@ -19,11 +19,11 @@ onMounted(() => {
     if (!app.importing) app.needsBackup = true
   })
 
-  watchEffect(async () => {
-    const watched = exchangeTrades.records.length;
-    await prices.getPrices()
+  // watchEffect(async () => {
+  //   const watched = exchangeTrades.records;
+  //   prices.getPrices()
 
-  });
+  // });
 
   window.ononline = () => (app.onLine = true);
   window.onoffline = () => (app.onLine = false);

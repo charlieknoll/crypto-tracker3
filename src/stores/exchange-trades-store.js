@@ -17,7 +17,7 @@ import {
   upperCaseFields,
 } from "src/models/exchange-trades";
 import { multiplyCurrency } from "src/utils/number-helpers";
-import { getPrice } from "src/services/price-provider";
+import { usePricesStore } from "./prices-store";
 
 const keyFunc = (r) =>
   hasValue(r.exchangeId) ? r.exchangeId : getId(r, keyFields);
@@ -30,70 +30,78 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
   getters: {
     split(state) {
       let data = JSON.parse(JSON.stringify(state.records));
+      const prices = usePricesStore();
       const mappedData = [];
       for (const tx of data) {
         //a nonUSD fee tx will always be a sell
         //first get USDfee
         let usdFee = 0.0;
+        tx.sourceId = tx.id;
         if (tx.feeCurrency != "USD") {
-          const feeUSDPrice = getPrice(tx.feeCurrency, tx.date);
+          const feeUSDPrice = prices.getPrice(
+            tx.feeCurrency,
+            tx.date,
+            tx.timestamp
+          );
           usdFee = multiplyCurrency([tx.fee, feeUSDPrice]);
           const feeTx = Object.assign({}, tx);
-          feeTx.action = "SELL";
-          feeTx.id = "F-" + tx.id;
+          feeTx.action = "FEE";
+          feeTx.id = tx.id + "F";
           feeTx.price = feeUSDPrice;
           feeTx.asset = tx.feeCurrency;
           feeTx.amount = tx.fee;
           feeTx.fee = 0.0;
           feeTx.feeCurrency = "USD";
-          feeTx.currency = "USD";
+          feeTx.currency = tx.feeCurrency;
           feeTx.net = multiplyCurrency([feeTx.amount, feeTx.price]);
+          feeTx.sort = 1;
           mappedData.push(feeTx);
         } else {
           usdFee = tx.fee;
         }
         tx.feeCurrency = "USD";
-        tx.fee = usdFee;
+
         if (tx.currency != "USD") {
-          const currencyUSDPrice = getPrice(tx.currency, tx.date);
+          //split into a BUY/SELL pair of txs
+          const currencyUSDPrice = prices.getPrice(
+            tx.currency,
+            tx.date,
+            tx.timestamp
+          );
           const currencyPrice = tx.price;
           const id = tx.id;
-          const timestamp = tx.timestamp;
-
+          tx.sort = tx.action == "BUY" ? 2 : 0;
           tx.price = currencyPrice * currencyUSDPrice;
-          tx.net = multiplyCurrency([tx.amount, tx.price]);
-          tx.id = (tx.action == "SELL" ? "S-" : "B-") + id;
-          tx.timestamp = timestamp + (tx.action == "BUY" ? 1 : 0);
           tx.fee = tx.action == "SELL" ? usdFee : 0.0;
+          tx.net = multiplyCurrency([tx.amount, tx.price]) - tx.fee; //fee only non-zero for sell
+          tx.id = id + (tx.action == "SELL" ? "S" : "B");
+
           const currencyTx = Object.assign({}, tx);
           currencyTx.action = tx.action == "SELL" ? "BUY" : "SELL";
-          currencyTx.id = (currencyTx.action == "SELL" ? "S-" : "B-") + id;
-          currencyTx.timestamp =
-            timestamp + (currencyTx.action == "BUY" ? 1 : 0);
+          currencyTx.id = id + (currencyTx.action == "SELL" ? "S" : "B") + id;
+          currencyTx.sort = currencyTx.action == "BUY" ? 2 : 0;
           currencyTx.price = currencyUSDPrice;
           currencyTx.asset = tx.currency;
           currencyTx.amount = tx.amount * currencyPrice;
-          currencyTx.net = currencyTx.price * currencyTx.amount;
           currencyTx.fee = currencyTx.action == "SELL" ? usdFee : 0.0;
-          if (tx.action == "SELL") {
-            mappedData.push(tx);
-            mappedData.push(currencyTx);
-          } else {
-            mappedData.push(currencyTx);
-            mappedData.push(tx);
-          }
+          currencyTx.net =
+            multiplyCurrency([currencyTx.price, currencyTx.amount]) -
+            currencyTx.fee;
+          mappedData.push(tx);
+          mappedData.push(currencyTx);
         } else {
-          tx.id = (tx.action == "SELL" ? "S-" : "B-") + tx.id;
           tx.amount = Math.abs(tx.amount);
-          tx.net = multiplyCurrency([tx.amount, tx.price]);
           tx.fee = usdFee;
+          tx.net = multiplyCurrency([tx.amount, tx.price]);
+          tx.net = tx.net + tx.action == "SELL" ? -tx.fee : tx.fee;
           tx.feeCurrency = "USD";
           mappedData.push(tx);
         }
       }
       return mappedData.sort((a, b) => {
-        if (a.timestamp != b.timestamp) return a - b;
-        return a.exchangeId < b.exchangeId ? 1 : -1;
+        if (a.timestamp != b.timestamp) return a.timestamp - b.timestamp;
+        if (a.sourceId != b.sourceId) return a.sourceId < b.sourceId ? 1 : -1;
+        return a.sort - b.sort;
       });
     },
   },
@@ -126,11 +134,15 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
       } else {
         Object.assign(record, upserted);
       }
+      //if not modifying a copied array
       if (!recs) {
         const app = useAppStore();
         app.needsBackup = true;
         this.sort();
+        const prices = usePricesStore();
+        prices.getPrices();
       }
+
       return "";
     },
     delete(id) {
@@ -201,6 +213,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
       const app = useAppStore();
       app.needsBackup = true;
       this.sort();
+
       return mapped.length;
     },
   },

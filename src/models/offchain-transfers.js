@@ -16,7 +16,7 @@ import moment from "moment";
 //showColumn: default true, will show column if set
 //format: used for column display
 //align: default "left"
-const app = useAppStore();
+
 //console.log("offchain-transfers fields");
 const fields = [
   {
@@ -29,7 +29,8 @@ const fields = [
     name: "time",
     label: "Time",
     key: 2,
-    required: false,
+    required: true,
+    defaultValue: "00:00:00",
   },
   { name: "id", required: false, showColumn: false },
   { name: "transferId", required: false, label: "Transfer Id" },
@@ -47,11 +48,39 @@ const fields = [
     name: "feeCurrency",
     label: "Fee Currency",
     upperCase: true,
-    defaultValue: app.defaultCurrency,
+    defaultValue: (app) => app.defaultCurrency,
+  },
+];
+
+const splitFields = [
+  {
+    name: "date",
+    label: "Transfer Date",
+  },
+  {
+    name: "time",
+    label: "Time",
+  },
+  { name: "id", format: (v) => v.substring(0, 10) },
+  { name: "fromAccount", label: "From Account" },
+  { name: "toAccount", label: "To Account" },
+  { name: "asset" },
+  { name: "amount", align: "right" },
+  {
+    name: "price",
+    align: "right",
+    format: currency,
+  },
+
+  { name: "type" },
+  {
+    name: "fee",
+    align: "right",
+    format: currency,
   },
 ];
 
 const keyFields = getKeyFields(fields);
 const requiredFields = getRequiredFields(fields);
 const upperCaseFields = getUpperCaseFields(fields);
-export { fields, keyFields, requiredFields, upperCaseFields };
+export { fields, splitFields, keyFields, requiredFields, upperCaseFields };

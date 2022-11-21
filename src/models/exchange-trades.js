@@ -1,3 +1,5 @@
+//1406548800
+
 import { useAppStore } from "src/stores/app-store";
 import {
   getKeyFields,
@@ -27,10 +29,22 @@ const fields = [
     name: "time",
     label: "Time",
     key: 2,
-    required: false,
+    required: true,
+    defaultValue: "00:00:00",
   },
-  { name: "id", required: false, showColumn: false },
-  { name: "exchangeId", required: false, label: "Exchange Id" },
+  {
+    name: "id",
+    required: false,
+    showColumn: true,
+    label: "Id",
+    format: (v) => v.substring(0, 10),
+  },
+  {
+    name: "exchangeId",
+    required: false,
+    label: "Exchange Id",
+    showColumn: false,
+  },
   { name: "account", key: 4 },
   { name: "asset", key: 6 },
   { name: "action", key: 3, upperCase: true },
@@ -43,6 +57,7 @@ const fields = [
   },
   {
     name: "currency",
+    label: "Cur",
     key: 4,
     upperCase: true,
     defaultValue: (app) => app.defaultCurrency,
@@ -54,7 +69,7 @@ const fields = [
   },
   {
     name: "feeCurrency",
-    label: "Fee Currency",
+    label: "FCur",
     upperCase: true,
     defaultValue: "USD",
   },
@@ -70,6 +85,7 @@ const splitFields = [
   { name: "id", required: false, format: (v) => v.substring(0, 10) },
 
   { name: "account", key: 4 },
+
   { name: "asset", key: 6 },
   { name: "action", key: 3, upperCase: true },
   { name: "amount", align: "right", key: 7 },
@@ -80,7 +96,7 @@ const splitFields = [
     format: currency,
     key: 7,
   },
-  { name: "currency", key: 4, upperCase: true },
+  { name: "currency", label: "Source Cur" },
   {
     name: "fee",
     align: "right",

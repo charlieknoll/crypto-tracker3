@@ -18,7 +18,7 @@ const fields = [
     key: 2,
     defaultValue: () => moment().format("YYYY-MM-DD"),
   },
-  { name: "time", required: false, showColumn: true, key: 3 },
+  { name: "time", defaultValue: "00:00:00", showColumn: true, key: 3 },
   {
     name: "price",
     required: true,
@@ -26,13 +26,14 @@ const fields = [
     defaultValue: 0.0,
     format: currency,
   },
-  // {
-  //   name: "currency",
-  //   key: 4,
-  //   upperCase: true,
-  //   defaultValue: app.defaultCurrency,
-  // },
-  { name: "source", required: true, showColumn: true, defaultValue: "Manual" },
+
+  {
+    name: "source",
+    required: true,
+    showColumn: true,
+    defaultValue: "Manual",
+    key: 4,
+  },
 ];
 
 const keyFields = getKeyFields(fields);

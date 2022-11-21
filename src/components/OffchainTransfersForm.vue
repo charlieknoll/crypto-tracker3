@@ -11,8 +11,9 @@
           v-autofocus></q-input>
       </div>
       <!-- <div class="col-12 col-sm-4">{{ value.date }}</div> -->
-      <div class="col-12 col-sm-8 q-pr-sm">
-        <q-input v-model="value.time" data-lpignore="true" label="Time"></q-input>
+      <div class="col-12 col-sm-4 q-pr-sm">
+        <q-input v-model="value.time" data-lpignore="true" mask="fulltime" :stack-label="true" label="Time"></q-input>
+
       </div>
     </div>
     <div class="row q-pa-sm">

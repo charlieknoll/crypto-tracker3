@@ -12,12 +12,12 @@
       </div>
       <!-- <div class="col-12 col-sm-4">{{ value.date }}</div> -->
       <div class="col-12 col-sm-4 q-pr-sm">
-        <q-input v-model="value.time" data-lpignore="true" label="Time"></q-input>
+        <q-input v-model="value.time" data-lpignore="true" mask="fulltime" :stack-label="true" label="Time"></q-input>
       </div>
     </div>
     <div class="row q-pa-sm">
       <div class="col-12 col-sm-4 q-pr-sm">
-        <q-input v-model="value.asset" label="Asset"></q-input>
+        <q-input v-model="value.asset" data-lpignore="true" label="Asset"></q-input>
       </div>
       <div class="col-12 col-sm-4 q-pr-sm">
         <q-input v-model="value.price" label="Price"></q-input>

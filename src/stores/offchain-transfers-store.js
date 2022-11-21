@@ -16,6 +16,8 @@ import {
   requiredFields,
   upperCaseFields,
 } from "src/models/offchain-transfers";
+import { usePricesStore } from "./prices-store";
+import { multiplyCurrency } from "src/utils/number-helpers";
 
 const keyFunc = (r) =>
   hasValue(r.transferId) ? r.transferId : getId(r, keyFields);
@@ -23,8 +25,53 @@ const keyFunc = (r) =>
 export const useOffchainTransfersStore = defineStore("offchain-transfers", {
   state: () => ({
     records: useLocalStorage("offchain-transfers", []),
+    initValue: getInitValue(fields, useAppStore()),
   }),
-  getters: {},
+  getters: {
+    split(state) {
+      let data = JSON.parse(JSON.stringify(state.records));
+      const prices = usePricesStore();
+      const mappedData = [];
+      for (const tx of data) {
+        //a nonUSD fee tx will always be a sell
+        //first get USDfee
+        let usdFee = 0.0;
+        tx.sourceId = tx.id;
+        if (tx.feeCurrency != "USD") {
+          const feeUSDPrice = prices.getPrice(
+            tx.feeCurrency,
+            tx.date,
+            tx.timestamp
+          );
+          usdFee = multiplyCurrency([tx.fee, feeUSDPrice]);
+          const feeTx = Object.assign({}, tx);
+          feeTx.type = "FEE";
+          feeTx.id = tx.id + "F";
+          feeTx.price = feeUSDPrice;
+          feeTx.asset = tx.feeCurrency;
+          feeTx.amount = tx.fee;
+          feeTx.fee = usdFee;
+          feeTx.feeCurrency = "USD";
+          feeTx.sort = 1;
+          mappedData.push(feeTx);
+        } else {
+          usdFee = tx.fee;
+        }
+        tx.sort = 0;
+        tx.type = "TRANSFER";
+        tx.feeCurrency = "USD";
+        tx.amount = Math.abs(tx.amount);
+        tx.fee = usdFee;
+        tx.feeCurrency = "USD";
+        mappedData.push(tx);
+      }
+      return mappedData.sort((a, b) => {
+        if (a.timestamp != b.timestamp) return a.timestamp - b.timestamp;
+        if (a.sourceId != b.sourceId) return a.sourceId < b.sourceId ? 1 : -1;
+        return a.sort - b.sort;
+      });
+    },
+  },
   actions: {
     set(upserted, recs) {
       const existing = recs ?? this.records;
@@ -49,6 +96,7 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
       if (dup) return "Duplicate record";
 
       upserted.id = keyFunc(upserted);
+      upserted.time = hasValue(upserted.time) ? upserted.time : "00:00:00";
       upserted.timestamp = getTimestamp(upserted.date + "T" + upserted.time);
       if (!record) {
         existing.push(Object.assign({}, upserted));
@@ -59,6 +107,8 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
         const app = useAppStore();
         app.needsBackup = true;
         this.sort();
+        const prices = usePricesStore();
+        prices.getPrices();
       }
       return "";
     },
@@ -79,20 +129,26 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
         columns: true,
         skip_empty_lines: true,
       });
-      const initValue = getInitValue(fields);
+      const app = useAppStore();
+      const initValue = getInitValue(fields, app);
+
       const mapped = stage.map((op) => {
+        //fix optional default values
+        let time = op.Date.substring(11, 19);
+        if (!hasValue(time)) time = initValue.time;
+        let feeCurrency = op.FeeCurrency;
+        if (!hasValue(feeCurrency)) feeCurrency = initValue.feeCurrency;
+
         const tx = {
           transferId: op.Id,
           memo: op.Memo,
           date: op.Date.substring(0, 10),
-          time: op.Date.substring(11, 19),
+          time: time,
           amount: parseFloat(op.Volume),
           fromAccount: op.FromAccount,
           toAccount: op.ToAccount,
           fee: hasValue(op.Fee) ? parseFloat(op.Fee) : 0.0,
-          feeCurrency: hasValue(op.FeeCurrency)
-            ? op.FeeCurrency
-            : initValue.feeCurrency,
+          feeCurrency: feeCurrency,
           asset: op.Symbol,
         };
 
@@ -120,7 +176,7 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
           );
       }
       this.records = recs;
-      const app = useAppStore();
+
       app.needsBackup = true;
       this.sort();
       return mapped.length;

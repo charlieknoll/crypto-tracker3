@@ -1,5 +1,5 @@
 <template>
-  <div style="min-width: 250px; display: inline-block;" class="q-mr-sm">
+  <div style="min-width: 250px; display: inline-block;">
     <base-select
       v-model="store.selectedAssets"
       :options="assets"

@@ -17,6 +17,7 @@ export const useAppStore = defineStore("app", {
     selectedAccounts: useLocalStorage("selectedAccounts", []),
     selectedAssets: useLocalStorage("selectedAssets", []),
     onLine: ref(navigator.onLine),
+    lastRequestTime: ref(0),
   }),
   getters: {
     taxYears() {

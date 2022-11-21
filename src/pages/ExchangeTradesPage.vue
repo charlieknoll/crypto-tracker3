@@ -24,10 +24,14 @@
       @rowClick="edit">
       <template v-slot:top-right>
         <q-toggle label="Split" v-model="split" class="q-pr-sm"></q-toggle>
-        <account-filter></account-filter>
-        <asset-filter></asset-filter>
-        <q-btn class="q-ml-lg" color="secondary" label="Add" @click="add" />
-        <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
+        <div>
+          <account-filter></account-filter>
+          <asset-filter></asset-filter>
+        </div>
+        <div>
+          <q-btn class="q-ml-sm" color="secondary" label="Add" @click="add" />
+          <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
+        </div>
       </template>
     </transactions-table>
   </q-page>
@@ -57,6 +61,7 @@ const editing = ref(false);
 const record = reactive({});
 const add = () => {
   error.value = "";
+  Object.assign(record, {})
   Object.assign(record, store.initValue);
   editing.value = true;
 };
@@ -68,7 +73,7 @@ const remove = () => {
     persistent: true,
   }).onOk(() => {
     error.value = "";
-    if (record.id) store.delete(record.id);
+    store.delete(record.sourceId ?? record.id);
     editing.value = false;
   })
 };
@@ -88,7 +93,13 @@ const clear = () => {
 
 const edit = (evt, row, index) => {
   error.value = "";
-  Object.assign(record, row);
+  Object.assign(record, {});
+  if (row.sourceId) {
+    const rec = store.records.find(r => r.id === row.sourceId)
+    Object.assign(record, rec);
+  } else {
+    Object.assign(record, row);
+  }
   editing.value = true;
 };
 const save = () => {
@@ -99,6 +110,7 @@ const filtered = computed(() => {
   //return [{ id: 'test' }]
   const appStore = useAppStore();
   let txs = split.value ? store.split : store.records;
+  //console.log(txs.length)
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByAccounts(txs, appStore.selectedAccounts);
   txs = filterByYear(txs, appStore.taxYear)
