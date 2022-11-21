@@ -184,46 +184,5 @@ export const usePricesStore = defineStore("prices", {
       app.importing = false;
       lock.release();
     },
-    load(data) {
-      const stage = parse(data, {
-        trim: true,
-        columns: true,
-        skip_empty_lines: true,
-      });
-      const mapped = stage.map((op) => {
-        const p = {
-          action,
-          memo: op.Memo,
-          price: parseFloat(op.Price),
-          currency: op.Currency.toUpperCase(),
-          date: op.Date.substring(0, 10),
-          time: op.Date.substring(11, 19),
-          exchangeId: op.ExchangeId,
-          amount: parseFloat(op.Volume),
-          account,
-          fee: parseFloat(op.Fee),
-          feeCurrency,
-          asset: op.Symbol,
-          cost: multiplyCurrency(op.Price, op.Volume),
-        };
-        return tx;
-      });
-
-      const recs = JSON.parse(JSON.stringify(this.records));
-      for (let i = 0; i < mapped.length; i++) {
-        const op = mapped[i];
-        op.id = keyFunc(op);
-        const errorMsg = this.set(op, recs);
-        if (errorMsg != "")
-          throw new Error(
-            errorMsg.replace("<br>", ", ") + " on row " + (i + 1)
-          );
-      }
-      this.records = recs;
-      const app = useAppStore();
-      app.needsBackup = true;
-      this.sort();
-      return mapped.length;
-    },
   },
 });
