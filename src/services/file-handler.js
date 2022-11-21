@@ -87,6 +87,7 @@ function processAllDataFile(content) {
   //addresses.$patch(backup.addresses);
   const app = useAppStore();
   app.taxYear = "All";
+
   return (
     1 +
     addresses.records.length +

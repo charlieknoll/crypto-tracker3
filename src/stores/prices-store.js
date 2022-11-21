@@ -177,23 +177,12 @@ export const usePricesStore = defineStore("prices", {
 
       //patch to store using repo technique
       const recs = JSON.parse(JSON.stringify(this.records));
-      //const recs = this.records;
-
-      // for (let i = 0; i < prices.length; i++) {
-      //   const op = prices[i];
-      //   op.id = keyFunc(op);
-      //   const errorMsg = this.set(op, recs);
-      //   if (errorMsg != "") console.error("Duplicate or invalid price:" + op);
-      // }
-      // debugger;
       this.records = recs.concat(prices);
       if (prices.length) showPriceDialog(prices.length);
-      //console.log("Prices downloaded: " + prices.length);
       app.needsBackup = true;
       this.sort();
       app.importing = false;
       lock.release();
-      //console.log(prices);
     },
     load(data) {
       const stage = parse(data, {
