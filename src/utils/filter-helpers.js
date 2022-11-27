@@ -16,6 +16,7 @@ export const filterByAccounts = function (txs, selectedAccounts, useToFrom) {
   }
   return txs;
 };
+
 export const filterByAssets = function (txs, selectedAssets) {
   if (!selectedAssets) return txs;
   if (selectedAssets.length > 0) {

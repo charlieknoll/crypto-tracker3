@@ -3,7 +3,12 @@ import { useLocalStorage } from "@vueuse/core";
 import { useAppStore } from "./app-store";
 import { ethers } from "ethers";
 
-import { getId, getInitValue, validate } from "src/utils/model-helpers";
+import {
+  getId,
+  getInitValue,
+  hasValue,
+  validate,
+} from "src/utils/model-helpers";
 import { fields, keyFields, requiredFields } from "src/models/address";
 const keyFunc = (r) => getId(r, keyFields);
 
@@ -17,6 +22,9 @@ export const useAddressStore = defineStore("address", {
     set(upserted) {
       //TODO convert to vuelidate pattern and use fields
       const app = useAppStore();
+      if (!hasValue(upserted.name)) {
+        upserted.name = upserted.address;
+      }
       let errorMessage = validate(upserted, requiredFields);
       try {
         if (upserted.address) {
@@ -55,6 +63,9 @@ export const useAddressStore = defineStore("address", {
     },
     delete(id) {
       this.records = this.records.filter((r) => r.id != id);
+    },
+    clear() {
+      this.records = [];
     },
     clearUnnamed() {
       this.records = this.records.filter((r) => r.address != r.name);

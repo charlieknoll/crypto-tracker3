@@ -44,6 +44,11 @@ const routes = [
         path: "prices",
         component: () => import("src/pages/PricesPage.vue"),
       },
+      {
+        name: "ChainTransactions",
+        path: "chain-transactions",
+        component: () => import("src/pages/ChainTxsPage.vue"),
+      },
     ],
   },
 

@@ -18,12 +18,13 @@
     </q-dialog>
     <transactions-table
 
-      title="Prices"
+      :title="title"
       :rows="filtered"
       :columns="columns"
       @rowClick="edit">
       <template v-slot:top-right>
         <asset-filter></asset-filter>
+        <q-btn class="q-ml-lg" color="primary" label="Refresh" @click="store.getPrices" />
         <q-btn class="q-ml-lg" color="secondary" label="Add" @click="add" />
         <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
       </template>
@@ -31,7 +32,7 @@
   </q-page>
 </template>
 <script setup>
-import { ref, reactive, computed } from "vue";
+import { computed } from "vue";
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
 import { fields } from "src/models/price";
@@ -43,55 +44,16 @@ import { useAppStore } from "src/stores/app-store";
 import { filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import PricesForm from "src/components/PricesForm.vue";
 import { usePricesStore } from "src/stores/prices-store";
-import { getInitValue } from "src/utils/model-helpers";
+import Repo from "src/utils/repo-helpers";
+
 const store = usePricesStore();
+const $q = useQuasar();
+const repo = new Repo("Prices", store, $q)
+
+const { title, record, editing, error, add, edit, save, remove, clear } = repo
 
 const columns = useColumns(fields);
-const $q = useQuasar();
-const error = ref("");
-const editing = ref(false);
-const record = reactive({});
-const add = () => {
-  error.value = "";
-  Object.assign(record, getInitValue(fields));
-  editing.value = true;
-};
-const remove = () => {
-  $q.dialog({
-    title: "Confirm",
-    message: "Are you sure you want to delete this record?",
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    error.value = "";
-    if (record.id) store.delete(record.id);
-    editing.value = false;
-  });
-};
-const clear = () => {
-  const appStore = useAppStore();
-  let message = "Are you sure you want to delete all prices?";
-  if (appStore.needsBackup) message += "  NOTE: You currently need to back up your data.";
-  $q.dialog({
-    title: "Confirm",
-    message,
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    store.clear();
-  });
-};
 
-const edit = (evt, row, index) => {
-  error.value = "";
-  Object.assign(record, {});
-  Object.assign(record, row);
-  editing.value = true;
-};
-const save = () => {
-  error.value = store.set(record);
-  editing.value = error.value != "";
-};
 const filtered = computed(() => {
   //return [{ id: 'test' }]
   const appStore = useAppStore();

@@ -3,7 +3,6 @@ import { useLocalStorage } from "@vueuse/core";
 import { useAppStore } from "./app-store";
 import { Notify } from "quasar";
 import {
-  hasValue,
   getInitValue,
   validate,
   setUpperCase,
@@ -21,6 +20,8 @@ import { useExchangeTradesStore } from "./exchange-trades-store";
 import Semaphore from "semaphore-async-await";
 import { getApiPrice } from "src/services/price-provider";
 import { useOffchainTransfersStore } from "./offchain-transfers-store";
+import StoreHelper from "src/utils/store-helpers";
+
 const lock = new Semaphore(1);
 const keyFunc = (r) => getId(r, keyFields);
 
@@ -49,9 +50,10 @@ export const usePricesStore = defineStore("prices", {
     initValue: getInitValue(fields, useAppStore()),
   }),
 
-  actions: {
+  actions: Object.assign(StoreHelper, {
     set(upserted, recs) {
       const app = useAppStore();
+      upserted.source = "Manual";
 
       let errorMessage = validate(upserted, requiredFields);
 
@@ -71,7 +73,6 @@ export const usePricesStore = defineStore("prices", {
 
       if (dup) return "Duplicate record";
 
-      upserted.source = "Manual";
       upserted.id = keyFunc(upserted);
       upserted.timestamp = getTimestamp(upserted.date + "T" + upserted.time);
 
@@ -89,17 +90,17 @@ export const usePricesStore = defineStore("prices", {
       this.getPrices();
       return "";
     },
-    delete(id) {
-      this.records = this.records.filter((r) => r.id != id);
-    },
-    clear() {
-      this.records = [];
-    },
-    sort() {
-      this.records = this.records.sort((a, b) => {
-        return a.timestamp - b.timestamp;
-      });
-    },
+    // delete(id) {
+    //   this.records = this.records.filter((r) => r.id != id);
+    // },
+    // clear() {
+    //   this.records = [];
+    // },
+    // sort() {
+    //   this.records = this.records.sort((a, b) => {
+    //     return a.timestamp - b.timestamp;
+    //   });
+    // },
     getPrice(asset, date, timestamp) {
       ///use manual with exact timestamp first
       ///then date from api
@@ -184,5 +185,5 @@ export const usePricesStore = defineStore("prices", {
       app.importing = false;
       lock.release();
     },
-  },
+  }),
 });

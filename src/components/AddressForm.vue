@@ -48,6 +48,7 @@ const value = computed({
 })
 
 const options = [
+  "",
   "Owned",
   "Exchange Owned",
   "Contract Owned",
@@ -57,6 +58,7 @@ const options = [
   "Spending",
   "Expense",
   "Income",
+  "Spam"
 ]
 </script>
 

@@ -16,6 +16,7 @@ export const useAppStore = defineStore("app", {
     minStartYear: 2007,
     selectedAccounts: useLocalStorage("selectedAccounts", []),
     selectedAssets: useLocalStorage("selectedAssets", []),
+    selectedChains: useLocalStorage("selectedChains", []),
     onLine: ref(navigator.onLine),
     lastRequestTime: ref(0),
   }),

@@ -1,23 +1,29 @@
 import axios from "axios";
-import { store } from "../boot/store";
-import { actions } from "../boot/actions";
+import { useAddressStore } from "src/stores/address-store";
+import { useAppStore } from "src/stores/app-store";
+import { useSettingsStore } from "src/stores/settings-store";
 import { throttle } from "../utils/cacheUtils";
 let lastRequestTime = 0;
-export const scanProviders = [];
-let etherScanProvider = {
-  baseUrl: "https://api.etherscan.io/api",
-  gasType: "ETH",
-  explorerUrl: "https://etherscan.io/tx/",
-  apikey: store.settings.apikey,
-};
-let bscScanProvider = {
-  baseUrl: "https://api.bscscan.com/api",
-  gasType: "BNB",
-  apikey: store.settings.bscApikey,
-  explorerUrl: "https://bscscan.com/tx/",
-};
-scanProviders.push(etherScanProvider);
-scanProviders.push(bscScanProvider);
+
+function getScanProviders() {
+  const settings = useSettingsStore();
+  const result = [];
+  let etherScanProvider = {
+    baseUrl: "https://api.etherscan.io/api",
+    gasType: "ETH",
+    explorerUrl: "https://etherscan.io/tx/",
+    apikey: settings.etherscanApikey,
+  };
+  let bscScanProvider = {
+    baseUrl: "https://api.bscscan.com/api",
+    gasType: "BNB",
+    apikey: settings.bscApikey,
+    explorerUrl: "https://bscscan.com/tx/",
+  };
+  result.push(etherScanProvider);
+  result.push(bscScanProvider);
+  return result;
+}
 
 async function getTokenTransactions(oa, provider, startBlock) {
   const tokenTxApiUrl =
@@ -56,21 +62,19 @@ async function getAccountTransactions(oa, provider, startBlock) {
     throw new Error("Invalid return status: " + result.data.message);
   }
   const txs = result.data.result;
+  const addresses = useAddressStore();
+
   for (const tx of txs) {
     if (tx.timeStamp) {
       tx.timestamp = parseInt(tx.timeStamp);
     }
     tx.gasType = provider.gasType;
     //TODO addImportedAccount
-    actions.addImportedAddress({ address: tx.to }, provider.gasType);
-    actions.addImportedAddress({ address: tx.from }, provider.gasType);
+    addresses.set({ address: tx.to, chain: provider.gasType });
+    addresses.set({ address: tx.from, chain: provider.gasType });
   }
   //There will be multiple txs for transfers between owned accounts so tx's must be merged
-  actions.mergeArrayToData(
-    "chainTransactions",
-    txs,
-    (a, b) => a.hash == b.hash
-  );
+  return txs;
 }
 
 async function getAccountInternalTransactions(oa, provider, startBlock) {
@@ -104,39 +108,47 @@ async function getAccountInternalTransactions(oa, provider, startBlock) {
     (a, b) => a.hash == b.hash
   );
 }
+export const getTransactions = async function () {
+  const scanProviders = getScanProviders();
+  const result = {
+    accountTxs: [],
+    internalTxs: [],
+    tokenTxs: [],
+  };
+  for (let i = 0; i < scanProviders.length; i++) {
+    const provider = scanProviders[i];
+    const txs = await getChainTransactions(provider);
+    result.accountTxs.push(txs.accountTxs);
+    result.internalTxs.push(txs.internalTxs);
+    result.tokenTxs.push(txs.tokenTxs);
+  }
+};
+export const getChainTransactions = async function (provider) {
+  const addresses = useAddressStore();
 
-export const getTransactions = async function (provider) {
-  const ownedAccounts = store.addresses.filter(
-    (a) =>
-      a.type == "Owned" &&
-      a.chains.replaceAll(" ", "").split(",").indexOf(provider.gasType) > -1
+  const ownedAccounts = addresses.records.filter(
+    (a) => a.type == "Owned" && a.chain == provider.gasType
   );
-  const blockSyncPropName = `last${provider.gasType}BlockSync`;
+
   //loop through "Owned accounts"
   const currentBlock = await getCurrentBlock(provider);
-  let tokenTxs = [...(actions.getData("tokenTransactions") ?? [])];
-
+  const result = {};
   for (const oa of ownedAccounts) {
     try {
       //get normal tx's
       lastRequestTime = await throttle(lastRequestTime, 500);
-      await getAccountTransactions(oa, provider, oa[blockSyncPropName]);
-      lastRequestTime = await throttle(lastRequestTime, 500);
-      await getAccountInternalTransactions(oa, provider, oa[blockSyncPropName]);
-      lastRequestTime = await throttle(lastRequestTime, 500);
-      tokenTxs = tokenTxs.concat(
-        await getTokenTransactions(oa, provider, oa[blockSyncPropName])
-      );
+      result.accountTxs = await getAccountTransactions(oa, provider);
+      // lastRequestTime = await throttle(lastRequestTime, 500);
+      // result.internalTxs = await getAccountInternalTransactions(oa, provider);
+      // lastRequestTime = await throttle(lastRequestTime, 500);
+      // result.tokenTxs = await getTokenTransactions(oa, provider);
       //setLastBlockSync
-      oa[blockSyncPropName] = currentBlock;
+      oa.lastBlockSync = currentBlock;
     } catch (err) {
       console.log("error getting txs: ", err);
     }
   }
-
-  actions.setObservableData("addresses", store.addresses);
-  tokenTxs.sort((a, b) => a.timestamp - b.timestamp);
-  actions.setData("tokenTransactions", tokenTxs);
+  return result;
 };
 export const getCurrentBlock = async function (provider) {
   const timestamp = Math.round(new Date().getTime() / 1000);
