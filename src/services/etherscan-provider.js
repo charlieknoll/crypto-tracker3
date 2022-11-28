@@ -118,10 +118,11 @@ export const getTransactions = async function () {
   for (let i = 0; i < scanProviders.length; i++) {
     const provider = scanProviders[i];
     const txs = await getChainTransactions(provider);
-    result.accountTxs.push(txs.accountTxs);
-    result.internalTxs.push(txs.internalTxs);
-    result.tokenTxs.push(txs.tokenTxs);
+    result.accountTxs = result.accountTxs.concat(txs.accountTxs);
+    result.internalTxs = result.internalTxs.concat(txs.internalTxs);
+    result.tokenTxs = result.tokenTxs.concat(txs.tokenTxs);
   }
+  return result;
 };
 export const getChainTransactions = async function (provider) {
   const addresses = useAddressStore();
@@ -132,7 +133,11 @@ export const getChainTransactions = async function (provider) {
 
   //loop through "Owned accounts"
   const currentBlock = await getCurrentBlock(provider);
-  const result = {};
+  const result = {
+    accountTxs: [],
+    internalTxs: [],
+    tokenTxs: [],
+  };
   for (const oa of ownedAccounts) {
     try {
       //get normal tx's
