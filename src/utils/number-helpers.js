@@ -1,3 +1,6 @@
+import { ethers } from "ethers";
+const BigNumber = ethers.BigNumber;
+
 const currency = (val, row) => `$${val ? parseFloat(val).toFixed(2) : "0.00"}`;
 const multiplyCurrency = (args) => {
   let result = 1.0;
@@ -7,4 +10,14 @@ const multiplyCurrency = (args) => {
   }
   return Math.round(result * 100) / 100;
 };
-export { currency, multiplyCurrency };
+const sBnToFloat = function (v) {
+  const decimals = 18;
+  const bn = BigNumber.from(v, decimals);
+  try {
+    return parseFloat(ethers.utils.formatUnits(bn, decimals));
+  } catch (error) {
+    //kill
+    return 0.0;
+  }
+};
+export { currency, multiplyCurrency, sBnToFloat };

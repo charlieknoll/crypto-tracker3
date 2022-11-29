@@ -25,6 +25,7 @@ export const useAddressStore = defineStore("address", {
       if (!hasValue(upserted.name)) {
         upserted.name = upserted.address;
       }
+      if (!upserted.lastBlockSync) upserted.lastBlockSync = 0;
       let errorMessage = validate(upserted, requiredFields);
       try {
         if (upserted.address) {

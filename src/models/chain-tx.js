@@ -19,7 +19,7 @@ const fields = [
     name: "amount",
     format: (val, row) => `${(parseFloat(val) ?? 0.0).toFixed(4)}`,
   },
-  { name: "price", format: (val, row) => currency(val) + " " + row.gasType },
+  { name: "price", format: (val, row) => currency(val) + " " + row.asset },
   { name: "fee", format: (val, row) => currency },
   { name: "gross", format: (val, row) => currency },
 ];

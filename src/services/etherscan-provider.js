@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAddressStore } from "src/stores/address-store";
 import { useAppStore } from "src/stores/app-store";
 import { useSettingsStore } from "src/stores/settings-store";
-import { throttle } from "../utils/cacheUtils";
+import { sleep, throttle } from "../utils/cacheUtils";
 let lastRequestTime = 0;
 
 function getScanProviders() {
@@ -109,20 +109,26 @@ async function getAccountInternalTransactions(oa, provider, startBlock) {
   );
 }
 export const getTransactions = async function () {
-  const scanProviders = getScanProviders();
-  const result = {
-    accountTxs: [],
-    internalTxs: [],
-    tokenTxs: [],
-  };
-  for (let i = 0; i < scanProviders.length; i++) {
-    const provider = scanProviders[i];
-    const txs = await getChainTransactions(provider);
-    result.accountTxs = result.accountTxs.concat(txs.accountTxs);
-    result.internalTxs = result.internalTxs.concat(txs.internalTxs);
-    result.tokenTxs = result.tokenTxs.concat(txs.tokenTxs);
+  const app = useAppStore();
+  app.importing = true;
+  try {
+    const scanProviders = getScanProviders();
+    const result = {
+      accountTxs: [],
+      internalTxs: [],
+      tokenTxs: [],
+    };
+    for (let i = 0; i < scanProviders.length; i++) {
+      const provider = scanProviders[i];
+      const txs = await getChainTransactions(provider);
+      result.accountTxs = result.accountTxs.concat(txs.accountTxs);
+      result.internalTxs = result.internalTxs.concat(txs.internalTxs);
+      result.tokenTxs = result.tokenTxs.concat(txs.tokenTxs);
+    }
+    return result;
+  } finally {
+    app.importing = false;
   }
-  return result;
 };
 export const getChainTransactions = async function (provider) {
   const addresses = useAddressStore();
