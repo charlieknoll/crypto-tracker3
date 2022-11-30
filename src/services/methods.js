@@ -1,4 +1,4 @@
-const methodIds = [
+export const methods = [
   {
     id: "0xb6b55f25",
     name: "deposit",
@@ -131,9 +131,12 @@ const methodIds = [
     id: "0xd7ed7453",
     name: "gnosis win",
   },
+  {
+    id: "0x76122903",
+    name: "claimTokens",
+  },
+  {
+    id: "0x8b95dd71",
+    name: "setAddr",
+  },
 ];
-export default function getMethodName(input) {
-  if (input == "0x") return "";
-  const methodId = methodIds.find((m) => m.id === input.substring(0, 10));
-  return methodId ? methodId.name : "";
-}

@@ -21,6 +21,7 @@ import Semaphore from "semaphore-async-await";
 import { getApiPrice } from "src/services/price-provider";
 import { useOffchainTransfersStore } from "./offchain-transfers-store";
 import StoreHelper from "src/utils/store-helpers";
+import { useChainTxsStore } from "./chain-txs-store";
 
 const lock = new Semaphore(1);
 const keyFunc = (r) => getId(r, keyFields);
@@ -44,6 +45,7 @@ const mapAssetDates = (baseCurrencies, r, fieldName) => {
       };
     });
 };
+
 export const usePricesStore = defineStore("prices", {
   state: () => ({
     records: useLocalStorage("prices", []),
@@ -93,9 +95,20 @@ export const usePricesStore = defineStore("prices", {
     // delete(id) {
     //   this.records = this.records.filter((r) => r.id != id);
     // },
-    // clear() {
-    //   this.records = [];
-    // },
+    clear(deletePrices) {
+      const app = useAppStore();
+      app.needsBackup = true;
+      if (!deletePrices) {
+        this.records = [];
+        return;
+      }
+      const recs = JSON.parse(JSON.stringify(this.records));
+
+      const notDeleted = this.records.filter(
+        (ep) => !deletePrices.includes(ep)
+      );
+      this.records = notDeleted;
+    },
     // sort() {
     //   this.records = this.records.sort((a, b) => {
     //     return a.timestamp - b.timestamp;
@@ -119,12 +132,31 @@ export const usePricesStore = defineStore("prices", {
 
       return 0.0;
     },
+    savePrices(prices) {
+      const app = useAppStore();
+      const recs = JSON.parse(JSON.stringify(this.records));
+      const added = prices.filter((p) => {
+        return (
+          this.records.findIndex((ep) => {
+            return (
+              p.asset == ep.asset && p.date == ep.date && ep.source == "Api"
+            );
+          }) == -1 && p.id
+        );
+      });
+
+      this.records = recs.concat(added);
+      if (added.length) showPriceDialog(added.length);
+      app.needsBackup = true;
+      this.sort();
+    },
     async getPrices() {
       await lock.acquire();
       const app = useAppStore();
       app.importing = true;
       const exchangeTrades = useExchangeTradesStore();
       const offchainTransfers = useOffchainTransfersStore();
+      const chainTxs = useChainTxsStore();
 
       const settings = useSettingsStore();
 
@@ -144,6 +176,9 @@ export const usePricesStore = defineStore("prices", {
       );
       prices = prices.concat(
         mapAssetDates(baseCurrencies, offchainTransfers.records, "feeCurrency")
+      );
+      prices = prices.concat(
+        mapAssetDates(baseCurrencies, chainTxs.accountTxs, "asset")
       );
 
       //make unique
@@ -166,10 +201,14 @@ export const usePricesStore = defineStore("prices", {
       });
 
       //get remaining prices
-
+      const self = this;
       for (let u = 0; u < prices.length; u++) {
         const p = prices[u];
-        p.price = await getApiPrice(p.asset, p.date);
+        p.price = await getApiPrice(p.asset, p.date, function () {
+          app.importing = false;
+          self.savePrices(prices);
+        });
+        app.importing = true;
         p.source = "Api";
         p.time = "00:00:00";
         p.timestamp = getTimestamp(p.date + "T" + p.time);
@@ -177,11 +216,7 @@ export const usePricesStore = defineStore("prices", {
       }
 
       //patch to store using repo technique
-      const recs = JSON.parse(JSON.stringify(this.records));
-      this.records = recs.concat(prices);
-      if (prices.length) showPriceDialog(prices.length);
-      app.needsBackup = true;
-      this.sort();
+      this.savePrices(prices);
       app.importing = false;
       lock.release();
     },

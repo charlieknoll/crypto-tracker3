@@ -8,6 +8,7 @@ const multiplyCurrency = (args) => {
     const element = args[i];
     result = parseFloat(element) * result;
   }
+
   return Math.round(result * 100) / 100;
 };
 const sBnToFloat = function (v) {

@@ -54,14 +54,10 @@ export const useAppStore = defineStore("app", {
       let accounts = [];
 
       accounts = addressStore.records
-        .filter((r) => r.type == "Owned")
-        .map((r) => r.name)
-        .filter(onlyUnique);
-      accounts.push(
-        ...openingPositionsStore.records
-          .map((r) => r.account)
-          .filter(onlyUnique)
-      );
+        .filter((r) => r.type !== "Spam")
+        .map((r) => r.name);
+
+      accounts.push(...openingPositionsStore.records.map((r) => r.account));
       accounts = accounts.filter(onlyUnique).sort();
       console.log(`Account duration: ${Date.now() - start} ms`);
       return accounts;

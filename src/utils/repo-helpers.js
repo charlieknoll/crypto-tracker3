@@ -25,9 +25,11 @@ function Repo(modelTitle, store, $q) {
     self.error.value = store.set(self.record);
     self.editing.value = self.error.value != "";
   };
-  this.clear = function () {
+  this.clear = function (recs) {
     const appStore = useAppStore();
-    let message = `Are you sure you want to delete all ${modelTitle.toLowerCase()}?`;
+    let message = `Are you sure you want to delete ${
+      recs ? "these" : "ALL"
+    } ${modelTitle.toLowerCase()}?`;
     if (appStore.needsBackup)
       message += "  NOTE: You currently need to back up your data.";
     $q.dialog({
@@ -36,7 +38,7 @@ function Repo(modelTitle, store, $q) {
       cancel: true,
       persistent: true,
     }).onOk(() => {
-      store.clear();
+      store.clear(recs);
     });
   };
   this.remove = function () {

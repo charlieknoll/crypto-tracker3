@@ -32,6 +32,7 @@ export const useAddressStore = defineStore("address", {
           upserted.address = ethers.utils.getAddress(
             upserted.address.toLowerCase()
           );
+          upserted.address = upserted.address.toLowerCase();
         }
       } catch (err) {
         errorMessage += err.reason;

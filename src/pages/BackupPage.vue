@@ -19,6 +19,8 @@ import { useOpeningPositionsStore } from 'src/stores/opening-positions-store';
 import { useExchangeTradesStore } from 'src/stores/exchange-trades-store';
 import { useOffchainTransfersStore } from 'src/stores/offchain-transfers-store';
 import { usePricesStore } from 'src/stores/prices-store';
+import { useMethodStore } from 'src/stores/methods-store';
+import { useChainTxsStore } from 'src/stores/chain-txs-store';
 
 const $q = useQuasar()
 
@@ -31,6 +33,8 @@ const downloadAll = async function () {
   const exchangeTrades = useExchangeTradesStore()
   const offchainTransfers = useOffchainTransfersStore()
   const prices = usePricesStore()
+  const methods = useMethodStore()
+  const chainTxs = useChainTxsStore()
 
   //const test = { ...mapState(settings) }
   const backup = {
@@ -41,7 +45,8 @@ const downloadAll = async function () {
     exchangeTrades: exchangeTrades.$state,
     offchainTransfers: offchainTransfers.$state,
     prices: prices.$state,
-
+    methods: methods.$state,
+    chainTxs: chainTxs.$state
   }
 
   const pStatus = await exportFile("all-data.json", JSON.stringify(backup), "text/csv");

@@ -5,25 +5,7 @@ import { useSettingsStore } from "src/stores/settings-store";
 import { sleep, throttle } from "../utils/cacheUtils";
 let lastRequestTime = 0;
 
-function getScanProviders() {
-  const settings = useSettingsStore();
-  const result = [];
-  let etherScanProvider = {
-    baseUrl: "https://api.etherscan.io/api",
-    gasType: "ETH",
-    explorerUrl: "https://etherscan.io/tx/",
-    apikey: settings.etherscanApikey,
-  };
-  let bscScanProvider = {
-    baseUrl: "https://api.bscscan.com/api",
-    gasType: "BNB",
-    apikey: settings.bscApikey,
-    explorerUrl: "https://bscscan.com/tx/",
-  };
-  result.push(etherScanProvider);
-  result.push(bscScanProvider);
-  return result;
-}
+import { getScanProviders } from "./scan-providers";
 
 async function getTokenTransactions(oa, provider, startBlock) {
   const tokenTxApiUrl =
@@ -95,6 +77,8 @@ async function getAccountInternalTransactions(oa, provider, startBlock) {
   for (const tx of txs) {
     if (tx.timeStamp) {
       tx.timestamp = parseInt(tx.timeStamp);
+      tx.to = tx.to.toLowerCase();
+      tx.from = tx.from.toLowerCase();
     }
     tx.gasType = provider.gasType;
     //TODO addImportedAccount
@@ -148,7 +132,9 @@ export const getChainTransactions = async function (provider) {
     try {
       //get normal tx's
       lastRequestTime = await throttle(lastRequestTime, 500);
-      result.accountTxs = await getAccountTransactions(oa, provider);
+      result.accountTxs = result.accountTxs.concat(
+        await getAccountTransactions(oa, provider)
+      );
       // lastRequestTime = await throttle(lastRequestTime, 500);
       // result.internalTxs = await getAccountInternalTransactions(oa, provider);
       // lastRequestTime = await throttle(lastRequestTime, 500);

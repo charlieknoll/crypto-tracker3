@@ -63,6 +63,8 @@ import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
 import { useQuasar } from "quasar";
 import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { usePricesStore } from "src/stores/prices-store";
+import { useMethodStore } from "src/stores/methods-store";
+import { useChainTxsStore } from "src/stores/chain-txs-store";
 
 
 const $q = useQuasar();
@@ -75,6 +77,8 @@ const openingPositions = useOpeningPositionsStore();
 const exchangeTrades = useExchangeTradesStore();
 const offchainTransfers = useOffchainTransfersStore()
 const prices = usePricesStore()
+const methods = useMethodStore()
+const chainTxs = useChainTxsStore()
 
 //do this to enable intermediate validation and conversion
 const startYearView = ref(settings.startYear);
@@ -109,7 +113,9 @@ const clearAll = function () {
   openingPositions.$reset();
   exchangeTrades.$reset();
   offchainTransfers.$reset();
-  prices.records = []
+  prices.records = [];
+  methods.$reset();
+  chainTxs.$reset();
 
   app.needsBackup = false;
 }

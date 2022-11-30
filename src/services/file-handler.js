@@ -2,7 +2,9 @@ import { Notify } from "quasar";
 import { useAddressStore } from "src/stores/address-store";
 import { useAppStore } from "src/stores/app-store";
 import { useChainStore } from "src/stores/chain-store";
+import { useChainTxsStore } from "src/stores/chain-txs-store";
 import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
+import { useMethodStore } from "src/stores/methods-store";
 import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
 import { usePricesStore } from "src/stores/prices-store";
@@ -81,6 +83,12 @@ function processAllDataFile(content) {
   const prices = usePricesStore();
   prices.$patch(backup.prices);
 
+  const methods = useMethodStore();
+  methods.$patch(backup.methods);
+
+  const chainTxs = useChainTxsStore();
+  chainTxs.$patch(backup.chainTxs);
+
   // const exchangeTrades = useExchangeTradesStore();
   // exchangeTrades.$patch(backup.exchangeTrades);
 
@@ -95,7 +103,9 @@ function processAllDataFile(content) {
     openingPositions.records.length +
     exchangeTrades.records.length +
     offchainTransfers.records.length +
-    prices.records.length
+    prices.records.length +
+    methods.records.length +
+    chainTxs.rawAccountTxs.length
   );
 }
 export const processFile = async function (name, content) {

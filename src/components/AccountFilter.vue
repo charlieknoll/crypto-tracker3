@@ -3,7 +3,7 @@
     <base-select
 
       v-model="store.selectedAccounts"
-      :options="accounts"
+      :options="options ?? accounts"
       label="Accounts" />
   </div>
 </template>
@@ -13,4 +13,10 @@ import BaseSelect from "src/components/Base/BaseSelect.vue";
 
 const store = useAppStore();
 const accounts = store.accounts;
+const props = defineProps({
+  options: {
+    type: [Array],
+    default: () => [],
+  },
+});
 </script>

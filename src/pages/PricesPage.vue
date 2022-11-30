@@ -26,7 +26,7 @@
         <asset-filter></asset-filter>
         <q-btn class="q-ml-lg" color="primary" label="Refresh" @click="store.getPrices" />
         <q-btn class="q-ml-lg" color="secondary" label="Add" @click="add" />
-        <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
+        <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear(filtered)" />
       </template>
     </transactions-table>
   </q-page>

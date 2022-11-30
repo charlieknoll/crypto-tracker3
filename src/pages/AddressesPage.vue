@@ -26,7 +26,7 @@
       title="Addresses"
       :rows="filteredAddresses"
       row-key="addressId"
-      @row-click="editAddress"
+      @row-click="rowClick"
       v-model:pagination="pagination"
       :columns="columns"
       :rows-per-page-options="[0]">
@@ -36,12 +36,13 @@
             clearable
             style="width: 300px; display: inline-block; min-height: 61px;"
             input-style="min-height: 61px;"
-            label="Filter by Name or Acct"
+            label="Filter by Name or Address"
             class="q-mr-md"
             v-model="filter"
             filled></q-input>
           <base-select style="width: 220px"
             multiple
+            popup-content-class="dropdown"
             v-model="app.selectedChains"
             :options="chainStore.chains"
             label="Chain" />
@@ -68,6 +69,7 @@ import { useAppStore } from "src/stores/app-store";
 import { useQuasar } from "quasar";
 import Repo from "src/utils/repo-helpers";
 import { hasValue } from "src/utils/model-helpers";
+import { getScanProviders } from "src/services/scan-providers";
 const $q = useQuasar();
 const columns = useColumns(fields);
 const store = useAddressStore();
@@ -97,9 +99,21 @@ const deleteAddress = () => {
   if (record.id) store.delete(record.id);
   edit.value = false;
 };
+const rowClick = (evt, row, index) => {
+  if (evt.ctrlKey) {
+    if (row?.address.substring(0, 2) == "0x") {
 
+      const scanProviders = getScanProviders();
+      const provider = scanProviders.find((sp) => sp.gasType == row.chain);
+      if (provider) window.open(provider.explorerUrl.replace("/tx/", "/address/") + row.address);
+    }
+  } else {
+    editAddress(evt, row, index)
+  }
+}
 const editAddress = (evt, row, index) => {
   error.value = "";
+  Object.assign(record, store.initValue);
   Object.assign(record, row);
   edit.value = true;
 };
@@ -131,3 +145,8 @@ const filteredAddresses = computed(() => {
   return result
 });
 </script>
+<style>
+/* .dropdown .q-item {
+  min-height: 30px !important;
+}  */
+</style>
