@@ -60,22 +60,23 @@ function processAllDataFile(content) {
   }
   openingPositions.$patch(backup.openingPositions);
 
-  if (!backup.exchangeTrades.records) {
-    const tempRecords = JSON.parse(JSON.stringify(backup.exchangeTrades));
-    backup.exchangeTrades = { records: tempRecords };
-    for (let i = 0; i < backup.exchangeTrades.records.length; i++) {
-      const exchangeTrade = backup.exchangeTrades.records[i];
-      exchangeTrade.amount = exchangeTrade.volume;
-      exchangeTrade.volume = undefined;
-      if (exchangeTrade.txId.length > 10) {
-        exchangeTrade.exchangeId = exchangeTrade.txId;
-      }
-      exchangeTrade.txId = undefined;
-    }
-  }
-
   const exchangeTrades = useExchangeTradesStore();
-  exchangeTrades.$patch(backup.exchangeTrades);
+  if (!backup.exchangeTrades.records) {
+    //NOT Supported v1 restore of exchange trades, use manual import and coinbase import
+    // const tempRecords = JSON.parse(JSON.stringify(backup.exchangeTrades));
+    // backup.exchangeTrades = { records: tempRecords };
+    // for (let i = 0; i < backup.exchangeTrades.records.length; i++) {
+    //   const exchangeTrade = backup.exchangeTrades.records[i];
+    //   exchangeTrade.amount = exchangeTrade.volume;
+    //   exchangeTrade.volume = undefined;
+    //   if (exchangeTrade.txId.length > 10) {
+    //     exchangeTrade.exchangeId = exchangeTrade.txId;
+    //   }
+    //   exchangeTrade.txId = undefined;
+    // }
+  } else {
+    exchangeTrades.$patch(backup.exchangeTrades);
+  }
 
   const offchainTransfers = useOffchainTransfersStore();
   offchainTransfers.$patch(backup.offchainTransfers);
@@ -190,6 +191,6 @@ export const processFiles = async function (fileArray, cb) {
     );
   }
   console.log(`Import duration: ${Date.now() - start} ms`);
-  const prices = usePricesStore();
-  prices.getPrices();
+  // const prices = usePricesStore();
+  // prices.getPrices();
 };

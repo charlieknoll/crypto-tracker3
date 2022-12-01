@@ -113,6 +113,8 @@ const clearAll = function () {
   openingPositions.$reset();
   exchangeTrades.$reset();
   offchainTransfers.$reset();
+
+  //TODO for some reason prices.$reset doesn't work, it sets value to false, maybe because it has an async method?
   prices.records = [];
   methods.$reset();
   chainTxs.$reset();

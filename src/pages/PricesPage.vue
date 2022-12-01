@@ -24,6 +24,7 @@
       @rowClick="edit">
       <template v-slot:top-right>
         <asset-filter></asset-filter>
+        <q-toggle label="Only Zero" v-model="onlyZero" class="q-pr-sm"></q-toggle>
         <q-btn class="q-ml-lg" color="primary" label="Refresh" @click="store.getPrices" />
         <q-btn class="q-ml-lg" color="secondary" label="Add" @click="add" />
         <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear(filtered)" />
@@ -32,7 +33,7 @@
   </q-page>
 </template>
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
 import { fields } from "src/models/price";
@@ -51,13 +52,16 @@ const $q = useQuasar();
 const repo = new Repo("Prices", store, $q)
 
 const { title, record, editing, error, add, edit, save, remove, clear } = repo
-
+const onlyZero = ref(false)
 const columns = useColumns(fields);
 
 const filtered = computed(() => {
   //return [{ id: 'test' }]
   const appStore = useAppStore();
   let txs = store.records;
+  if (onlyZero.value) {
+    txs = txs.filter((tx) => tx.price == 0.0)
+  }
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByYear(txs, appStore.taxYear);
   return txs;
