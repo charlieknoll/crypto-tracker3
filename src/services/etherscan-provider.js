@@ -23,11 +23,14 @@ async function getTokenTransactions(oa, provider, startBlock) {
   for (const tx of txs) {
     if (tx.timeStamp) {
       tx.timestamp = parseInt(tx.timeStamp);
+      tx.to = tx.to.toLowerCase();
+      tx.from = tx.from.toLowerCase();
     }
     tx.gasType = provider.gasType;
     //TODO addImportedAccount
-    actions.addImportedAddress({ address: tx.to }, provider.gasType);
-    actions.addImportedAddress({ address: tx.from }, provider.gasType);
+    const addresses = useAddressStore();
+    addresses.set({ address: tx.to, chain: provider.gasType });
+    addresses.set({ address: tx.from, chain: provider.gasType });
   }
   return txs;
 }
@@ -44,18 +47,19 @@ async function getAccountTransactions(oa, provider, startBlock) {
     throw new Error("Invalid return status: " + result.data.message);
   }
   const txs = result.data.result;
-  const addresses = useAddressStore();
 
   for (const tx of txs) {
     if (tx.timeStamp) {
       tx.timestamp = parseInt(tx.timeStamp);
+      tx.to = tx.to.toLowerCase();
+      tx.from = tx.from.toLowerCase();
     }
     tx.gasType = provider.gasType;
     //TODO addImportedAccount
+    const addresses = useAddressStore();
     addresses.set({ address: tx.to, chain: provider.gasType });
     addresses.set({ address: tx.from, chain: provider.gasType });
   }
-  //There will be multiple txs for transfers between owned accounts so tx's must be merged
   return txs;
 }
 
@@ -73,24 +77,40 @@ async function getAccountInternalTransactions(oa, provider, startBlock) {
   ) {
     throw new Error("Invalid return status: " + result.data.message);
   }
-  const txs = result.data.result;
+  let txs = result.data.result;
   for (const tx of txs) {
     if (tx.timeStamp) {
       tx.timestamp = parseInt(tx.timeStamp);
       tx.to = tx.to.toLowerCase();
       tx.from = tx.from.toLowerCase();
+      if (tx.seqNo) {
+        debugger;
+      }
     }
     tx.gasType = provider.gasType;
     //TODO addImportedAccount
-    actions.addImportedAddress({ address: tx.to }, provider.gasType);
-    actions.addImportedAddress({ address: tx.from }, provider.gasType);
+    const addresses = useAddressStore();
+    addresses.set({ address: tx.to, chain: provider.gasType });
+    addresses.set({ address: tx.from, chain: provider.gasType });
   }
-  //There will be multiple txs for transfers between owned accounts so tx's must be merged
-  actions.mergeArrayToData(
-    "internalTransactions",
-    txs,
-    (a, b) => a.hash == b.hash
-  );
+  let hash;
+  let seqNo = 0;
+  txs = txs.sort((a, b) => {
+    return a.timestamp == b.timestamp
+      ? a.hash > b.hash
+        ? 1
+        : -1
+      : a.timestamp - b.timestamp;
+  });
+
+  for (const it of txs) {
+    if (it.hash != hash) seqNo = 0;
+    hash = it.hash;
+    seqNo += 1;
+    it.seqNo = seqNo;
+  }
+
+  return txs;
 }
 export const getTransactions = async function () {
   const app = useAppStore();
@@ -109,6 +129,9 @@ export const getTransactions = async function () {
       result.internalTxs = result.internalTxs.concat(txs.internalTxs);
       result.tokenTxs = result.tokenTxs.concat(txs.tokenTxs);
     }
+    result.tokenTxs = result.tokenTxs.sort(
+      (a, b) => a.blockNumber - b.blockNumber
+    );
     return result;
   } finally {
     app.importing = false;
@@ -135,10 +158,15 @@ export const getChainTransactions = async function (provider) {
       result.accountTxs = result.accountTxs.concat(
         await getAccountTransactions(oa, provider)
       );
-      // lastRequestTime = await throttle(lastRequestTime, 500);
-      // result.internalTxs = await getAccountInternalTransactions(oa, provider);
-      // lastRequestTime = await throttle(lastRequestTime, 500);
-      // result.tokenTxs = await getTokenTransactions(oa, provider);
+      lastRequestTime = await throttle(lastRequestTime, 500);
+      result.internalTxs = result.internalTxs.concat(
+        await getAccountInternalTransactions(oa, provider)
+      );
+      lastRequestTime = await throttle(lastRequestTime, 500);
+      result.tokenTxs = result.tokenTxs.concat(
+        await getTokenTransactions(oa, provider)
+      );
+
       //setLastBlockSync
       oa.lastBlockSync = currentBlock;
     } catch (err) {

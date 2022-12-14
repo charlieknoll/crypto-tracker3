@@ -11,8 +11,7 @@ const multiplyCurrency = (args) => {
 
   return Math.round(result * 100) / 100;
 };
-const sBnToFloat = function (v) {
-  const decimals = 18;
+const sBnToFloat = function (v, decimals = 18) {
   const bn = BigNumber.from(v, decimals);
   try {
     return parseFloat(ethers.utils.formatUnits(bn, decimals));

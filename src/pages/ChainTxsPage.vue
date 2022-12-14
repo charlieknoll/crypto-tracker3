@@ -22,6 +22,7 @@
       <template v-slot:top-right>
         <div class="row">
           <q-toggle label="Unnamed" v-model="unnamed" class="q-pr-sm"></q-toggle>
+          <q-toggle label="Only Tokens" v-model="onlyTokens" class="q-pr-sm"></q-toggle>
           <q-input
             v-alpha-numeric
             clearable
@@ -80,6 +81,7 @@ const onlyUnnamed = ref(false);
 const columns = ref(useColumns(fields));
 const hashFilter = ref("");
 const unnamed = ref(false);
+const onlyTokens = ref(false)
 const editing = ref(false);
 const error = ref("")
 const record = reactive({})
@@ -162,6 +164,12 @@ const filtered = computed(() => {
       (tx) =>
         tx.toAccount == tx.toAddress.substring(0, 8) ||
         tx.fromAccount == tx.fromAddress.substring(0, 8)
+    );
+  }
+  if (onlyTokens.value) {
+    txs = txs.filter(
+      (tx) =>
+        tx.txType == 'T'
     );
   }
   if (hashFilter.value) {

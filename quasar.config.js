@@ -70,7 +70,15 @@ module.exports = configure(function (/* ctx */) {
       // polyfillModulePreload: true,
       // distDir
 
-      // extendViteConf (viteConf) {},
+      extendViteConf(viteConf) {
+        viteConf.define.global = {};
+
+        // Object.assign(viteConf.resolve, {
+        //   alias: {
+        //     stream: require.resolve("readable-stream"),
+        //   },
+        // });
+      },
       // viteVuePluginOptions: {},
 
       // vitePlugins: [
@@ -86,6 +94,13 @@ module.exports = configure(function (/* ctx */) {
       //   passphrase: 'password'
       // },
       open: false, // opens browser window automatically
+      proxy: {
+        "/cbp-api": {
+          target: "https://api.exchange.coinbase.com",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/cbp-api/, ""),
+        },
+      },
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework

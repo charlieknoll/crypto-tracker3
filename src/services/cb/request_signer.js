@@ -1,8 +1,10 @@
 "use strict";
-const crypto = require("crypto");
-const querystring = require("querystring");
-const Utils = require("./utilities.js");
-const Buffer = require("buffer").Buffer;
+import crypto from "crypto-browserify";
+import querystring from "querystring-es3";
+import { checkAuth } from "./utilities";
+import { Buffer } from "buffer";
+import { Transform } from "vite-compatible-readable-stream";
+import CryptoJS from "crypto-js";
 /**
  Signs request messages for authenticated requests to Coinbase Pro
  * @param auth {object} hash containing key, secret and passphrase
@@ -13,8 +15,8 @@ const Buffer = require("buffer").Buffer;
  * @param options.qs {object} A hash of query string parameters
  * @returns {{key: string, signature: *, timestamp: number, passphrase: string}}
  */
-module.exports.signRequest = (auth, method, path, options = {}) => {
-  Utils.checkAuth(auth);
+export const signRequest = (auth, method, path, options = {}) => {
+  checkAuth(auth);
   const timestamp = Date.now() / 1000;
   let body = "";
   if (options.body) {
@@ -23,10 +25,12 @@ module.exports.signRequest = (auth, method, path, options = {}) => {
     body = "?" + querystring.stringify(options.qs);
   }
   const what = timestamp + method.toUpperCase() + path + body;
-  const key = Buffer.from(auth.secret, "base64");
-  var Transform = require("stream").Transform;
-  const hmac = crypto.createHmac("sha256", key);
-  const signature = hmac.update(what).digest("base64");
+
+  const crypted = CryptoJS.HmacSHA256(
+    what,
+    CryptoJS.enc.Base64.parse(auth.secret)
+  );
+  const signature = CryptoJS.enc.Base64.stringify(crypted);
   return {
     key: auth.key,
     signature: signature,

@@ -1,4 +1,4 @@
-const { signRequest } = require("../request_signer");
+import { signRequest } from "../request_signer";
 import { PublicClient } from "./public";
 
 export class AuthenticatedClient extends PublicClient {

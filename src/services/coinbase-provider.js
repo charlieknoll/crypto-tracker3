@@ -1,17 +1,15 @@
-import { store } from "../boot/store";
-import { actions } from "../boot/actions";
 import { throttle } from "../utils/cacheUtils";
-
 import { AuthenticatedClient } from "./cb/clients/authenticated";
-import { Notify } from "quasar";
-import { getPrice } from "./price-provider";
+import { useSettingsStore } from "src/stores/settings-store";
+import CryptoJS from "crypto-js";
+import axios from "axios";
 let lastRequestTime = 0;
 function mapConversions(history, account) {
   return history
     .filter((h) => h.type == "conversion")
     .map((c) => {
       const tx = {};
-      tx.txId = c.details.conversion_id;
+      tx.id = c.details.conversion_id;
       const tradeDate = new Date(c.created_at);
       tx.timestamp = tradeDate.getTime() / 1000;
       tx.date = c.created_at.substring(0, 10);
@@ -29,7 +27,7 @@ function mapConversions(history, account) {
 function mapFills(fills, account) {
   return fills.map((f) => {
     const tx = {};
-    tx.txId = "" + f.trade_id;
+    tx.id = "" + f.trade_id;
     const tradeDate = new Date(f.created_at);
     tx.timestamp = tradeDate.getTime() / 1000;
     tx.date = f.created_at.substring(0, 10);
@@ -136,16 +134,16 @@ async function getFees(authedClient, accounts, before, fullDownload) {
           fee.fee = 0.0;
           fee.asset = accounts.find((a) => a.id == t.account_id).currency;
           fee.hash = t.details.crypto_transaction_hash;
-          fee.txId = t.id;
+          fee.id = t.id;
           fee.account = "Coinbase Pro";
           fee.action = "TF:" + fee.asset;
           return fee;
         })
     );
     //set gross
-    for (const f of fees) {
-      f.gross = f.amount * (await getPrice(f.asset, f.date));
-    }
+    // for (const f of fees) {
+    //   f.gross = f.amount * (await getPrice(f.asset, f.date));
+    // }
     if (authedClient.before && after == 1) {
       before = authedClient.before;
     }
@@ -155,11 +153,42 @@ async function getFees(authedClient, accounts, before, fullDownload) {
 }
 
 export const importCbpTrades = async function (fullDownload) {
-  const apikey = store.settings.cbpApikey;
-  const passphrase = store.settings.cbpPassphrase;
-  const secret = store.settings.cbpSecret;
-  const apiUrl = window.location.origin + "/cbp-api";
+  const settings = useSettingsStore();
 
+  const apikey = settings.cbpApikey;
+  const passphrase = settings.cbpPassphrase;
+  const secret = settings.cbpSecret;
+  const apiUrl = window.location.origin + "/cbp-api";
+  //var apiUrl = "https://api.exchange.coinbase.com";
+
+  // const timestamp = Date.now() / 1000;
+  // const path = "/accounts";
+  // const method = "GET";
+  // var message = timestamp + method + path;
+  // const crypted = CryptoJS.HmacSHA256(
+  //   message,
+  //   CryptoJS.enc.Base64.parse(secret)
+  // );
+  // const signature = CryptoJS.enc.Base64.stringify(crypted);
+  // var request = {
+  //   // method: "get",
+  //   // url: path,
+  //   // baseUrl: url,
+  //   headers: {
+  //     "CB-ACCESS-KEY": apikey,
+  //     "CB-ACCESS-SIGN": signature,
+  //     "CB-ACCESS-TIMESTAMP": timestamp,
+  //     "CB-ACCESS-PASSPHRASE": passphrase,
+  //   },
+  // };
+  // axios
+  //   .get(apiUrl + path, request)
+  //   .then(function (response) {
+  //     console.log(response);
+  //   })
+  //   .catch(function (error) {
+  //     console.log(error);
+  //   });
   const authedClient = new AuthenticatedClient(
     apikey,
     secret,
@@ -167,8 +196,8 @@ export const importCbpTrades = async function (fullDownload) {
     apiUrl
   );
   let accounts;
-  const productIds = actions.getData("productIds") ?? [];
-  const accountHistory = actions.getData("accountHistory") ?? [];
+  const productIds = [];
+  const accountHistory = [];
 
   const trades = [];
 
@@ -196,23 +225,24 @@ export const importCbpTrades = async function (fullDownload) {
     //TODO get transfer fees (withdraw)
     console.log(trades);
 
-    actions.setData("productIds", productIds);
-    actions.setData("accountHistory", accountHistory);
-    actions.setData("exchangeTransferFees", fees);
-    actions.mergeArrayToData(
-      "exchangeTrades",
-      trades,
-      (a, b) => a.account + a.txId == b.account + b.txId
-    );
+    // actions.setData("productIds", productIds);
+    // actions.setData("accountHistory", accountHistory);
+    // actions.setData("exchangeTransferFees", fees);
+    // actions.mergeArrayToData(
+    //   "exchangeTrades",
+    //   trades,
+    //   (a, b) => a.account + a.txId == b.account + b.txId
+    // );
 
     return trades.length;
   } catch (error) {
-    Notify.create({
-      message: error.message,
-      color: "negative",
-      actions: [{ label: "Dismiss", color: "white" }],
-      timeout: 0,
-    });
+    console.log(error);
+    // Notify.create({
+    //   message: error.message,
+    //   color: "negative",
+    //   actions: [{ label: "Dismiss", color: "white" }],
+    //   timeout: 0,
+    // });
     return -1;
   }
   //merge trades to data

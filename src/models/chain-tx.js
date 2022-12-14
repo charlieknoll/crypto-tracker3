@@ -11,8 +11,9 @@ import moment from "moment";
 const fields = [
   { name: "date" },
   { name: "id", format: (v) => v.substring(0, 8) },
-  { name: "fromAccount", label: "From" },
-  { name: "toAccount", label: "To" },
+  { name: "txType" },
+  { name: "fromAccountName", label: "From" },
+  { name: "toAccountName", label: "To" },
   { name: "methodName", label: "Method" },
   { name: "taxCode", label: "Tax Code" },
   {
@@ -29,7 +30,11 @@ const fields = [
   { name: "price", format: (val, row) => currency(val) + " " + row.asset },
   { name: "fee", format: currency, align: "right" },
   { name: "gross", format: (val, row) => currency(val), align: "right" },
-  { name: "error" },
+  {
+    name: "error",
+    format: (val, row) => `${val == 1 ? "ERROR" : ""}`,
+    style: "color: red; font-weight: bold;",
+  },
 ];
 
 export { fields };

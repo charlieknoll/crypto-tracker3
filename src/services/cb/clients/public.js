@@ -1,5 +1,6 @@
 import axios from "axios";
-const { Readable } = require("stream");
+import { Readable } from "vite-compatible-readable-stream";
+
 const DEFAULT_TIMEOUT = 10 * 1000; // 10 sec
 //import axios from "axios";
 export class PublicClient {
