@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { parse } from "csv-parse/browser/esm/sync";
 import { useLocalStorage } from "@vueuse/core";
 import { useAppStore } from "./app-store";
+import { uid, date } from "quasar";
+const { addToDate } = date;
 import {
   getId,
   getInitValue,
@@ -55,6 +57,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           feeTx.currency = tx.feeCurrency;
           feeTx.net = multiplyCurrency([feeTx.amount, feeTx.price]);
           feeTx.sort = 1;
+          // if (feeTx.amount != 0.0)
           mappedData.push(feeTx);
         } else {
           usdFee = tx.fee;
@@ -93,7 +96,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           tx.amount = Math.abs(tx.amount);
           tx.fee = usdFee;
           tx.net = multiplyCurrency([tx.amount, tx.price]);
-          tx.net = tx.net + tx.action == "SELL" ? -tx.fee : tx.fee;
+          tx.net = tx.net + (tx.action == "SELL" ? -tx.fee : tx.fee);
           tx.feeCurrency = "USD";
           mappedData.push(tx);
         }
@@ -156,7 +159,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
         return a.timestamp - b.timestamp;
       });
     },
-    async load(data) {
+    async load(data, offsets) {
       const stage = parse(data, {
         trim: true,
         columns: true,
@@ -168,23 +171,36 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           throw new Error("Invalid action in trade data.");
         }
         const account = op.Account == "" ? op.Memo : op.Account;
+        const offset = offsets.find((o) => o.account == op.Account);
+        let dateStr = op.Date;
+        if (offset) {
+          const newDate = addToDate(new Date(dateStr.substring(0, 19)), {
+            hours: offset.offset,
+          });
+          dateStr = date.formatDate(newDate, "YYYY-MM-DDTHH:mm:ss.SSSZ");
+        }
         const feeCurrency = (
           hasValue(op.FeeCurrency) ? op.FeeCurrency : op.Currency
         ).toUpperCase();
+        let fee = parseFloat(op.Fee);
+        let net = parseFloat(op["Cost/Proceeds"]);
+        const gross = (action == "SELL" ? fee : -fee) + net;
+        const exchangeId = hasValue(op.ExchangeId) ? op.ExchangeId : uid();
         const tx = {
           action,
           memo: op.Memo,
-          price: parseFloat(op.Price),
+          price: gross / parseFloat(op.Volume),
           currency: op.Currency.toUpperCase(),
-          date: op.Date.substring(0, 10),
-          time: op.Date.substring(11, 19),
-          exchangeId: op.ExchangeId,
+          date: dateStr.substring(0, 10),
+          time: dateStr.substring(11, 19),
+          exchangeId,
           amount: parseFloat(op.Volume),
           account,
           fee: parseFloat(op.Fee),
           feeCurrency,
           asset: op.Symbol,
-          cost: multiplyCurrency(op.Price, op.Volume),
+          gross,
+          net,
         };
         return tx;
         //return { action, account };

@@ -117,7 +117,19 @@ export const processFile = async function (name, content) {
   }
   if (name.substring(0, 5) == "trade") {
     const store = useExchangeTradesStore();
-    return store.load(content);
+    //Look for offset
+    const offsets = [];
+    while (content.substring(0, 6) == "OFFSET") {
+      var offset = content.split("\n")[0];
+      content = content.substring(offset.length + 1);
+      var parts = offset.split(":");
+      offsets.push({
+        account: parts[1],
+        offset: parseInt(parts[2]),
+      });
+    }
+
+    return store.load(content, offsets);
   }
   // if (name.substring(0, 9) == "addresses") {
   //   return processAddressFile(content);

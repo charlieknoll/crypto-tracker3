@@ -23,13 +23,15 @@
       @rowClick="edit">
       <template v-slot:top-right>
         <q-toggle label="Split" v-model="split" class="q-pr-sm"></q-toggle>
-        <div>
-          <account-filter></account-filter>
-          <asset-filter></asset-filter>
-        </div>
-        <div>
-          <q-btn class="q-ml-lg" color="secondary" label="Add" @click="add" />
-          <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
+        <div class="row">
+          <div>
+            <account-filter></account-filter>
+            <asset-filter></asset-filter>
+          </div>
+          <div>
+            <q-btn class="q-ml-lg" color="secondary" label="Add" @click="add" />
+            <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
+          </div>
         </div>
       </template>
     </transactions-table>

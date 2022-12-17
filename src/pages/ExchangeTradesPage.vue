@@ -24,7 +24,7 @@
       <template v-slot:top-right>
         <q-toggle label="Split" v-model="split" class="q-pr-sm"></q-toggle>
         <div>
-          <account-filter></account-filter>
+          <account-filter :options="accounts"></account-filter>
           <asset-filter></asset-filter>
         </div>
         <div>
@@ -50,6 +50,7 @@ import { useAppStore } from "src/stores/app-store";
 import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import Repo from "src/utils/repo-helpers";
 import { importCbpTrades } from "src/services/coinbase-provider";
+import { onlyUnique } from "src/utils/array-helpers";
 
 const $q = useQuasar();
 
@@ -76,6 +77,12 @@ const filtered = computed(() => {
   txs = filterByYear(txs, appStore.taxYear)
   return txs;
 });
+
+const accounts = computed(() => {
+  let txs = split.value ? store.split : store.records;
+  const allAccounts = txs.map((tx) => tx.account);
+  return allAccounts.filter(onlyUnique);
+})
 
 watchEffect(() => {
   columns.value = (split.value) ? useColumns(splitFields) : useColumns(fields)

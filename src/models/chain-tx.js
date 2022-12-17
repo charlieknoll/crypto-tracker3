@@ -25,9 +25,10 @@ const fields = [
     name: "gasFee",
     label: "Gas",
     align: "right",
-    format: (val, row) => `${(parseFloat(val) ?? 0.0).toFixed(6)}`,
+    format: (val, row) => `${val ? parseFloat(val).toFixed(6) : ""}`,
   },
-  { name: "price", format: (val, row) => currency(val) + " " + row.asset },
+  { name: "price", format: (val, row) => currency(val) },
+  { name: "asset" },
   { name: "fee", format: currency, align: "right" },
   { name: "gross", format: (val, row) => currency(val), align: "right" },
   {
@@ -36,5 +37,29 @@ const fields = [
     style: "color: red; font-weight: bold;",
   },
 ];
-
-export { fields };
+const tokenFields = [
+  { name: "date" },
+  {
+    name: "id",
+    format: (v, row) => v.substring(0, 8) + (row.suffix ?? ""),
+  },
+  { name: "txType" },
+  { name: "fromAccountName", label: "From" },
+  { name: "toAccountName", label: "To" },
+  { name: "methodName", label: "Method" },
+  {
+    name: "asset",
+    label: "Token",
+    format: (val, row) => (val == "ETH" ? "" : val),
+  },
+  { name: "taxCode", label: "Tax Code" },
+  {
+    name: "amount",
+    align: "right",
+    format: (val, row) => `${(parseFloat(val) ?? 0.0).toFixed(4)}`,
+  },
+  { name: "price", format: (val, row) => currency(val) },
+  { name: "fee", format: currency, align: "right" },
+  { name: "gross", format: (val, row) => currency(val), align: "right" },
+];
+export { fields, tokenFields };

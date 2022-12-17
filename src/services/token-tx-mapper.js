@@ -105,6 +105,7 @@ function init(tx, parentTx, addresses) {
   parentTx.txCt += 1;
   //this should handle interal txs creating token txs
   let id = parentTx.id + "-" + parentTx.txCt;
+  const suffix = (parentTx.suffix ?? "") + "-" + parentTx.txCt;
 
   const toAccount = addresses.find((a) => a.address == tx.to);
   const fromAccount = addresses.find((a) => a.address == tx.from);
@@ -131,7 +132,9 @@ function init(tx, parentTx, addresses) {
 
   return {
     id,
+    suffix,
     asset,
+    parentTx,
     tokenDecimal,
     hash,
     toAccount,
@@ -143,6 +146,7 @@ function init(tx, parentTx, addresses) {
     bnAmount,
     amount,
     gas,
+    gasType,
     timestamp,
     tracked: false,
     date,
@@ -154,10 +158,10 @@ const getTokenTxs = function (chainTxs, rawTokenTxs) {
   const settings = useSettingsStore();
   const prices = usePricesStore();
   let trackedTokens = stringToArray(settings.trackedTokens, ",");
+
   trackedTokens = trackedTokens.concat(
     stringToArray(settings.baseCurrencies, ",")
   );
-
   let mappedTxs = [];
   const parentTxs = JSON.parse(
     JSON.stringify(
@@ -166,46 +170,31 @@ const getTokenTxs = function (chainTxs, rawTokenTxs) {
       )
     )
   );
-
-  //set up init values on parent
-
   parentTxs.map((pt) => initParentTransaction(pt));
   const sortedRawTokenTxs = rawTokenTxs.sort((a, b) => a.hash > b.hash);
-
   for (let i = 0; i < sortedRawTokenTxs.length; i++) {
-    try {
-      const rawTokenTx = sortedRawTokenTxs[i];
-      let parentTx = parentTxs.find((pt) => pt.hash == rawTokenTx.hash);
-      //if (!parentTx) continue;
-      if (!parentTx) {
-        parentTx = { id: rawTokenTx.hash };
-        initParentTransaction(parentTx);
-      }
-      //make a non reactive copy
-      const tokenTx = init(rawTokenTx, parentTx, addresses.records);
-      tokenTx.parentTx = parentTx;
-
-      //if (!tokenTx.tracked) continue;
-      mappedTxs.push(tokenTx);
-    } catch (err) {
-      debugger;
-      console.log(err);
+    const rawTokenTx = sortedRawTokenTxs[i];
+    let parentTx = parentTxs.find((pt) => pt.hash == rawTokenTx.hash);
+    if (!parentTx) {
+      //handle token txs initiated by non owned accounts
+      parentTx = { id: rawTokenTx.hash };
+      initParentTransaction(parentTx);
     }
+    //make a non reactive copy
+    const tokenTx = init(rawTokenTx, parentTx, addresses.records);
+    if (tokenTx.fromAccount?.type == "Spam") continue;
+    mappedTxs.push(tokenTx);
   }
 
   if (settings.trackSpentTokens) {
     setTrackedTokens(mappedTxs, trackedTokens);
   }
-
   mappedTxs = mappedTxs.filter((mtx) => mtx.tracked);
   mappedTxs.map((tokenTx) => setTokenFields(tokenTx, trackedTokens, prices));
-
   //distribute baseCurrency costs/proceeds and fees to non baseCurrency
-
   for (const pt of parentTxs) {
     distributeFee(pt);
   }
-
   return mappedTxs;
 };
 

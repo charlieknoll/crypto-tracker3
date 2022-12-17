@@ -39,15 +39,15 @@ export default [
   {
     icon: "mdi-swap-horizontal-circle",
     label: "Chain Transactions",
-    separator: false,
+    separator: true,
     to: "/chain-transactions",
   },
-  {
-    icon: "mdi-swap-horizontal-variant",
-    label: "Token Transactions",
-    separator: true,
-    to: "/token-transactions",
-  },
+  // {
+  //   icon: "mdi-swap-horizontal-variant",
+  //   label: "Token Transactions",
+  //   separator: true,
+  //   to: "/token-transactions",
+  // },
 
   {
     icon: "mdi-note-text-outline",

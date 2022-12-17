@@ -51,10 +51,10 @@
   </q-page>
 </template>
 <script setup>
-import { ref, computed, reactive } from "vue";
+import { ref, computed, reactive, watchEffect } from "vue";
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AccountFilter from "src/components/AccountFilter.vue";
-import { fields } from "src/models/chain-tx";
+import { fields, tokenFields } from "src/models/chain-tx";
 import { useColumns } from "src/use/useColumns";
 import { useAppStore } from "src/stores/app-store";
 import { filterByAccounts, filterByYear } from "src/utils/filter-helpers";
@@ -88,8 +88,8 @@ const record = reactive({})
 
 const edit = (evt, row, index) => {
   const addresses = useAddressStore()
-  const toAddress = addresses.records.find((a) => a.address == row.toAddress && a.chain == row.asset)
-  const fromAddress = addresses.records.find((a) => a.address == row.fromAddress && a.chain == row.asset)
+  const toAddress = addresses.records.find((a) => a.address == row.toAddress && a.chain == row.gasType)
+  const fromAddress = addresses.records.find((a) => a.address == row.fromAddress && a.chain == row.gasType)
   if (!toAddress || !fromAddress) return
   error.value = ''
   Object.assign(record, {
@@ -101,7 +101,7 @@ const edit = (evt, row, index) => {
     fromName: fromAddress.name,
     method: row.method,
     methodName: row.methodName,
-    asset: row.asset
+    gasType: row.gasType
 
   })
   editing.value = true
@@ -109,8 +109,8 @@ const edit = (evt, row, index) => {
 
 const save = function () {
   const addresses = useAddressStore()
-  const toAddress = addresses.records.find((a) => a.address == record.toAddress && a.chain == record.asset)
-  const fromAddress = addresses.records.find((a) => a.address == record.fromAddress && a.chain == record.asset)
+  const toAddress = addresses.records.find((a) => a.address == record.toAddress && a.chain == record.gasType)
+  const fromAddress = addresses.records.find((a) => a.address == record.fromAddress && a.chain == record.gasType)
   let rec = Object.assign({}, toAddress)
   rec.type = record.toType
   rec.name = record.toName
@@ -149,8 +149,8 @@ const accounts = computed(() => {
   let txs = store.accountTxs;
   txs = filterByYear(txs, app.taxYear);
 
-  let result = txs.map((tx) => tx.toAccount)
-  result = result.concat(txs.map((tx) => tx.fromAccount))
+  let result = txs.map((tx) => tx.toAccountName)
+  result = result.concat(txs.map((tx) => tx.fromAccountName))
   return result.filter(onlyUnique).sort();
 })
 const filtered = computed(() => {
@@ -167,6 +167,11 @@ const filtered = computed(() => {
     );
   }
   if (onlyTokens.value) {
+    // let tokenTxs = txs.filter(
+    //   (tx) =>
+    //     tx.txType == 'T'
+    // );
+    // txs = txs.filter((tx) => tx.txType == 'T' || tokenTxs.findIndex((ttx) => ttx.hash == tx.hash) > -1);
     txs = txs.filter(
       (tx) =>
         tx.txType == 'T'
@@ -188,4 +193,7 @@ const filtered = computed(() => {
   }
   return txs;
 });
+watchEffect(() => {
+  columns.value = (onlyTokens.value) ? useColumns(tokenFields) : useColumns(fields)
+})
 </script>

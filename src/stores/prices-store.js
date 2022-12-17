@@ -130,6 +130,10 @@ export const usePricesStore = defineStore("prices", {
       );
       if (result) return result.price;
 
+      //TODO return base currency = 1.0
+
+      //TODO calc implied?
+
       return 0.0;
     },
     savePrices(prices) {

@@ -70,7 +70,7 @@ const rowClick = function (evt, row, index) {
     if (row?.id.substring(0, 2) == "0x") {
       const txId = row.id.split("-");
       const scanProviders = getScanProviders();
-      const provider = scanProviders.find((sp) => sp.gasType == row.asset);
+      const provider = scanProviders.find((sp) => sp.gasType == row.gasType);
       if (provider) window.open(provider.explorerUrl + txId[0]);
     }
   } else {

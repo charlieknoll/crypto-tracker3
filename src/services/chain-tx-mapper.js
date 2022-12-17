@@ -51,6 +51,7 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
     id,
     hash: tx.hash,
     asset: tx.gasType,
+    gasType: tx.gasType,
     toAccount,
     toAccountName: to,
     toAddress,

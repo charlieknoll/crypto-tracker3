@@ -6,6 +6,8 @@ import { useOpeningPositionsStore } from "./opening-positions-store";
 import { onlyUnique } from "src/utils/array-helpers";
 import { ref } from "vue";
 import { useChainStore } from "./chain-store";
+import { useExchangeTradesStore } from "./exchange-trades-store";
+import { useChainTxsStore } from "./chain-txs-store";
 export const useAppStore = defineStore("app", {
   state: () => ({
     importing: false,
@@ -35,13 +37,14 @@ export const useAppStore = defineStore("app", {
 
     assets() {
       const start = Date.now();
-      const chainStore = useChainStore();
+      const chainTxsStore = useChainTxsStore();
       const openingPositionsStore = useOpeningPositionsStore();
+      const exchangeTradesStore = useExchangeTradesStore();
+
       //TODO add offchain and exchange trades stores
-      let result = chainStore.records.map((r) => r.symbol);
-      result.push(
-        ...openingPositionsStore.records.map((r) => r.asset).filter(onlyUnique)
-      );
+      let result = chainTxsStore.accountTxs.map((r) => r.asset);
+      result.push(...openingPositionsStore.records.map((r) => r.asset));
+      result.push(...exchangeTradesStore.split.map((r) => r.asset));
       result = result.filter(onlyUnique).sort();
       console.log(`Asset duration: ${Date.now() - start} ms`);
       return result;
@@ -59,7 +62,7 @@ export const useAppStore = defineStore("app", {
 
       accounts.push(...openingPositionsStore.records.map((r) => r.account));
       accounts = accounts.filter(onlyUnique).sort();
-      console.log(`Account duration: ${Date.now() - start} ms`);
+      //console.log(`Account duration: ${Date.now() - start} ms`);
       return accounts;
     },
   },

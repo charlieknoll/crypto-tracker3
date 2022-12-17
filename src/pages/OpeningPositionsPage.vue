@@ -23,11 +23,13 @@
       :columns="columns"
       @rowClick="edit">
       <template v-slot:top-right>
-        <account-filter></account-filter>
-        <asset-filter></asset-filter>
-        <div>
-          <q-btn class="" color="secondary" label="Add" @click="add" />
-          <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
+        <div class="row">
+          <account-filter></account-filter>
+          <asset-filter></asset-filter>
+          <div>
+            <q-btn class="" color="secondary" label="Add" @click="add" />
+            <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
+          </div>
         </div>
       </template>
     </transactions-table>

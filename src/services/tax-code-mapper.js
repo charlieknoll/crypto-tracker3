@@ -16,12 +16,22 @@ const getTaxCode = function (fromType, toType) {
 };
 
 const getTokenTaxCode = function (tokenTx) {
-  let result = getTaxCode(tokenTx.fromAccount?.type, tokenTx.toAccount?.type);
+  let toType = tokenTx.toAccount?.type ?? "";
+  let isMinted = tokenTx.fromAccount?.address.includes("0x00000000000");
+  let isBurned = tokenTx.toAccount?.address.includes("0x00000000000");
+  // if (toType == "") toType = tokenTx.parentTx?.toAccount?.type ?? "";
+
+  let fromType = tokenTx.fromAccount?.type ?? "";
+  // if (fromType == "") fromType = tokenTx.parentTx?.fromAccount?.type ?? "";
+
+  let result = getTaxCode(fromType, toType);
   if (result != "") return result;
-  const toType = tokenTx.toAccount?.type?.toLowerCase() ?? "";
-  const fromType = tokenTx.fromAccount?.type?.toLowerCase() ?? "";
-  if (toType == "token") return "SELL";
-  if (fromType == "token") return "BUY";
+  if (toType == "Token") return "SELL";
+  const parentToType = tokenTx.parentTx?.toAccount?.type;
+  if (isMinted && parentToType == "Income") return "INCOME";
+  if (isMinted && parentToType == "Token") return "BUY";
+  if (isBurned && parentToType == "Token") return "SELL";
+  if (fromType == "Token") return "BUY";
   return result;
 };
 export { getTaxCode, getTokenTaxCode };

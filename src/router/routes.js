@@ -49,6 +49,11 @@ const routes = [
         path: "chain-transactions",
         component: () => import("src/pages/ChainTxsPage.vue"),
       },
+      {
+        name: "RunningBalances",
+        path: "running-balances",
+        component: () => import("src/pages/RunningBalancesPage.vue"),
+      },
     ],
   },
 

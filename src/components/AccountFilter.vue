@@ -13,6 +13,7 @@ import BaseSelect from "src/components/Base/BaseSelect.vue";
 
 const store = useAppStore();
 const accounts = store.accounts;
+
 const props = defineProps({
   options: {
     type: [Array],

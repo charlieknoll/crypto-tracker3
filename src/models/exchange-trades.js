@@ -48,7 +48,12 @@ const fields = [
   { name: "account", key: 4 },
   { name: "asset", key: 6 },
   { name: "action", key: 3, upperCase: true },
-  { name: "amount", align: "right", key: 7 },
+  {
+    name: "amount",
+    align: "right",
+    format: (v) => parseFloat(v ?? 0.0).toFixed(4),
+    key: 7,
+  },
   { name: "memo", required: false, showColumn: false, key: 8 },
   {
     name: "price",
@@ -88,7 +93,12 @@ const splitFields = [
 
   { name: "asset", key: 6 },
   { name: "action", key: 3, upperCase: true },
-  { name: "amount", align: "right", key: 7 },
+  {
+    name: "amount",
+    align: "right",
+    format: (v) => parseFloat(v ?? 0.0).toFixed(4),
+    key: 7,
+  },
   { name: "memo", required: false, showColumn: false, key: 8 },
   {
     name: "price",
@@ -97,6 +107,12 @@ const splitFields = [
     key: 7,
   },
   { name: "currency", label: "Source Cur" },
+  {
+    name: "gross",
+    align: "right",
+    format: currency,
+  },
+
   {
     name: "fee",
     align: "right",
