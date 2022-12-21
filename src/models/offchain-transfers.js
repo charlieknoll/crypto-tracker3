@@ -32,6 +32,10 @@ const fields = [
     required: true,
     defaultValue: "00:00:00",
   },
+  {
+    name: "timestamp",
+    required: false,
+  },
   { name: "id", required: false, showColumn: false },
   { name: "transferId", required: false, label: "Transfer Id" },
   { name: "fromAccount", key: 5, label: "From Account" },

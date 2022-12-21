@@ -3,7 +3,7 @@ import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
 import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
 import { usePricesStore } from "src/stores/prices-store";
-
+import { date } from "quasar";
 const sortByTimeStampThenTxId = (a, b) => {
   return a.timestamp == b.timestamp
     ? a.txId > b.txId
@@ -35,6 +35,7 @@ const getRunningBalances = function () {
       asset: tx.asset,
       price: tx.price,
       type: "Open",
+      action: "BUY",
     });
   }
   const prices = usePricesStore();
@@ -50,6 +51,7 @@ const getRunningBalances = function () {
       amount: tx.amount,
       asset: tx.asset,
       type: "Transfer In",
+      action: "TRANSFER",
       price,
     });
     mappedData.push({
@@ -60,6 +62,7 @@ const getRunningBalances = function () {
       amount: -tx.amount,
       asset: tx.asset,
       type: "Transfer Out",
+      action: "TRANSFER",
       price,
     });
     if (tx.feeCurrency != "USD") {
@@ -71,12 +74,16 @@ const getRunningBalances = function () {
         amount: -tx.fee,
         asset: tx.feeCurrency,
         type: "Transfer Fee",
+        action: "FEE",
         price: feePrice,
       });
     }
   }
   let i = 0;
-  for (const tx of chainTransactions) {
+  //debugger;
+  for (const tx of chainTransactions.filter(
+    (tx) => tx.txType == "C" || tx.type == "I"
+  )) {
     if (tx?.fromAccountName.toLowerCase() == "genesis") continue;
     //if (tx.fromAccount.type == "Gift") continue;
     try {
@@ -87,10 +94,11 @@ const getRunningBalances = function () {
           account: tx.toAccount.name,
           date: tx.date,
           amount: tx.isError ? 0.0 : tx.amount,
-          asset: tx.gasType,
+          asset: tx.asset,
           price: tx.price,
           type: "Chain-in",
           hash: tx.hash,
+          action: tx.taxCode,
         });
       }
       if (tx.fromAccount?.type?.toLowerCase().includes("owned")) {
@@ -100,9 +108,48 @@ const getRunningBalances = function () {
           account: tx.fromAccount.name,
           date: tx.date,
           amount: tx.isError ? -tx.gasFee : -tx.amount - tx.gasFee,
-          asset: tx.gasType,
+          asset: tx.asset,
           price: tx.price,
           type: "Chain-out",
+          hash: tx.hash,
+          action: tx.taxCode,
+        });
+      }
+      i++;
+    } catch (err) {
+      debugger;
+    }
+  }
+
+  for (const tx of chainTransactions.filter((tx) => tx.txType == "T")) {
+    if (tx?.fromAccountName.toLowerCase() == "genesis") continue;
+    //if (tx.fromAccount.type == "Gift") continue;
+    try {
+      if (tx.toAccount?.type?.toLowerCase().includes("owned")) {
+        mappedData.push({
+          txId: "To-I-" + tx.id,
+          timestamp: tx.timestamp,
+          account: tx.toAccount.name,
+          date: tx.date,
+          amount: tx.amount,
+          asset: tx.asset,
+          price: tx.price,
+          type: "Token-in",
+          action: tx.taxCode,
+          hash: tx.hash,
+        });
+      }
+      if (tx.fromAccount?.type?.toLowerCase().includes("owned")) {
+        mappedData.push({
+          txId: "Ch-O-" + tx.id,
+          timestamp: tx.timestamp,
+          account: tx.fromAccount.name,
+          date: tx.date,
+          amount: -tx.amount,
+          asset: tx.asset,
+          price: tx.price,
+          type: "Token-out",
+          action: tx.taxCode,
           hash: tx.hash,
         });
       }
@@ -230,6 +277,11 @@ const columns = [
     label: "Date",
     field: "date",
     align: "left",
+  },
+  {
+    name: "time",
+    field: "time",
+    format: (val, row) => date.formatDate(row.timestamp * 1000, "HH:mm:ss"),
   },
   {
     name: "timestamp",

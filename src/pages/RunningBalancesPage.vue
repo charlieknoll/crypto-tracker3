@@ -34,6 +34,7 @@ const accounts = computed(() => {
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByYear(txs, appStore.taxYear);
   const allAccounts = txs.map((tx) => tx.account);
-  return allAccounts.filter(onlyUnique);
+  const result = allAccounts.filter(onlyUnique).sort((a, b) => a.toUpperCase() > b.toUpperCase() ? 1 : -1);
+  return result
 });
 </script>

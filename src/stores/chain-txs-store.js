@@ -6,6 +6,7 @@ import { usePricesStore } from "./prices-store";
 import { getAccountTxs, mergeByHash } from "src/services/chain-tx-mapper";
 import { getTokenTxs } from "src/services/token-tx-mapper";
 import { sortByTimeStampThenId } from "src/utils/array-helpers";
+import { useExchangeTradesStore } from "./exchange-trades-store";
 
 const mapTokenTx = function (tx, addresses, methods, prices) {};
 export const useChainTxsStore = defineStore("chain-txs", {
@@ -16,8 +17,11 @@ export const useChainTxsStore = defineStore("chain-txs", {
   }),
   getters: {
     accountTxs: (state) => {
+      const exchangeTrades = useExchangeTradesStore();
       let result = getAccountTxs(state.rawAccountTxs, state.rawInternalTxs);
-      result = result.concat(getTokenTxs(result, state.rawTokenTxs));
+      result = result.concat(
+        getTokenTxs(result, state.rawTokenTxs, exchangeTrades.fees)
+      );
       result = result.sort(sortByTimeStampThenId);
       return result;
     },

@@ -3,7 +3,11 @@ const routes = [
     path: "/",
     component: () => import("layouts/MainLayout.vue"),
     children: [
-      { path: "", component: () => import("pages/DashboardPage.vue") },
+      {
+        path: "",
+        name: "Dashboard",
+        component: () => import("pages/DashboardPage.vue"),
+      },
       {
         name: "Settings",
         path: "settings",
@@ -25,17 +29,17 @@ const routes = [
         component: () => import("src/pages/ChainsPage.vue"),
       },
       {
-        name: "OpeningPoisitions",
+        name: "Opening Poisitions",
         path: "opening-positions",
         component: () => import("src/pages/OpeningPositionsPage.vue"),
       },
       {
-        name: "ExchangeTrades",
+        name: "Exchange Trades",
         path: "exchange-trades",
         component: () => import("src/pages/ExchangeTradesPage.vue"),
       },
       {
-        name: "OffchainTransfers",
+        name: "Offchain Transfers",
         path: "offchain-transfers",
         component: () => import("src/pages/OffchainTransfersPage.vue"),
       },
@@ -45,12 +49,12 @@ const routes = [
         component: () => import("src/pages/PricesPage.vue"),
       },
       {
-        name: "ChainTransactions",
+        name: "Chain Transactions",
         path: "chain-transactions",
         component: () => import("src/pages/ChainTxsPage.vue"),
       },
       {
-        name: "RunningBalances",
+        name: "Running Balances",
         path: "running-balances",
         component: () => import("src/pages/RunningBalancesPage.vue"),
       },

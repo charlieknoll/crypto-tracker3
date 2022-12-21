@@ -119,7 +119,7 @@ export class PublicClient {
       //request(opts, this.makeRequestCallback(callback, resolve, reject));
       axios(opts.uri, opts)
         .then(function (response) {
-          resolve(response.data);
+          resolve(response);
         })
         .catch(function (error) {
           reject(error);

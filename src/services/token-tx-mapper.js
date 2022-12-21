@@ -153,7 +153,7 @@ function init(tx, parentTx, addresses) {
     txType: "T",
   };
 }
-const getTokenTxs = function (chainTxs, rawTokenTxs) {
+const getTokenTxs = function (chainTxs, rawTokenTxs, fees) {
   const addresses = useAddressStore();
   const settings = useSettingsStore();
   const prices = usePricesStore();
@@ -195,6 +195,22 @@ const getTokenTxs = function (chainTxs, rawTokenTxs) {
   for (const pt of parentTxs) {
     distributeFee(pt);
   }
+  //TODO add fees
+  fees.map((f) => {
+    //toAccountName
+    //fromAccountName
+
+    const fromAccount = addresses.records.find((a) => a.name == f.account);
+    f.fromAccountName = f.account;
+    f.fromAccount = fromAccount;
+    f.taxCode = f.action;
+    f.suffix = "-F";
+    f.id = f.id + f.suffix;
+    f.toAccountName = "Mint/Burn";
+    f.toAddress = "Ox0000000";
+    f.txType = "T";
+    mappedTxs.push(f);
+  });
   return mappedTxs;
 };
 

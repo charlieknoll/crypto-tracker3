@@ -20,6 +20,7 @@ import {
 } from "src/models/exchange-trades";
 import { multiplyCurrency } from "src/utils/number-helpers";
 import { usePricesStore } from "./prices-store";
+import { importCbpTrades } from "src/services/coinbase-provider";
 
 const keyFunc = (r) =>
   hasValue(r.exchangeId) ? r.exchangeId : getId(r, keyFields);
@@ -27,6 +28,8 @@ const keyFunc = (r) =>
 export const useExchangeTradesStore = defineStore("exchange-trades", {
   state: () => ({
     records: useLocalStorage("exchange-trades", []),
+    fees: useLocalStorage("exchange-fees", []),
+    importedTrades: useLocalStorage("imported-trades", []),
     initValue: getInitValue(fields, useAppStore()),
   }),
   getters: {
@@ -156,7 +159,11 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
     },
     sort() {
       this.records = this.records.sort((a, b) => {
-        return a.timestamp - b.timestamp;
+        return a.timestamp == b.timestamp
+          ? a.id > b.id
+            ? 1
+            : -1
+          : a.timestamp - b.timestamp;
       });
     },
     async load(data, offsets) {
@@ -231,6 +238,32 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
       this.sort();
 
       return mapped.length;
+    },
+    async importCbp() {
+      const app = useAppStore();
+      app.importing = true;
+      const result = await importCbpTrades();
+      if (result == -1) {
+        app.importing = false;
+        return;
+      }
+      const recs = JSON.parse(JSON.stringify(this.records));
+      //const recs = this.records;
+
+      for (let i = 0; i < result.trades.length; i++) {
+        const op = result.trades[i];
+        op.id = keyFunc(op);
+        const errorMsg = this.set(op, recs);
+        if (errorMsg != "")
+          throw new Error(
+            errorMsg.replace("<br>", ", ") + " on row " + (i + 1)
+          );
+      }
+      this.fees = result.fees;
+      this.importedTrades = result.trades;
+      this.records = recs;
+      app.importing = false;
+      this.sort();
     },
   },
 });

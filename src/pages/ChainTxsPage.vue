@@ -160,10 +160,11 @@ const filtered = computed(() => {
   txs = filterByAccounts(txs, app.selectedAccounts, true);
   txs = filterByYear(txs, app.taxYear);
   if (unnamed.value) {
+
     txs = txs.filter(
       (tx) =>
-        tx.toAccount == tx.toAddress.substring(0, 8) ||
-        tx.fromAccount == tx.fromAddress.substring(0, 8)
+        tx.toAccountName.substring(0, 2) == '0x' ||
+        tx.fromAccountName.substring(0, 2) == "0x"
     );
   }
   if (onlyTokens.value) {

@@ -49,7 +49,7 @@ import { useQuasar } from "quasar";
 import { useAppStore } from "src/stores/app-store";
 import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import Repo from "src/utils/repo-helpers";
-import { importCbpTrades } from "src/services/coinbase-provider";
+
 import { onlyUnique } from "src/utils/array-helpers";
 
 const $q = useQuasar();
@@ -64,8 +64,8 @@ const repo = new Repo("Exchange Trades", store, $q)
 
 const { title, record, editing, error, add, edit, save, remove, clear } = repo
 
-const importCbp = async () => {
-  importCbpTrades()
+const importCbp = () => {
+  store.importCbp()
 }
 const filtered = computed(() => {
   //return [{ id: 'test' }]
