@@ -7,13 +7,14 @@ import { getAccountTxs, mergeByHash } from "src/services/chain-tx-mapper";
 import { getTokenTxs } from "src/services/token-tx-mapper";
 import { sortByTimeStampThenId } from "src/utils/array-helpers";
 import { useExchangeTradesStore } from "./exchange-trades-store";
+import { getMinedBlocks } from "src/services/mined-block-mapper";
 
-const mapTokenTx = function (tx, addresses, methods, prices) {};
 export const useChainTxsStore = defineStore("chain-txs", {
   state: () => ({
     rawAccountTxs: useLocalStorage("txs-account", []),
     rawInternalTxs: useLocalStorage("txs-internal", []),
     rawTokenTxs: useLocalStorage("txs-token", []),
+    rawMinedBlocks: useLocalStorage("txs-mined", []),
   }),
   getters: {
     accountTxs: (state) => {
@@ -22,6 +23,7 @@ export const useChainTxsStore = defineStore("chain-txs", {
       result = result.concat(
         getTokenTxs(result, state.rawTokenTxs, exchangeTrades.fees)
       );
+      result = result.concat(getMinedBlocks(state.rawMinedBlocks));
       result = result.sort(sortByTimeStampThenId);
       return result;
     },
@@ -32,6 +34,7 @@ export const useChainTxsStore = defineStore("chain-txs", {
       this.rawAccountTxs = [];
       this.rawInternalTxs = [];
       this.rawTokenTxs = [];
+      this.rawMinedBlocks = [];
     },
 
     async import() {
@@ -39,6 +42,7 @@ export const useChainTxsStore = defineStore("chain-txs", {
       this.rawAccountTxs = mergeByHash(this.rawAccountTxs, txs.accountTxs);
       this.rawInternalTxs = mergeByHash(this.rawInternalTxs, txs.internalTxs);
       this.rawTokenTxs = txs.tokenTxs;
+      this.rawMinedBlocks = txs.minedBlocks;
 
       const prices = usePricesStore();
       await prices.getPrices();

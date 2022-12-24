@@ -189,15 +189,20 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
         const feeCurrency = (
           hasValue(op.FeeCurrency) ? op.FeeCurrency : op.Currency
         ).toUpperCase();
+        const currency = op.Currency.toUpperCase();
         let fee = parseFloat(op.Fee);
         let net = parseFloat(op["Cost/Proceeds"]);
-        const gross = (action == "SELL" ? fee : -fee) + net;
+        let gross = net;
+        if (feeCurrency == currency) {
+          gross += action == "SELL" ? fee : -fee;
+        }
+
         const exchangeId = hasValue(op.ExchangeId) ? op.ExchangeId : uid();
         const tx = {
           action,
           memo: op.Memo,
           price: gross / parseFloat(op.Volume),
-          currency: op.Currency.toUpperCase(),
+          currency,
           date: dateStr.substring(0, 10),
           time: dateStr.substring(11, 19),
           exchangeId,

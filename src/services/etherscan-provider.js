@@ -112,6 +112,60 @@ async function getAccountInternalTransactions(oa, provider, startBlock) {
 
   return txs;
 }
+async function getMinedBlocks(oa, provider, startBlock) {
+  const minedBlocksUrl =
+    `${provider.baseUrl}?module=account&action=getminedblocks&address=` +
+    `${oa.address}&blocktype=blocks&startblock=${startBlock}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
+
+  let result = await axios.get(minedBlocksUrl);
+  if (
+    result.data.status != "1" &&
+    result.data.message != "No transactions found"
+  ) {
+    throw new Error("Invalid return status: " + result.data.message);
+  }
+  let txs = result.data.result;
+  for (const tx of txs) {
+    if (tx.timeStamp) {
+      tx.timestamp = parseInt(tx.timeStamp);
+    }
+    tx.gasType = provider.gasType;
+    tx.to = oa.address;
+    tx.value = tx.blockReward;
+    tx.hash = tx.blockNumber;
+    tx.gas = "0";
+    tx.gasUsed = "0";
+    tx.gasPrice = "0";
+    tx.from = "0x000000";
+    tx.txType = "B";
+  }
+  const minedUnclesUrl =
+    `${provider.baseUrl}?module=account&action=getminedblocks&address=` +
+    `${oa.address}&blocktype=uncles&startblock=${startBlock}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
+  result = await axios.get(minedUnclesUrl);
+  if (
+    result.data.status != "1" &&
+    result.data.message != "No transactions found"
+  ) {
+    throw new Error("Invalid return status: " + result.data.message);
+  }
+  let uncleTxs = result.data.result;
+  for (const tx of uncleTxs) {
+    if (tx.timeStamp) {
+      tx.timestamp = parseInt(tx.timeStamp);
+    }
+    tx.gasType = provider.gasType;
+    tx.txType = "U";
+    tx.to = oa.address;
+    tx.value = tx.blockReward;
+    tx.hash = tx.blockNumber;
+    tx.gas = "0";
+    tx.gasUsed = "0";
+    tx.gasPrice = "0";
+    tx.from = "0x000000";
+  }
+  return txs.concat(uncleTxs);
+}
 export const getTransactions = async function () {
   const app = useAppStore();
   app.importing = true;
@@ -121,13 +175,15 @@ export const getTransactions = async function () {
       accountTxs: [],
       internalTxs: [],
       tokenTxs: [],
+      minedBlocks: [],
     };
     for (let i = 0; i < scanProviders.length; i++) {
       const provider = scanProviders[i];
-      const txs = await getChainTransactions(provider);
+      const txs = await getProviderTransactions(provider);
       result.accountTxs = result.accountTxs.concat(txs.accountTxs);
       result.internalTxs = result.internalTxs.concat(txs.internalTxs);
       result.tokenTxs = result.tokenTxs.concat(txs.tokenTxs);
+      result.minedBlocks = result.minedBlocks.concat(txs.minedBlocks);
     }
     result.tokenTxs = result.tokenTxs.sort(
       (a, b) => a.blockNumber - b.blockNumber
@@ -137,7 +193,7 @@ export const getTransactions = async function () {
     app.importing = false;
   }
 };
-export const getChainTransactions = async function (provider) {
+export const getProviderTransactions = async function (provider) {
   const addresses = useAddressStore();
 
   const ownedAccounts = addresses.records.filter(
@@ -150,6 +206,7 @@ export const getChainTransactions = async function (provider) {
     accountTxs: [],
     internalTxs: [],
     tokenTxs: [],
+    minedBlocks: [],
   };
   for (const oa of ownedAccounts) {
     try {
@@ -165,6 +222,10 @@ export const getChainTransactions = async function (provider) {
       lastRequestTime = await throttle(lastRequestTime, 500);
       result.tokenTxs = result.tokenTxs.concat(
         await getTokenTransactions(oa, provider)
+      );
+      lastRequestTime = await throttle(lastRequestTime, 500);
+      result.minedBlocks = result.minedBlocks.concat(
+        await getMinedBlocks(oa, provider)
       );
 
       //setLastBlockSync
