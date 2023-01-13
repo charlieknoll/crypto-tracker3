@@ -19,10 +19,18 @@ export const useChainTxsStore = defineStore("chain-txs", {
   getters: {
     accountTxs: (state) => {
       const exchangeTrades = useExchangeTradesStore();
-      let result = getAccountTxs(state.rawAccountTxs, state.rawInternalTxs);
+      //TODO make tokenTxs children of  either acct or internal tx and do it all in one pass
+      let result = JSON.parse(JSON.stringify(state.rawAccountTxs));
+      const tokenTxs = JSON.parse(JSON.stringify(state.rawTokenTxs));
+      for (let i = 0; i < result.length; i++) {
+        const tx = result[i];
+        tx.tokenTxs = tokenTxs.filter((t) => t.hash == tx.hash);
+      }
+      result = getAccountTxs(result, state.rawInternalTxs);
       result = result.concat(
         getTokenTxs(result, state.rawTokenTxs, exchangeTrades.fees)
       );
+
       result = result.concat(getMinedBlocks(state.rawMinedBlocks));
       result = result.sort(sortByTimeStampThenId);
       return result;

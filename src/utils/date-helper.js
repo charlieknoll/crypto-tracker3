@@ -5,6 +5,11 @@ const timestampToDateStr = function (ts) {
   const d = new Date(ts * 1000);
   return date.formatDate(d, "YYYY-MM-DD");
 };
+const timestampToTime = function (ts) {
+  if (!ts) return "";
+  const d = new Date(ts * 1000);
+  return date.formatDate(d, "HH:mm:ss");
+};
 const timestampToDateAndTime = function (ts) {
   if (!ts) return "";
   const d = new Date(ts * 1000);
@@ -13,4 +18,4 @@ const timestampToDateAndTime = function (ts) {
     time: date.formatDate(d, "HH:mm:ss"),
   };
 };
-export { timestampToDateStr, timestampToDateAndTime };
+export { timestampToDateStr, timestampToDateAndTime, timestampToTime };

@@ -1,6 +1,13 @@
-const getTaxCode = function (fromType, toType) {
+const getTaxCode = function (fromType, toType, toName, tokenTxCt) {
   if (!fromType) fromType = "";
   if (!toType) toType = "";
+  let token = toName?.split(":")[1];
+  if (token && tokenTxCt == 0) {
+    return "TF:" + token;
+  }
+  if (token && tokenTxCt > 0) {
+    return "";
+  }
   if (
     fromType.toLowerCase().includes("owned") &&
     toType.toLowerCase().includes("owned")

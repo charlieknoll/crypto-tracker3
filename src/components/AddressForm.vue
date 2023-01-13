@@ -18,6 +18,11 @@
         <q-select v-model="value.chain" :options="chainStore.chains" required label="Chain" />
       </div>
     </div>
+    <div class="row q-pa-sm">
+      <div class="col-12 col-sm-8  q-pr-sm">
+        <q-checkbox v-model="value.skipInternal" label="Skip Internal" />
+      </div>
+    </div>
   </q-form>
 </template>
 

@@ -22,6 +22,8 @@ import { getApiPrice } from "src/services/price-provider";
 import { useOffchainTransfersStore } from "./offchain-transfers-store";
 import StoreHelper from "src/utils/store-helpers";
 import { useChainTxsStore } from "./chain-txs-store";
+import { timestampToTime } from "src/utils/date-helper";
+import { onlyUnique } from "src/utils/array-helpers";
 
 const lock = new Semaphore(1);
 const keyFunc = (r) => getId(r, keyFields);
@@ -36,14 +38,58 @@ const showPriceDialog = function (count) {
   });
 };
 const mapAssetDates = (baseCurrencies, r, fieldName) => {
-  return r
-    .filter((r) => baseCurrencies.findIndex((bc) => bc == r[fieldName]) == -1)
-    .map((r) => {
-      return {
-        date: r.date,
-        asset: r[fieldName],
-      };
+  return (
+    r
+      //.filter((r) => baseCurrencies.findIndex((bc) => bc == r[fieldName]) == -1)
+      .map((r) => {
+        return {
+          date: r.date,
+          asset: r[fieldName],
+        };
+      })
+  );
+};
+const pricesFromHashes = function (hashes, tokenTxs) {
+  //first calc prices for baseCurrency containing txs where tx.price = 0.0
+  const calcPrices = [];
+  for (let i = 0; i < hashes.length; i++) {
+    const hash = hashes[i];
+    let hashTxs = tokenTxs.filter((tx) => tx.hash == hash);
+    let sellCt = 0;
+    let buyCt = 0;
+    let sellGross = 0.0;
+    let buyGross = 0.0;
+    hashTxs.map((tx) => {
+      if (tx.taxCode == "BUY") {
+        buyGross += tx.amount * tx.price;
+        buyCt += tx.amount > 0.0 ? 1 : 0;
+      } else {
+        sellGross += tx.amount * tx.price;
+        sellCt += tx.amount > 0.0 ? 1 : 0;
+      }
     });
+    hashTxs.map((tx) => {
+      if (tx.price == 0.0) {
+        let price = 0.0;
+
+        if (tx.taxCode == "BUY") {
+          price = sellGross / buyCt / tx.amount;
+        } else {
+          price = buyGross / sellCt / tx.amount;
+        }
+        calcPrices.push({
+          price,
+          asset: tx.asset,
+          timestamp: tx.timestamp,
+          date: tx.date,
+          time: timestampToTime(tx.timestamp),
+          source: "Calc",
+        });
+      }
+    });
+  }
+  calcPrices.map((p) => (p.id = keyFunc(p)));
+  return calcPrices;
 };
 
 export const usePricesStore = defineStore("prices", {
@@ -120,21 +166,97 @@ export const usePricesStore = defineStore("prices", {
 
       let result = this.records.find(
         (r) =>
-          r.asset == asset && r.timestamp == timestamp && r.source == "Manual"
+          r.asset == asset &&
+          r.timestamp == timestamp &&
+          (r.source == "Manual" || r.source == "Calc")
       );
       if (result) {
         return result.price;
       }
       result = this.records.find(
-        (r) => r.asset == asset && r.date == date && r.source == "Api"
+        (r) => r.asset == asset && r.date == date && r.source == "Manual"
+      );
+      if (result) {
+        return result.price;
+      }
+      //return the closest calc'd using timestamp
+      result = this.records.filter(
+        (r) => r.asset == asset && r.date == date && r.source == "Calc"
+      );
+      if (result.length > 0) {
+        result.sort((a, b) =>
+          Math.abs(a.timestamp - timestamp) > Math.abs(b.timestamp - timestamp)
+            ? 1
+            : -1
+        );
+        return result[0].price;
+      }
+
+      result = this.records.find(
+        (r) => r.asset == asset && r.date == date && r.source != "Manual"
       );
       if (result) return result.price;
 
-      //TODO return base currency = 1.0
+      // const baseCurrencies = settings.baseCurrencies
+      //   .split(",")
+      //   .map((bc) => bc.trim());
 
-      //TODO calc implied?
+      // if (baseCurrencies.indexOf(asset) > -1) return 1.0;
 
       return 0.0;
+    },
+
+    calcPrices() {
+      const settings = useSettingsStore();
+
+      const baseCurrencies = settings.baseCurrencies
+        .split(",")
+        .map((bc) => bc.trim());
+      //get tokenTxs
+      const txStore = useChainTxsStore();
+      let tokenTxs = txStore.accountTxs.filter(
+        (tx) =>
+          tx.txType == "T" && (tx.taxCode == "BUY" || tx.taxCode == "SELL")
+      );
+
+      let baseParentHashes = tokenTxs
+        .filter((tx) => baseCurrencies.indexOf(tx.asset) > -1)
+        .map((tx) => tx.hash);
+      //filter out baseParentHashes with no zero price tx's
+
+      baseParentHashes = baseParentHashes
+        .filter(
+          (h) =>
+            tokenTxs.filter((tx) => tx.hash == h && tx.price == 0.0).length > 0
+        )
+        .filter(onlyUnique);
+      let prices = pricesFromHashes(baseParentHashes, tokenTxs);
+      this.savePrices(prices);
+      tokenTxs = txStore.accountTxs.filter(
+        (tx) =>
+          tx.txType == "T" && (tx.taxCode == "BUY" || tx.taxCode == "SELL")
+      );
+
+      let parentHashes = tokenTxs
+        .filter((tx) => tx.price == 0.0)
+        .map((tx) => tx.hash)
+        .filter(onlyUnique);
+      let parentHashesCt = 0;
+      while (parentHashesCt != parentHashes.length) {
+        parentHashesCt = parentHashes.length;
+        prices = pricesFromHashes(parentHashes, tokenTxs);
+        this.savePrices(prices);
+        tokenTxs = txStore.accountTxs.filter(
+          (tx) =>
+            tx.txType == "T" && (tx.taxCode == "BUY" || tx.taxCode == "SELL")
+        );
+        parentHashes = tokenTxs
+          .filter((tx) => tx.price == 0.0)
+          .map((tx) => tx.hash)
+          .filter(onlyUnique);
+      }
+
+      //then derive more prices until calc'd prices are exausted
     },
     savePrices(prices) {
       const app = useAppStore();
@@ -143,7 +265,9 @@ export const usePricesStore = defineStore("prices", {
         return (
           this.records.findIndex((ep) => {
             return (
-              p.asset == ep.asset && p.date == ep.date && ep.source == "Api"
+              p.asset == ep.asset &&
+              p.timestamp == ep.timestamp &&
+              ep.source == p.source
             );
           }) == -1 && p.id
         );
@@ -198,7 +322,7 @@ export const usePricesStore = defineStore("prices", {
         return (
           this.records.findIndex((ep) => {
             return (
-              p.asset == ep.asset && p.date == ep.date && ep.source == "Api"
+              p.asset == ep.asset && p.date == ep.date && ep.source != "Manual"
             );
           }) == -1
         );
@@ -208,19 +332,28 @@ export const usePricesStore = defineStore("prices", {
       const self = this;
       for (let u = 0; u < prices.length; u++) {
         const p = prices[u];
-        p.price = await getApiPrice(p.asset, p.date, function () {
-          app.importing = false;
-          self.savePrices(prices);
-        });
-        app.importing = true;
-        p.source = "Api";
-        p.time = "00:00:00";
-        p.timestamp = getTimestamp(p.date + "T" + p.time);
-        p.id = keyFunc(p);
+        if (baseCurrencies.indexOf(p.asset) > -1) {
+          p.price = 1.0;
+          p.source = "Base";
+          p.time = "00:00:00";
+          p.timestamp = getTimestamp(p.date + "T" + p.time);
+          p.id = keyFunc(p);
+        } else {
+          p.price = await getApiPrice(p.asset, p.date, function () {
+            app.importing = false;
+            self.savePrices(prices);
+          });
+          app.importing = true;
+          p.source = "Api";
+          p.time = "00:00:00";
+          p.timestamp = getTimestamp(p.date + "T" + p.time);
+          p.id = keyFunc(p);
+        }
       }
-
-      //patch to store using repo technique
       this.savePrices(prices);
+      this.calcPrices();
+      //patch to store using repo technique
+
       app.importing = false;
       lock.release();
     },

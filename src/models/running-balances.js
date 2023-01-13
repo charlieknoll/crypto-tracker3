@@ -29,7 +29,7 @@ const columns = [
     label: "Id",
     field: "txId",
     align: "left",
-    format: (v) => v.substring(0, 10),
+    format: (v) => v.substring(0, 13),
   },
   {
     name: "account",

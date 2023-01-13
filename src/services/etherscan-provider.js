@@ -46,7 +46,7 @@ async function getAccountTransactions(oa, provider, startBlock) {
   ) {
     throw new Error("Invalid return status: " + result.data.message);
   }
-  const txs = result.data.result;
+  let txs = result.data.result;
 
   for (const tx of txs) {
     if (tx.timeStamp) {
@@ -57,10 +57,17 @@ async function getAccountTransactions(oa, provider, startBlock) {
     tx.gasType = provider.gasType;
     //TODO addImportedAccount
     const addresses = useAddressStore();
+    const from = addresses.records.find(
+      (a) => a.address == tx.from && a.type.includes("Owned")
+    );
+    const to = addresses.records.find(
+      (a) => a.address == tx.to && a.type.includes("Owned")
+    );
+    tx.keep = from || to;
     addresses.set({ address: tx.to, chain: provider.gasType });
     addresses.set({ address: tx.from, chain: provider.gasType });
   }
-  return txs;
+  return txs.filter((tx) => tx.keep);
 }
 
 async function getAccountInternalTransactions(oa, provider, startBlock) {
@@ -82,10 +89,10 @@ async function getAccountInternalTransactions(oa, provider, startBlock) {
     if (tx.timeStamp) {
       tx.timestamp = parseInt(tx.timeStamp);
       tx.to = tx.to.toLowerCase();
-      tx.from = tx.from.toLowerCase();
-      if (tx.seqNo) {
-        debugger;
+      if (tx.to == "") {
+        tx.to = tx.contractAddress.toLowerCase();
       }
+      tx.from = tx.from.toLowerCase();
     }
     tx.gasType = provider.gasType;
     //TODO addImportedAccount
@@ -230,6 +237,27 @@ export const getProviderTransactions = async function (provider) {
 
       //setLastBlockSync
       oa.lastBlockSync = currentBlock;
+    } catch (err) {
+      console.log("error getting txs: ", err);
+      throw err;
+    }
+  }
+
+  const contractAccounts = addresses.records.filter(
+    (a) =>
+      a.type == "Contract Owned" &&
+      a.chain == provider.gasType &&
+      a.skipInternal != true
+  );
+
+  for (const ca of contractAccounts) {
+    try {
+      lastRequestTime = await throttle(lastRequestTime, 500);
+      result.internalTxs = result.internalTxs.concat(
+        await getAccountInternalTransactions(ca, provider)
+      );
+      //setLastBlockSync
+      ca.lastBlockSync = currentBlock;
     } catch (err) {
       console.log("error getting txs: ", err);
     }

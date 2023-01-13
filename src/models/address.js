@@ -13,6 +13,10 @@ const fields = [
     key: 1,
   },
   {
+    name: "skipInternal",
+    required: false,
+  },
+  {
     name: "lastBlockSync",
     label: "Last Block",
     showColumn: true,

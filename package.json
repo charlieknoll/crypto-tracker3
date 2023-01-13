@@ -11,7 +11,7 @@
     "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
-    "@quasar/extras": "^1.15.8",
+    "@quasar/extras": "^1.15.9",
     "@vueuse/core": "^9.3.1",
     "axios": "^0.21.1",
     "buffer": "^6.0.3",
@@ -21,7 +21,7 @@
     "ethers": "^5.0.0",
     "moment": "2.29.4",
     "pinia": "^2.0.11",
-    "quasar": "^2.11.0",
+    "quasar": "^2.11.5",
     "querystring-es3": "^0.2.1",
     "readable-stream": "^4.2.0",
     "semaphore-async-await": "^1.5.1",

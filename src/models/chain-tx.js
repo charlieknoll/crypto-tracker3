@@ -1,5 +1,5 @@
 import { useAppStore } from "src/stores/app-store";
-
+import { date } from "quasar";
 import {
   getKeyFields,
   getRequiredFields,
@@ -10,6 +10,13 @@ import moment from "moment";
 //const app = useAppStore();
 const fields = [
   { name: "date" },
+  {
+    label: "Time",
+    name: "time",
+    field: "time",
+    align: "left",
+    format: (val, row) => date.formatDate(row.timestamp * 1000, "HH:mm:ss"),
+  },
   { name: "id", format: (v) => v.substring(0, 8) },
   { name: "txType" },
   { name: "fromAccountName", label: "From" },

@@ -3,7 +3,6 @@ import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
 import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
 import { usePricesStore } from "src/stores/prices-store";
-
 import { defineStore } from "pinia";
 
 import { useAppStore } from "src/stores/app-store";
@@ -18,6 +17,7 @@ const sortByTimeStampThenTxId = (a, b) => {
 
 function getRunningBalances() {
   let mappedData = [];
+
   const openingPositions = useOpeningPositionsStore().records;
   const offchainTransfers = useOffchainTransfersStore().split;
   const chainTransactions = useChainTxsStore().accountTxs;
@@ -27,6 +27,7 @@ function getRunningBalances() {
     if (account.includes("->")) {
       account = account.split("->")[1];
     }
+
     mappedData.push({
       txId: "Op-" + tx.id,
       timestamp: tx.timestamp,

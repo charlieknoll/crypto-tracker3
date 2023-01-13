@@ -35,12 +35,15 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
   const timestamp = parseInt(tx.timeStamp);
   const price = prices.getPrice(tx.gasType, date, timestamp);
   const amount = sBnToFloat(tx.value);
+  //const bnAmount = BigNumber.from(tx?.value ?? "0");
   const gross = multiplyCurrency([amount, price]);
 
   let gasFee =
     tx.gasUsed == "0"
       ? 0.0
-      : sBnToFloat(BigNumber.from(tx.gasUsed).mul(BigNumber.from(tx.gasPrice)));
+      : sBnToFloat(
+          BigNumber.from(tx.gasUsed).mul(BigNumber.from(tx?.gasPrice ?? "0"))
+        );
   let fee = tx.gasUsed == "0" ? 0.0 : multiplyCurrency([gasFee, price]);
   let id = tx.hash.toLowerCase();
   if (tx.seqNo) {
@@ -60,7 +63,13 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
     fromAddress,
     isError: tx.isError == "1",
     amount,
-    taxCode: getTaxCode(fromAccount?.type, toAccount?.type),
+    //bnAmount,
+    taxCode: getTaxCode(
+      fromAccount?.type,
+      toAccount?.type,
+      toAccount?.name,
+      tx.tokenTxs?.length
+    ),
     method: tx.input.substring(0, 10),
     methodName: methods.getMethodName(tx.input),
     timestamp,
@@ -78,15 +87,17 @@ const getAccountTxs = function (rawAccountTxs, rawInternalTxs) {
   const addresses = useAddressStore();
   const methods = useMethodStore();
   const prices = usePricesStore();
-
+  debugger;
   let result = rawAccountTxs.map((r) => {
     return mapRawAccountTx(r, addresses.records, methods, prices, "C");
   });
+
   result = result.concat(
     rawInternalTxs.map((r) => {
       return mapRawAccountTx(r, addresses.records, methods, prices, "I");
     })
   );
+
   return result;
 };
 

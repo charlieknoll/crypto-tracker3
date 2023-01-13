@@ -51,6 +51,7 @@
         <div>
           <q-btn class="q-ml-sm" color="secondary" label="Add" @click="add" />
           <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
+          <q-btn class="q-ml-sm" color="negative" label="Clear Unnamed" @click="store.clearUnnamed" />
         </div>
       </template>
     </q-table>

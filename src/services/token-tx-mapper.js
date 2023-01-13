@@ -127,7 +127,7 @@ function init(tx, parentTx, addresses) {
   const gas = 0.0;
   const tokenDecimal = tx.tokenDecimal;
   const hash = tx.hash.toLowerCase();
-  const bnAmount = BigNumber.from(tx.value);
+  //const bnAmount = BigNumber.from(tx.value);
   const amount = sBnToFloat(tx.value, parseFloat(tokenDecimal));
 
   return {
@@ -143,7 +143,7 @@ function init(tx, parentTx, addresses) {
     fromAccount,
     fromAccountName: from,
     fromAddress,
-    bnAmount,
+    //bnAmount,
     amount,
     gas,
     gasType,
@@ -204,6 +204,8 @@ const getTokenTxs = function (chainTxs, rawTokenTxs, fees) {
     f.fromAccountName = f.account;
     f.fromAccount = fromAccount;
     f.taxCode = f.action;
+    f.price = prices.getPrice(f.asset, f.date);
+    f.gross = multiplyCurrency([f.amount, f.price]);
     f.suffix = "-F";
     f.id = f.id + f.suffix;
     f.toAccountName = "Mint/Burn";

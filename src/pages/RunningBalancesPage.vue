@@ -43,7 +43,7 @@ const groups = ["Detailed", "Account", "Asset"]
 const balanceGrouping = ref("Account");
 const filtered = computed(() => {
   let txs = runningBalancesStore.runningBalances;
-
+  if (!txs) return []
   let taxYear = appStore.taxYear;
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByAccounts(txs, appStore.selectedAccounts);
@@ -74,7 +74,7 @@ const filtered = computed(() => {
 const accounts = computed(() => {
   //const runningBalancesStore = useRunningBalancesStore();
   let txs = runningBalancesStore.runningBalances;
-
+  if (!txs) return
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByYear(txs, appStore.taxYear);
   const allAccounts = txs.map((tx) => tx.account);
