@@ -2,7 +2,7 @@ const getTaxCode = function (fromType, toType, toName, tokenTxCt) {
   if (!fromType) fromType = "";
   if (!toType) toType = "";
   let token = toName?.split(":")[1];
-  if (token && tokenTxCt == 0) {
+  if (token && tokenTxCt == 0 && toType == "Token") {
     return "TF:" + token;
   }
   if (token && tokenTxCt > 0) {

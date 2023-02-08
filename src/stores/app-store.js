@@ -36,7 +36,7 @@ export const useAppStore = defineStore("app", {
     },
 
     assets() {
-      const start = Date.now();
+      //console.time("assets");
       const chainTxsStore = useChainTxsStore();
       const openingPositionsStore = useOpeningPositionsStore();
       const exchangeTradesStore = useExchangeTradesStore();
@@ -46,13 +46,15 @@ export const useAppStore = defineStore("app", {
       result.push(...openingPositionsStore.records.map((r) => r.asset));
       result.push(...exchangeTradesStore.split.map((r) => r.asset));
       result = result.filter(onlyUnique).sort();
-      console.log(`Asset duration: ${Date.now() - start} ms`);
+      //console.timeEnd("assets");
+
       return result;
     },
     accounts() {
-      const start = Date.now();
+      //const start = Date.now();
       const addressStore = useAddressStore();
       const openingPositionsStore = useOpeningPositionsStore();
+      const exchangeTradesStore = useExchangeTradesStore();
       //TODO add offchain and exchange trades stores
       let accounts = [];
 
@@ -61,6 +63,7 @@ export const useAppStore = defineStore("app", {
         .map((r) => r.name);
 
       accounts.push(...openingPositionsStore.records.map((r) => r.account));
+      accounts.push(...exchangeTradesStore.records.map((r) => r.account));
       accounts = accounts.filter(onlyUnique).sort();
       //console.log(`Account duration: ${Date.now() - start} ms`);
       return accounts;

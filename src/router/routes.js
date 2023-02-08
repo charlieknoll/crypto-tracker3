@@ -58,6 +58,11 @@ const routes = [
         path: "running-balances",
         component: () => import("src/pages/RunningBalancesPage.vue"),
       },
+      {
+        name: "Capital Gains",
+        path: "capital-gains",
+        component: () => import("src/pages/CapitalGainsPage.vue"),
+      },
     ],
   },
 

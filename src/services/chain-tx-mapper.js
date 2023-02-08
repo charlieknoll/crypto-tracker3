@@ -87,7 +87,7 @@ const getAccountTxs = function (rawAccountTxs, rawInternalTxs) {
   const addresses = useAddressStore();
   const methods = useMethodStore();
   const prices = usePricesStore();
-  debugger;
+
   let result = rawAccountTxs.map((r) => {
     return mapRawAccountTx(r, addresses.records, methods, prices, "C");
   });

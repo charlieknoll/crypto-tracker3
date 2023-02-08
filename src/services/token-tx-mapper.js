@@ -124,7 +124,7 @@ function init(tx, parentTx, addresses) {
   const timestamp = parseInt(tx.timeStamp);
   const asset = tx.tokenSymbol;
   const gasType = tx.gasType;
-  const gas = 0.0;
+  const gasFee = 0.0;
   const tokenDecimal = tx.tokenDecimal;
   const hash = tx.hash.toLowerCase();
   //const bnAmount = BigNumber.from(tx.value);
@@ -145,7 +145,7 @@ function init(tx, parentTx, addresses) {
     fromAddress,
     //bnAmount,
     amount,
-    gas,
+    gasFee,
     gasType,
     timestamp,
     tracked: false,
@@ -206,11 +206,12 @@ const getTokenTxs = function (chainTxs, rawTokenTxs, fees) {
     f.taxCode = f.action;
     f.price = prices.getPrice(f.asset, f.date);
     f.gross = multiplyCurrency([f.amount, f.price]);
+    f.fee = 0.0;
     f.suffix = "-F";
     f.id = f.id + f.suffix;
     f.toAccountName = "Mint/Burn";
     f.toAddress = "Ox0000000";
-    f.txType = "T";
+    f.txType = "F";
     mappedTxs.push(f);
   });
   return mappedTxs;
