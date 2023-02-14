@@ -41,13 +41,17 @@ function distributeFee(pt) {
 }
 
 function getOwnedState(tokenTx) {
-  const fromOwned =
-    tokenTx?.fromAccount?.type?.toLowerCase().includes("owned") != undefined;
-  const toOwned =
-    tokenTx?.toAccount?.type?.toLowerCase().includes("owned") != undefined;
+  const fromOwned = tokenTx?.fromAccount?.type?.toLowerCase().includes("owned");
+  const toOwned = tokenTx?.toAccount?.type?.toLowerCase().includes("owned");
   return { fromOwned, toOwned };
 }
 function setParentFields(tokenTx) {
+  // if (
+  //   tokenTx.hash ==
+  //   "0x603e46ce4884ccfa774a6e422d36bbeb1dec2e82a6f83d6093413a017c529808"
+  // )
+  //   debugger;
+
   const { fromOwned, toOwned } = getOwnedState(tokenTx);
   if (toOwned && !fromOwned) {
     tokenTx.parentTx.inTokenTxs.push(tokenTx);
@@ -78,7 +82,6 @@ function setTokenFields(tokenTx, trackedTokens, prices) {
     );
     tokenTx.gross = multiplyCurrency([tokenTx.amount, tokenTx.price]);
     setParentFields(tokenTx);
-    tokenTx.taxCode = getTokenTaxCode(tokenTx);
   }
 }
 function setTrackedTokens(tokenTxs, trackedTokens) {
@@ -191,6 +194,7 @@ const getTokenTxs = function (chainTxs, rawTokenTxs, fees) {
   }
   mappedTxs = mappedTxs.filter((mtx) => mtx.tracked);
   mappedTxs.map((tokenTx) => setTokenFields(tokenTx, trackedTokens, prices));
+  mappedTxs.map((tokenTx) => (tokenTx.taxCode = getTokenTaxCode(tokenTx)));
   //distribute baseCurrency costs/proceeds and fees to non baseCurrency
   for (const pt of parentTxs) {
     distributeFee(pt);

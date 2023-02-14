@@ -68,7 +68,8 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
       fromAccount?.type,
       toAccount?.type,
       toAccount?.name,
-      tx.tokenTxs?.length
+      tx.tokenTxs?.length,
+      tx.isError
     ),
     method: tx.input.substring(0, 10),
     methodName: methods.getMethodName(tx.input),
