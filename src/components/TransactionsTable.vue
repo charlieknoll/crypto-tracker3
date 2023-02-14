@@ -14,6 +14,16 @@
     <template v-slot:top-right>
       <slot name="top-right"></slot>
     </template>
+    <!-- <template v-slot:body-cell-id="props">
+      <q-td :props="props.props">
+        <div>
+          <q-badge color="purple" :label="props.value" />
+        </div>
+        <div class="my-table-details">
+          {{ props.row.details }}
+        </div>
+      </q-td>
+    </template> -->
   </q-table>
 </template>
 <script setup>

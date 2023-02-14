@@ -35,6 +35,9 @@
           <div>
             <account-filter :options="accounts"></account-filter>
           </div>
+          <div>
+            <asset-filter></asset-filter>
+          </div>
           <base-select style="width: 220px"
             multiple
             popup-content-class="dropdown"
@@ -54,10 +57,11 @@
 import { ref, computed, reactive, watchEffect } from "vue";
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AccountFilter from "src/components/AccountFilter.vue";
+import AssetFilter from "src/components/AssetFilter.vue";
 import { fields, tokenFields } from "src/models/chain-tx";
 import { useColumns } from "src/use/useColumns";
 import { useAppStore } from "src/stores/app-store";
-import { filterByAccounts, filterByYear } from "src/utils/filter-helpers";
+import { filterByAccounts, filterByYear, filterByAssets } from "src/utils/filter-helpers";
 import { vAlphaNumeric } from 'src/directives/vAlphaNumeric'
 import { useChainTxsStore } from "src/stores/chain-txs-store";
 import { useAddressStore } from "src/stores/address-store";
@@ -159,6 +163,7 @@ const filtered = computed(() => {
   let txs = store.accountTxs;
   txs = filterByAccounts(txs, app.selectedAccounts, true);
   txs = filterByYear(txs, app.taxYear);
+  txs = filterByAssets(txs, app.selectedAssets);
   if (unnamed.value) {
 
     txs = txs.filter(

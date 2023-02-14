@@ -21,6 +21,7 @@
           </q-btn-dropdown>
         </div>
       </template>
+
     </transactions-table>
   </q-page>
 </template>

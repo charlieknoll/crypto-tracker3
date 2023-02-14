@@ -50,8 +50,8 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           );
           usdFee = multiplyCurrency([tx.fee, feeUSDPrice]);
           const feeTx = Object.assign({}, tx);
-          feeTx.action = "FEE";
-          feeTx.id = tx.id + "F";
+          feeTx.action = "SELL";
+          feeTx.id = "F-" + tx.id;
           feeTx.price = feeUSDPrice;
           feeTx.asset = tx.feeCurrency;
           feeTx.amount = tx.fee;
@@ -59,6 +59,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           feeTx.feeCurrency = "USD";
           feeTx.currency = tx.feeCurrency;
           feeTx.net = multiplyCurrency([feeTx.amount, feeTx.price]);
+          feeTx.gross = feeTx.net;
           feeTx.sort = 1;
           // if (feeTx.amount != 0.0)
           mappedData.push(feeTx);
@@ -79,7 +80,8 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           tx.sort = tx.action == "BUY" ? 2 : 0;
           tx.price = currencyPrice * currencyUSDPrice;
           tx.fee = tx.action == "SELL" ? usdFee : 0.0;
-          tx.net = multiplyCurrency([tx.amount, tx.price]) - tx.fee; //fee only non-zero for sell
+          tx.gross = multiplyCurrency([tx.amount, tx.price]);
+          tx.net = tx.gross - tx.fee; //fee only non-zero for sell
           tx.id = id + (tx.action == "SELL" ? "S" : "B");
 
           const currencyTx = Object.assign({}, tx);
@@ -90,16 +92,18 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           currencyTx.asset = tx.currency;
           currencyTx.amount = tx.amount * currencyPrice;
           currencyTx.fee = currencyTx.action == "SELL" ? usdFee : 0.0;
-          currencyTx.net =
-            multiplyCurrency([currencyTx.price, currencyTx.amount]) -
-            currencyTx.fee;
+          currencyTx.gross = multiplyCurrency([
+            currencyTx.price,
+            currencyTx.amount,
+          ]);
+          currencyTx.net = currencyTx.gross - currencyTx.fee;
           mappedData.push(tx);
           mappedData.push(currencyTx);
         } else {
           tx.amount = Math.abs(tx.amount);
           tx.fee = usdFee;
-          tx.net = multiplyCurrency([tx.amount, tx.price]);
-          tx.net = tx.net + (tx.action == "SELL" ? -tx.fee : tx.fee);
+          tx.gross = multiplyCurrency([tx.amount, tx.price]);
+          tx.net = tx.gross + (tx.action == "SELL" ? -tx.fee : tx.fee);
           tx.feeCurrency = "USD";
           mappedData.push(tx);
         }
