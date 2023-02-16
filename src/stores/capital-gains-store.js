@@ -108,7 +108,10 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     feeTx.amount = tx.gasFee;
     feeTx.fee = 0.0;
     feeTx.gross = tx.gasFee * tx.price;
+<<<<<<< HEAD
     feeTx.proceeds = feeTx.gross;
+=======
+>>>>>>> 0697ba873fb2e0d0fa758047c71f1fe5e8436821
     feeTx.action = "FEE";
     feeTx.account = feeTx.fromAccountName;
     return feeTx;
