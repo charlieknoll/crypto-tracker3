@@ -49,7 +49,20 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
   if (tx.seqNo) {
     id += "-" + tx.seqNo;
   }
-
+  // if (
+  //   tx?.hash ==
+  //   "0x385bb3faccfe08333daec56bf405be08ffe5b0a1217e02cd395df51c579a3679"
+  // ) {
+  //   debugger;
+  // }
+  const taxCode = getTaxCode(
+    fromAccount?.type,
+    toAccount?.type,
+    toAccount?.name,
+    tx.tokenTxs?.length,
+    tx.isError == "1",
+    tx
+  );
   return {
     id,
     hash: tx.hash,
@@ -64,13 +77,7 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
     isError: tx.isError == "1",
     amount,
     //bnAmount,
-    taxCode: getTaxCode(
-      fromAccount?.type,
-      toAccount?.type,
-      toAccount?.name,
-      tx.tokenTxs?.length,
-      tx.isError
-    ),
+    taxCode,
     method: tx.input.substring(0, 10),
     methodName: methods.getMethodName(tx.input),
     timestamp,

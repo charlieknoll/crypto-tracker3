@@ -1,5 +1,6 @@
-const getTaxCode = function (fromType, toType, toName, tokenTxCt, isError) {
+const getTaxCode = function (fromType, toType, toName, tokenTxCt, isError, tx) {
   if (isError) return "";
+
   if (!fromType) fromType = "";
   if (!toType) toType = "";
   let token = toName?.split(":")[1];

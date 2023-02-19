@@ -23,7 +23,7 @@
       </template>
 
     </transactions-table>
-  </q-page>
+</q-page>
 </template>
 <script setup>
 import { computed, ref } from "vue";
@@ -34,6 +34,7 @@ import { columns } from "src/models/capital-gains";
 import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
 import { useCapitalGainsStore } from "src/stores/capital-gains-store";
+import { getCapitalGains } from "src/stores/capital-gains-store";
 import { onlyUnique } from "src/utils/array-helpers";
 
 const appStore = useAppStore();
@@ -43,7 +44,7 @@ const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Detailed");
 const filtered = computed(() => {
   let txs = capitalGainsStore.capitalGains.sellTxs;
-
+  //let txs = getCapitalGains(false).sellTxs;
   if (!txs) return [];
 
   txs = filterByAssets(txs, appStore.selectedAssets);

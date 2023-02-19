@@ -13,6 +13,7 @@ const sortByTimeStampThenTxId = (a, b) => {
 };
 function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
   //TODO Add received gifts?
+
   let buyTxs = chainTxs.filter(
     (tx) => (tx.taxCode == "BUY" || tx.taxCode == "INCOME") && tx.amount > 0.0
   );
@@ -25,7 +26,13 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
   let _buyExchangeTrades = exchangeTrades.filter((tx) => tx.action == "BUY");
   buyTxs = buyTxs.concat(_buyExchangeTrades);
 
-  buyTxs = buyTxs.concat(openingPositions);
+  buyTxs = buyTxs.concat(
+    openingPositions.map((tx) => {
+      const oTx = Object.assign({}, tx);
+      oTx.gross = tx.amount * tx.price;
+      return oTx;
+    })
+  );
 
   buyTxs = buyTxs.map((tx) => {
     tx.cost = tx.gross + tx.fee;
@@ -36,6 +43,98 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
   });
   buyTxs.sort((a, b) => a.timestamp - b.timestamp);
   return buyTxs;
+}
+
+function getCostBasisTxs(chainTransactions, offchainTransfers) {
+  //gas Costs for transfers on chaintx
+  let gasFeeTxs = chainTransactions.filter(
+    (tx) =>
+      tx.gasFee > 0.0 &&
+      tx.txType == "C" &&
+      tx.fromAccount.type == "Owned" &&
+      tx.taxCode == "TRANSFER"
+  );
+  gasFeeTxs = gasFeeTxs.map((tx) => {
+    const feeTx = Object.assign({}, tx);
+    feeTx.timestamp = tx.timestamp - 1;
+    feeTx.amount = tx.gasFee;
+    feeTx.gross = tx.gasFee * tx.price;
+    return feeTx;
+  });
+
+  //chainTx.fee for token transfers on chaintx
+  let tokenTransferTxs = chainTransactions.filter(
+    (tx) =>
+      tx.taxCode == "TRANSFER" &&
+      tx.amount != 0.0 &&
+      tx.txType == "T" &&
+      tx.fee > 0.0
+  );
+  tokenTransferTxs = tokenTransferTxs.map((tx) => {
+    const ttx = Object.assign({}, tx);
+    ttx.timestamp = tx.timestamp - 1;
+    ttx.gross = tx.fee;
+    return ttx;
+  });
+  //tokenFeeTxs
+  let tokenFeeTxs = chainTransactions.filter((tx) => tx.txType == "F");
+
+  //error fees for chaintx type = "C" to non token or spending or expense to gas asset
+  let errorFeeTxs = chainTransactions.filter(
+    (tx) =>
+      tx.isError &&
+      tx.gasFee > 0.0 &&
+      tx.txType == "C" &&
+      tx.fromAccount.type == "Owned" &&
+      tx.toAccount.type != "Token"
+  );
+  errorFeeTxs = errorFeeTxs.map((tx) => {
+    const feeTx = Object.assign({}, tx);
+    feeTx.timestamp = tx.timestamp - 1;
+    feeTx.amount = tx.gasFee;
+    feeTx.gross = tx.gasFee * tx.price;
+    return feeTx;
+  });
+  //error fees for chaintx type = "C" to token contract to token asset
+  let tokenErrorFeeTxs = chainTransactions.filter(
+    (tx) =>
+      tx.isError &&
+      tx.gasFee > 0.0 &&
+      tx.txType == "C" &&
+      tx.fromAccount.type == "Owned" &&
+      tx.toAccount.type == "Token"
+  );
+  tokenErrorFeeTxs = tokenErrorFeeTxs.map((tx) => {
+    const feeTx = Object.assign({}, tx);
+    feeTx.timestamp = tx.timestamp - 1;
+    //TODO if : in toacct then split and use [1] as asset
+    let token = tx.toAccount.name?.split(":")[1];
+
+    feeTx.asset = token ?? tx.toAccount.name;
+    feeTx.amount = tx.gasFee;
+    feeTx.gross = tx.gasFee * tx.price;
+    return feeTx;
+  });
+  //offchain.fee for type == "TRANSFER" for offchainTx
+
+  let offChainTransferTxs = offchainTransfers.filter(
+    (tx) => (tx.type = "TRANSFER" && tx.fee > 0.0)
+  );
+  offChainTransferTxs = offChainTransferTxs.map((tx) => {
+    const otx = Object.assign({}, tx);
+    otx.timestamp = tx.timestamp - 1;
+    otx.gross = tx.fee;
+    return otx;
+  });
+
+  const txs = gasFeeTxs.concat(
+    tokenTransferTxs,
+    tokenFeeTxs,
+    errorFeeTxs,
+    tokenErrorFeeTxs,
+    offChainTransferTxs
+  );
+  return txs;
 }
 function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   let sellTxs = [];
@@ -135,6 +234,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     tx.longTermGain = 0.0;
     tx.longLots = 0;
     tx.shortLots = 0;
+    tx.taxTxType = "SELL";
     return tx;
   });
   sellTxs.sort((a, b) => a.timestamp - b.timestamp);
@@ -187,14 +287,15 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
       tx.shortLots += 1;
     }
     //TODO create split tx
+
     const splitTx = {};
     splitTx.description = "" + allocatedAmount + " " + buyTx.asset;
     splitTx.asset = buyTx.asset;
     splitTx.longShort = daysHeld > 365 ? "Long" : "Short";
     splitTx.dateAcquired = buyTx.date;
-    splitTx.allocatedTxId = buyTx.txId;
-    splitTx.sellTxId = tx.txId;
-    splitTx.txId = tx.txId;
+    splitTx.allocatedId = buyTx.id;
+    splitTx.sellId = tx.id;
+    splitTx.id = tx.id;
     splitTx.daysHeld = daysHeld;
     splitTx.date = tx.date;
     splitTx.amount = allocatedAmount;
@@ -214,7 +315,7 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
     );
   }
 }
-function allocateFee(tx, buyTxs) {
+function allocateCostBasis(tx, buyTxs) {
   let buyTx = buyTxs.find(
     (btx) => btx.asset == tx.asset && btx.disposedAmount < btx.amount
   );
@@ -230,11 +331,11 @@ function allocateFee(tx, buyTxs) {
         ? remainingAmount
         : buyTx.amount - buyTx.disposedAmount;
 
-    const allocatedProceeds = (allocatedAmount / tx.amount) * tx.proceeds;
+    const allocatedGross = (allocatedAmount / tx.amount) * tx.gross;
 
     tx.allocatedAmount += allocatedAmount;
 
-    buyTx.cost += allocatedProceeds;
+    buyTx.cost += allocatedGross;
 
     i++;
     buyTx = buyTxs.find(
@@ -258,47 +359,30 @@ function getAllocatedTxs(includeWashSales) {
   );
   let buyTxs = getBuyTxs(chainTransactions, exchangeTrades, openingPositions);
 
-  // let ethTxs = sellTxs.filter((tx) => tx.asset == "ETH");
-  // let ethSellTotal = 0.0;
-  // ethTxs.map((tx) => (ethSellTotal += tx.amount));
-  // let buyEthTxs = buyTxs.filter((tx) => tx.asset == "ETH");
-  // let ethBuyTotal = 0.0;
-  // buyEthTxs.map((tx) => (ethBuyTotal += tx.amount));
+  let costBasisTxs = getCostBasisTxs(chainTransactions, offchainTransfers);
 
   //Calc gains for each sell
 
   const splitTxs = [];
-  //TODO allocate fees for token transfers, token contract interactions (type = "C" with 0 tokenTx to token contract)
-  //TODO include TF:  of type "F" from chain tx's
-
-  for (const tx of sellTxs) {
-    if (tx.action != "TOKEN FEE") {
+  const txs = sellTxs
+    .concat(costBasisTxs)
+    .sort((a, b) => a.timestamp - b.timestamp);
+  for (const tx of txs) {
+    if (tx.taxTxType == "SELL") {
       allocateProceeds(tx, buyTxs, splitTxs);
       if (includeWashSales) applyWashSale(tx, buyTxs, splitTxs);
     }
-    //IMPORTANT, TRANSFER FEES timestamp adjusted -1 so the fees get applied first
-    // if (tx.action == "TRANSFER FEE") {
-    //   debugger;
-    //   allocateFee(tx, buyTxs);
+
+    // if (!tx.taxTxType) {
+    //   if (tx.asset == "yDAI+yUSDC+yUSDT+yTUSD") {
+    //     debugger;
+    //   }
+    //   allocateCostBasis(tx, buyTxs);
     // }
-    //Only increase cost basis for tx's that did not transfer tokens (approve), token transfers, buys and
-    //sells will be applied to the token cost basis
-    if (tx.action && tx.action.includes("TF:")) {
-      const _tx = Object.assign({}, tx);
-      _tx.asset = tx.action.split(":")[1];
-      allocateFee(_tx, buyTxs);
-    }
-    if (
-      tx.action == "TOKEN FEE"
-      // tx.action == "TOKEN FEE" &&
-      // tokenTxs.findIndex(tt => tt.parentTx.hash == tx.hash) == -1
-    ) {
-      allocateTokenFee(tx, buyTxs);
-    }
   }
   return { sellTxs, splitTxs };
 }
-function getCapitalGains(applyWashSale) {
+export function getCapitalGains(applyWashSale) {
   const allocatedTxs = getAllocatedTxs(applyWashSale);
   const sellTxs = allocatedTxs.sellTxs.filter((tx) => tx.action != "GIFT");
   const splitTxs = allocatedTxs.splitTxs.filter(
