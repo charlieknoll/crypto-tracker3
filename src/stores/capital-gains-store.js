@@ -342,7 +342,7 @@ function allocateCostBasis(tx, buyTxs) {
       (btx) =>
         btx.asset == tx.asset &&
         btx.disposedAmount < btx.amount &&
-        btx.txId != buyTx.txId
+        btx.id != buyTx.id
     );
   }
 }
@@ -373,12 +373,12 @@ function getAllocatedTxs(includeWashSales) {
       if (includeWashSales) applyWashSale(tx, buyTxs, splitTxs);
     }
 
-    // if (!tx.taxTxType) {
-    //   if (tx.asset == "yDAI+yUSDC+yUSDT+yTUSD") {
-    //     debugger;
-    //   }
-    //   allocateCostBasis(tx, buyTxs);
-    // }
+    if (!tx.taxTxType) {
+      // if (tx.asset == "yDAI+yUSDC+yUSDT+yTUSD") {
+      //   debugger;
+      // }
+      allocateCostBasis(tx, buyTxs);
+    }
   }
   return { sellTxs, splitTxs };
 }

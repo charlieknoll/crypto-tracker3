@@ -1,6 +1,6 @@
 <template>
   <q-page>
-    <transactions-table title="Capital Gains" :rows="filtered" :columns="columns">
+    <transactions-table title="Capital Gains" :rows="filtered" :columns="columns" @rowClick="showBuys">
       <template v-slot:top-right>
         <div class="row">
           <account-filter :options="appStore.accounts"></account-filter>
@@ -23,7 +23,7 @@
       </template>
 
     </transactions-table>
-</q-page>
+  </q-page>
 </template>
 <script setup>
 import { computed, ref } from "vue";
@@ -42,6 +42,11 @@ const capitalGainsStore = useCapitalGainsStore();
 
 const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Detailed");
+const showBuys = (evt, row, index) => {
+  let txs = capitalGainsStore.capitalGains.splitTxs
+  txs = txs.filter((t) => t.sellId == row.id)
+  console.log(txs)
+}
 const filtered = computed(() => {
   let txs = capitalGainsStore.capitalGains.sellTxs;
   //let txs = getCapitalGains(false).sellTxs;
