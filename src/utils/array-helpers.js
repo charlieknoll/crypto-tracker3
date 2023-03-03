@@ -20,4 +20,16 @@ const stringToArray = function (val, delimter) {
   }
   return result;
 };
-export { onlyUnique, sortByTimeStampThenId, stringToArray };
+const convertToCsvNoHeadher = function (arr, names, delimiter) {
+  if (!delimiter) delimiter = ",";
+  const content = arr
+    .map((val) => names.map((name) => val[name]).join(delimiter))
+    .join("\r\n");
+  return content;
+};
+export {
+  onlyUnique,
+  sortByTimeStampThenId,
+  stringToArray,
+  convertToCsvNoHeadher,
+};

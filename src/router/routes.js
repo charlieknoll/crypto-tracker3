@@ -63,6 +63,26 @@ const routes = [
         path: "capital-gains",
         component: () => import("src/pages/CapitalGainsPage.vue"),
       },
+      {
+        name: "Tax Export",
+        path: "tax-export",
+        component: () => import("src/pages/TaxExportPage.vue"),
+      },
+      {
+        name: "Income",
+        path: "income",
+        component: () => import("src/pages/IncomePage.vue"),
+      },
+      {
+        name: "Spending",
+        path: "spending",
+        component: () => import("src/pages/SpendingPage.vue"),
+      },
+      {
+        name: "Unrealized",
+        path: "unrealized",
+        component: () => import("src/pages/UnrealizedPage.vue"),
+      },
     ],
   },
 

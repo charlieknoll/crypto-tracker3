@@ -1,7 +1,8 @@
 import { ethers } from "ethers";
 const BigNumber = ethers.BigNumber;
 
-const currency = (val, row) => `$${val ? parseFloat(val).toFixed(2) : "0.00"}`;
+const currency = (val, row) =>
+  `${val || val == 0.0 ? `$${parseFloat(val).toFixed(2)}` : ""}`;
 const multiplyCurrency = (args) => {
   let result = 1.0;
   for (let i = 0; i < args.length; i++) {

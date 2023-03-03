@@ -1,6 +1,6 @@
 <template>
   <q-table
-    row-key="id"
+    :row-key="rowKey ?? 'id'"
     dense
     :title="title"
     :rows="rows"
@@ -15,15 +15,15 @@
       <slot name="top-right"></slot>
     </template>
     <!-- <template v-slot:body-cell-id="props">
-      <q-td :props="props.props">
-        <div>
-          <q-badge color="purple" :label="props.value" />
-        </div>
-        <div class="my-table-details">
-          {{ props.row.details }}
-        </div>
-      </q-td>
-    </template> -->
+        <q-td :props="props.props">
+          <div>
+            <q-badge color="purple" :label="props.value" />
+          </div>
+          <div class="my-table-details">
+            {{ props.row.details }}
+          </div>
+        </q-td>
+      </template> -->
   </q-table>
 </template>
 <script setup>
@@ -38,6 +38,7 @@ const props = defineProps({
   rows: Array,
   columns: Array,
   onRowClick: Function,
+  rowKey: String,
 });
 const page = ref(1);
 const ready = ref(false);

@@ -19,10 +19,14 @@ const fields = [
   },
   { name: "id", format: (v) => v.substring(0, 8) },
   { name: "txType" },
-  { name: "fromAccountName", label: "From" },
-  { name: "toAccountName", label: "To" },
+  {
+    name: "fromAccountName",
+    label: "From",
+    format: (val) => val.substring(0, 18),
+  },
+  { name: "toAccountName", label: "To", format: (val) => val.substring(0, 18) },
   { name: "methodName", label: "Method" },
-  { name: "taxCode", label: "Tax Code" },
+  { name: "taxCode", label: "Tax Code", format: (val) => val.substring(0, 18) },
   {
     name: "amount",
     align: "right",

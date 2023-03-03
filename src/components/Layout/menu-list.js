@@ -70,14 +70,14 @@ export default [
   {
     icon: "mdi-calculator",
     label: "Capital Gains",
-    separator: true,
+    separator: false,
     to: "/capital-gains",
   },
   {
-    icon: "mdi-database-arrow-right",
-    label: "Import",
-    separator: false,
-    to: "/import",
+    icon: "mdi-calculator",
+    label: "Unrealized",
+    separator: true,
+    to: "/unrealized",
   },
   {
     icon: "mdi-database-arrow-down",

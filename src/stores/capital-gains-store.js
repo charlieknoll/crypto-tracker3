@@ -146,6 +146,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   spendTxs = spendTxs.map((tx) => {
     const spendTx = Object.assign({}, tx);
     spendTx.proceeds = spendTx.gross;
+    spendTx.cgId = spendTx.id + "-spend";
     return spendTx;
   });
 
@@ -157,6 +158,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   giftTxs = giftTxs.map((tx) => {
     const giftTx = Object.assign({}, tx);
     giftTx.proceeds = 0.0;
+    giftTx.cgId = giftTx.id + "-gift";
     return giftTx;
   });
 
@@ -167,6 +169,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   sellAssetTxs = sellAssetTxs.map((tx) => {
     const sellAssetTx = Object.assign({}, tx);
     sellAssetTx.proceeds = sellAssetTx.gross - sellAssetTx.fee;
+    sellAssetTx.cgId = sellAssetTx.id + "-sellAsset";
     return sellAssetTx;
   });
 
@@ -271,6 +274,8 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
       (allocatedAmount / buyTx.amount) * buyTx.cost;
     let proceeds = (allocatedAmount / tx.amount) * tx.proceeds;
     let costBasis = (allocatedAmount / buyTx.amount) * buyTx.cost;
+    let costBasisFees =
+      (allocatedAmount / buyTx.amount) * (buyTx.costBasisFees ?? 0.0);
     let realizedType = "";
     let fee = 0.0;
     if (tx.action == "GIFT") {
@@ -294,6 +299,7 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
     splitTx.longShort = daysHeld > 365 ? "Long" : "Short";
     splitTx.dateAcquired = buyTx.date;
     splitTx.allocatedId = buyTx.id;
+    splitTx.costBasisFees = costBasisFees;
     splitTx.sellId = tx.id;
     splitTx.id = tx.id;
     splitTx.daysHeld = daysHeld;
@@ -336,7 +342,7 @@ function allocateCostBasis(tx, buyTxs) {
     tx.allocatedAmount += allocatedAmount;
 
     buyTx.cost += allocatedGross;
-
+    buyTx.costBasisFees = (buyTx.costBasisFees ?? 0.0) + allocatedGross;
     i++;
     buyTx = buyTxs.find(
       (btx) =>
@@ -380,7 +386,8 @@ function getAllocatedTxs(includeWashSales) {
       allocateCostBasis(tx, buyTxs);
     }
   }
-  return { sellTxs, splitTxs };
+  const unrealized = buyTxs.filter((tx) => tx.amount > tx.disposedAmount);
+  return { sellTxs, splitTxs, unrealized };
 }
 export function getCapitalGains(applyWashSale) {
   const allocatedTxs = getAllocatedTxs(applyWashSale);
@@ -388,7 +395,7 @@ export function getCapitalGains(applyWashSale) {
   const splitTxs = allocatedTxs.splitTxs.filter(
     (tx) => tx.realizedType != "GIFT"
   );
-  return { sellTxs, splitTxs };
+  return { sellTxs, splitTxs, unrealized: allocatedTxs.unrealized };
 }
 export const useCapitalGainsStore = defineStore("capitalGains", {
   getters: {
