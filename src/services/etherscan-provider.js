@@ -4,20 +4,24 @@ import { useAppStore } from "src/stores/app-store";
 import { useSettingsStore } from "src/stores/settings-store";
 import { sleep, throttle } from "../utils/cacheUtils";
 let lastRequestTime = 0;
+let debug = 1;
 
 import { getScanProviders } from "./scan-providers";
+//https://api.etherscan.io/v2/chainlist
 
-async function getTokenTransactions(oa, provider, startBlock) {
+async function getTokenTransactions(oa, provider) {
   const tokenTxApiUrl =
-    `${provider.baseUrl}?module=account&action=tokentx&address=` +
-    `${oa.address}&startblock=${startBlock}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
-
+    `${provider.baseUrl}?chainId=${provider.chainId}&module=account&action=tokentx&address=` +
+    `${oa.address}&startblock=${oa.lastBlockSync}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
   const result = await axios.get(tokenTxApiUrl);
   if (
     result.data.status != "1" &&
     result.data.message != "No transactions found"
   ) {
-    throw new Error("Invalid return status: " + result.data.message);
+    if (debug) console.log("tokenTxApiUrl: ", tokenTxApiUrl);
+    throw new Error(
+      "Invalid return status: " + result.data.message + ":" + result.data.result
+    );
   }
   const txs = result.data.result;
   for (const tx of txs) {
@@ -34,17 +38,21 @@ async function getTokenTransactions(oa, provider, startBlock) {
   }
   return txs;
 }
-async function getAccountTransactions(oa, provider, startBlock) {
+async function getAccountTransactions(oa, provider) {
   const normalTxApiUrl =
-    `${provider.baseUrl}?module=account&action=txlist&address=` +
-    `${oa.address}&startblock=${startBlock}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
+    `${provider.baseUrl}?chainId=${provider.chainId}&module=account&action=txlist&address=` +
+    `${oa.address}&startblock=${oa.lastBlockSync}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
 
   const result = await axios.get(normalTxApiUrl);
   if (
     result.data.status != "1" &&
     result.data.message != "No transactions found"
   ) {
-    throw new Error("Invalid return status: " + result.data.message);
+    if (debug) console.log("normalTxApiUrl: ", normalTxApiUrl);
+
+    throw new Error(
+      "Invalid return status: " + result.data.message + ":" + result.data.result
+    );
   }
   let txs = result.data.result;
 
@@ -58,10 +66,10 @@ async function getAccountTransactions(oa, provider, startBlock) {
     //TODO addImportedAccount
     const addresses = useAddressStore();
     const from = addresses.records.find(
-      (a) => a.address == tx.from && a.type.includes("Owned")
+      (a) => a.address == tx.from && a.type && a.type.includes("Owned")
     );
     const to = addresses.records.find(
-      (a) => a.address == tx.to && a.type.includes("Owned")
+      (a) => a.address == tx.to && a.type && a.type.includes("Owned")
     );
     tx.keep = from || to;
     addresses.set({ address: tx.to, chain: provider.gasType });
@@ -70,10 +78,10 @@ async function getAccountTransactions(oa, provider, startBlock) {
   return txs.filter((tx) => tx.keep);
 }
 
-async function getAccountInternalTransactions(oa, provider, startBlock) {
+async function getAccountInternalTransactions(oa, provider) {
   const internalTxApiUrl =
-    `${provider.baseUrl}?module=account&action=txlistinternal&address=` +
-    `${oa.address}&startblock=${startBlock}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
+    `${provider.baseUrl}?chainId=${provider.chainId}&module=account&action=txlistinternal&address=` +
+    `${oa.address}&startblock=${oa.lastBlockSync}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
 
   //https://api.etherscan.io/api?module=account&action=txlistinternal&address=0xef5184cd2bbb274d787beab010141a0a85626e7b&startblock=0&endblock=99999999&sort=asc&apikey=9YY3B2WKQU43J5KGAFAJKPCUJ3UYEQVJRF
 
@@ -82,7 +90,10 @@ async function getAccountInternalTransactions(oa, provider, startBlock) {
     result.data.status != "1" &&
     result.data.message != "No transactions found"
   ) {
-    throw new Error("Invalid return status: " + result.data.message);
+    if (debug) console.log("internalTxApiUrl: ", internalTxApiUrl);
+    throw new Error(
+      "Invalid return status: " + result.data.message + ":" + result.data.result
+    );
   }
   let txs = result.data.result;
   for (const tx of txs) {
@@ -119,17 +130,20 @@ async function getAccountInternalTransactions(oa, provider, startBlock) {
 
   return txs;
 }
-async function getMinedBlocks(oa, provider, startBlock) {
+async function getMinedBlocks(oa, provider) {
   const minedBlocksUrl =
-    `${provider.baseUrl}?module=account&action=getminedblocks&address=` +
-    `${oa.address}&blocktype=blocks&startblock=${startBlock}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
+    `${provider.baseUrl}?chainId=${provider.chainId}&module=account&action=getminedblocks&address=` +
+    `${oa.address}&blocktype=blocks&startblock=${oa.lastBlockSync}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
 
   let result = await axios.get(minedBlocksUrl);
   if (
     result.data.status != "1" &&
     result.data.message != "No transactions found"
   ) {
-    throw new Error("Invalid return status: " + result.data.message);
+    if (debug) console.log("minedBlocksUrl: ", minedBlocksUrl);
+    throw new Error(
+      "Invalid return status: " + result.data.message + ":" + result.data.result
+    );
   }
   let txs = result.data.result;
   for (const tx of txs) {
@@ -146,15 +160,18 @@ async function getMinedBlocks(oa, provider, startBlock) {
     tx.from = "0x000000";
     tx.txType = "B";
   }
+  sleep(600);
   const minedUnclesUrl =
-    `${provider.baseUrl}?module=account&action=getminedblocks&address=` +
-    `${oa.address}&blocktype=uncles&startblock=${startBlock}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
+    `${provider.baseUrl}?chainId=${provider.chainId}&module=account&action=getminedblocks&address=` +
+    `${oa.address}&blocktype=uncles&startblock=${oa.lastBlockSync}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
   result = await axios.get(minedUnclesUrl);
   if (
     result.data.status != "1" &&
     result.data.message != "No transactions found"
   ) {
-    throw new Error("Invalid return status: " + result.data.message);
+    throw new Error(
+      "Invalid return status: " + result.data.message + ":" + result.data.result
+    );
   }
   let uncleTxs = result.data.result;
   for (const tx of uncleTxs) {
@@ -186,6 +203,7 @@ export const getTransactions = async function () {
     };
     for (let i = 0; i < scanProviders.length; i++) {
       const provider = scanProviders[i];
+      if (provider.chainId == 56) continue; //TODO remove to enable bsc
       const txs = await getProviderTransactions(provider);
       result.accountTxs = result.accountTxs.concat(txs.accountTxs);
       result.internalTxs = result.internalTxs.concat(txs.internalTxs);
@@ -218,25 +236,29 @@ export const getProviderTransactions = async function (provider) {
   for (const oa of ownedAccounts) {
     try {
       //get normal tx's
-      lastRequestTime = await throttle(lastRequestTime, 500);
+      lastRequestTime = await throttle(lastRequestTime, 1000);
       result.accountTxs = result.accountTxs.concat(
         await getAccountTransactions(oa, provider)
       );
-      lastRequestTime = await throttle(lastRequestTime, 500);
+      lastRequestTime = await throttle(lastRequestTime, 1000);
       result.internalTxs = result.internalTxs.concat(
         await getAccountInternalTransactions(oa, provider)
       );
-      lastRequestTime = await throttle(lastRequestTime, 500);
+      lastRequestTime = await throttle(lastRequestTime, 1000);
       result.tokenTxs = result.tokenTxs.concat(
         await getTokenTransactions(oa, provider)
       );
-      lastRequestTime = await throttle(lastRequestTime, 500);
+      lastRequestTime = await throttle(lastRequestTime, 1000);
       result.minedBlocks = result.minedBlocks.concat(
         await getMinedBlocks(oa, provider)
       );
 
       //setLastBlockSync
+      //TODO only set if no error
       oa.lastBlockSync = currentBlock;
+      if (provider.chainId != 1) {
+        //find max tx block number
+      }
     } catch (err) {
       console.log("error getting txs: ", err);
       throw err;
@@ -252,7 +274,7 @@ export const getProviderTransactions = async function (provider) {
 
   for (const ca of contractAccounts) {
     try {
-      lastRequestTime = await throttle(lastRequestTime, 500);
+      lastRequestTime = await throttle(lastRequestTime, 1000);
       result.internalTxs = result.internalTxs.concat(
         await getAccountInternalTransactions(ca, provider)
       );
@@ -265,16 +287,27 @@ export const getProviderTransactions = async function (provider) {
   return result;
 };
 export const getCurrentBlock = async function (provider) {
+  if (provider.chainId != 1) return 0;
   const timestamp = Math.round(new Date().getTime() / 1000);
-  const apiUrl = `${provider.baseUrl}?module=block&action=getblocknobytime&timestamp=${timestamp}&closest=before&apikey=${provider.apikey}`;
+  const apiUrl = `${provider.baseUrl}?chainId=${provider.chainId}&module=block&action=getblocknobytime&timestamp=${timestamp}&closest=before&apikey=${provider.apikey}`;
   try {
     const result = await axios.get(apiUrl);
-    if (result.data.status != "1")
-      throw new Error("Invalid return status: " + result.data.message);
+
+    if (result.data.status != "1") {
+      if (debug) console.log("currentBlockUrl: ", apiUrl);
+      throw new Error(
+        "Invalid return status: " +
+          result.data.message +
+          ":" +
+          result.data.result
+      );
+    }
+
     const currentBlock = parseInt(result.data.result);
 
     return currentBlock;
   } catch (err) {
+    if (debug) console.log("currentBlockUrl: ", apiUrl);
     console.log("error getting current block: ", err);
   }
 };

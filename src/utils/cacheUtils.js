@@ -5,6 +5,11 @@ export const sleep = function (ms) {
 export const throttle = async function throttle(lastRequestTime, requestDelay) {
   const timestamp = new Date().getTime();
   const elapsed = timestamp - lastRequestTime;
+  console.log(
+    `Elapsed time since last request: ${elapsed} ms, delay is ${
+      requestDelay - elapsed
+    } ms at ${timestamp}`
+  );
   if (elapsed < requestDelay) {
     await sleep(requestDelay - elapsed);
   }

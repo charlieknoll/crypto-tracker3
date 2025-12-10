@@ -205,7 +205,15 @@ export const usePricesStore = defineStore("prices", {
 
       return 0.0;
     },
-
+    getMostRecentPrice(asset) {
+      const result = this.records.filter(
+        (r) => r.asset == asset && r.price != 0.0
+      );
+      if (result.length > 0) {
+        result.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
+        return result[0];
+      }
+    },
     calcPrices() {
       const settings = useSettingsStore();
 
