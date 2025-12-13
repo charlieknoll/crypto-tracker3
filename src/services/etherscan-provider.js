@@ -12,7 +12,9 @@ import { getScanProviders } from "./scan-providers";
 async function getTokenTransactions(oa, provider) {
   const tokenTxApiUrl =
     `${provider.baseUrl}?chainId=${provider.chainId}&module=account&action=tokentx&address=` +
-    `${oa.address}&startblock=${oa.lastBlockSync}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
+    `${oa.address}&startblock=${oa.lastBlockSync + 1}&endblock=${
+      provider.currentBlock
+    }&sort=asc&apikey=${provider.apikey}`;
   const result = await axios.get(tokenTxApiUrl);
   if (
     result.data.status != "1" &&
@@ -41,7 +43,9 @@ async function getTokenTransactions(oa, provider) {
 async function getAccountTransactions(oa, provider) {
   const normalTxApiUrl =
     `${provider.baseUrl}?chainId=${provider.chainId}&module=account&action=txlist&address=` +
-    `${oa.address}&startblock=${oa.lastBlockSync}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
+    `${oa.address}&startblock=${oa.lastBlockSync + 1}&endblock=${
+      provider.currentBlock
+    }&sort=asc&apikey=${provider.apikey}`;
 
   const result = await axios.get(normalTxApiUrl);
   if (
@@ -81,7 +85,9 @@ async function getAccountTransactions(oa, provider) {
 async function getAccountInternalTransactions(oa, provider) {
   const internalTxApiUrl =
     `${provider.baseUrl}?chainId=${provider.chainId}&module=account&action=txlistinternal&address=` +
-    `${oa.address}&startblock=${oa.lastBlockSync}&endblock=99999999&sort=asc&apikey=${provider.apikey}`;
+    `${oa.address}&startblock=${oa.lastBlockSync + 1}&endblock=${
+      provider.currentBlock
+    }&sort=asc&apikey=${provider.apikey}`;
 
   //https://api.etherscan.io/api?module=account&action=txlistinternal&address=0xef5184cd2bbb274d787beab010141a0a85626e7b&startblock=0&endblock=99999999&sort=asc&apikey=9YY3B2WKQU43J5KGAFAJKPCUJ3UYEQVJRF
 
@@ -233,7 +239,8 @@ export const getProviderTransactions = async function (provider) {
     tokenTxs: [],
     minedBlocks: [],
   };
-  for (const oa of ownedAccounts) {
+  for (let i = 0; i < ownedAccounts.length; i++) {
+    const oa = ownedAccounts[i];
     try {
       //get normal tx's
       lastRequestTime = await throttle(lastRequestTime, 1000);
@@ -248,14 +255,18 @@ export const getProviderTransactions = async function (provider) {
       result.tokenTxs = result.tokenTxs.concat(
         await getTokenTransactions(oa, provider)
       );
-      lastRequestTime = await throttle(lastRequestTime, 1000);
-      result.minedBlocks = result.minedBlocks.concat(
-        await getMinedBlocks(oa, provider)
-      );
+      // lastRequestTime = await throttle(lastRequestTime, 1000);
+      // result.minedBlocks = result.minedBlocks.concat(
+      //   await getMinedBlocks(oa, provider)
+      // );
 
       //setLastBlockSync
       //TODO only set if no error
       oa.lastBlockSync = currentBlock;
+      let rec = Object.assign({}, oa);
+      rec.lastBlockSync = currentBlock;
+      addresses.set(rec);
+
       if (provider.chainId != 1) {
         //find max tx block number
       }
@@ -304,7 +315,7 @@ export const getCurrentBlock = async function (provider) {
     }
 
     const currentBlock = parseInt(result.data.result);
-
+    provider.currentBlock = currentBlock;
     return currentBlock;
   } catch (err) {
     if (debug) console.log("currentBlockUrl: ", apiUrl);

@@ -11,7 +11,10 @@ import { getMinedBlocks } from "src/services/mined-block-mapper";
 
 export const useChainTxsStore = defineStore("chain-txs", {
   state: () => ({
-    rawAccountTxs: useLocalStorage("txs-account", []),
+    rawAccountTxs: useLocalStorage("txs-account", [], {
+      shallow: true,
+      deep: false,
+    }),
     rawInternalTxs: useLocalStorage("txs-internal", []),
     rawTokenTxs: useLocalStorage("txs-token", []),
     rawMinedBlocks: useLocalStorage("txs-mined", []),
@@ -20,6 +23,7 @@ export const useChainTxsStore = defineStore("chain-txs", {
     accountTxs: (state) => {
       const exchangeTrades = useExchangeTradesStore();
       //TODO make tokenTxs children of  either acct or internal tx and do it all in one pass
+      console.log("test1");
       let result = JSON.parse(JSON.stringify(state.rawAccountTxs));
       const tokenTxs = JSON.parse(JSON.stringify(state.rawTokenTxs));
       for (let i = 0; i < result.length; i++) {
@@ -27,9 +31,13 @@ export const useChainTxsStore = defineStore("chain-txs", {
         tx.tokenTxs = tokenTxs.filter((t) => t.hash == tx.hash);
       }
       result = getAccountTxs(result, state.rawInternalTxs);
-      result = result.concat(
-        getTokenTxs(result, state.rawTokenTxs, exchangeTrades.fees)
+      const testTokenTxs = getTokenTxs(
+        result,
+        state.rawTokenTxs,
+        exchangeTrades.fees
       );
+
+      result = result.concat(testTokenTxs);
 
       result = result.concat(getMinedBlocks(state.rawMinedBlocks));
       result = result.sort(sortByTimeStampThenId);
@@ -49,8 +57,11 @@ export const useChainTxsStore = defineStore("chain-txs", {
       const txs = await getTransactions();
       this.rawAccountTxs = mergeByHash(this.rawAccountTxs, txs.accountTxs);
       this.rawInternalTxs = mergeByHash(this.rawInternalTxs, txs.internalTxs);
-      this.rawTokenTxs = txs.tokenTxs;
-      this.rawMinedBlocks = txs.minedBlocks;
+
+      let tempTokenTxs = JSON.parse(JSON.stringify(this.rawTokenTxs));
+      this.rawTokenTxs = tempTokenTxs.concat(txs.tokenTxs);
+      //No more mined blocks for now
+      //this.rawMinedBlocks = txs.minedBlocks;
 
       const prices = usePricesStore();
       await prices.getPrices();

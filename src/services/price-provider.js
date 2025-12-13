@@ -19,7 +19,7 @@ export const getApiPrice = async function (symbol, tradeDate, throttleFn) {
   //only 5 req's per second
   //console.log("Last request: " + lastRequestTime);
   //handle multiple async tasks by waiting until there is at least 200ms expired since last request
-  const throttleMs = 300;
+  const throttleMs = 2100;
   while (new Date().getTime() - lastRequestTime < throttleMs) {
     lastRequestTime = await throttle(new Date().getTime(), throttleMs);
   }

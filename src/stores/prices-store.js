@@ -37,17 +37,13 @@ const showPriceDialog = function (count) {
     color: "green",
   });
 };
-const mapAssetDates = (baseCurrencies, r, fieldName) => {
-  return (
-    r
-      //.filter((r) => baseCurrencies.findIndex((bc) => bc == r[fieldName]) == -1)
-      .map((r) => {
-        return {
-          date: r.date,
-          asset: r[fieldName],
-        };
-      })
-  );
+const mapAssetDates = (r, fieldName) => {
+  return r.map((r) => {
+    return {
+      date: r.date,
+      asset: r[fieldName],
+    };
+  });
 };
 const pricesFromHashes = function (hashes, tokenTxs) {
   //first calc prices for baseCurrency containing txs where tx.price = 0.0
@@ -300,22 +296,21 @@ export const usePricesStore = defineStore("prices", {
         .split(",")
         .map((bc) => bc.trim());
 
+      // trackedCurrencies.push(
+      //   ...settings.additionalTrackedCurrencies.split(",").map((c) => c.trim())
+      // );
+
       //build list of date/prices (coingecko doesn't support timestamps)
 
-      let prices = mapAssetDates(
-        baseCurrencies,
-        exchangeTrades.records,
-        "currency"
+      let prices = mapAssetDates(exchangeTrades.records, "currency");
+      prices = prices.concat(
+        mapAssetDates(exchangeTrades.records, "feeCurrency")
       );
       prices = prices.concat(
-        mapAssetDates(baseCurrencies, exchangeTrades.records, "feeCurrency")
+        mapAssetDates(offchainTransfers.records, "feeCurrency")
       );
-      prices = prices.concat(
-        mapAssetDates(baseCurrencies, offchainTransfers.records, "feeCurrency")
-      );
-      prices = prices.concat(
-        mapAssetDates(baseCurrencies, chainTxs.accountTxs, "asset")
-      );
+
+      prices = prices.concat(mapAssetDates(chainTxs.accountTxs, "asset"));
 
       //make unique
       prices = prices.filter(function (value, index, self) {
