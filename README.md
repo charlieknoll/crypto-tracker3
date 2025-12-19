@@ -4,15 +4,20 @@ Track crypto balances, gains and losses
 
 ## TODO
 
+- fix window height for capital gains. Income, spending and running balances works
+- build help page which include readme files
+- set all non named accounts to spam if type not set using button
+- hide spam toggle on address
+- fix asset store to only show non spam tokens
+- hide spam toggle on chain tx that hides token-txs to/from spam and zero value ETH
 - don't request non tracked token prices
-- set all as spam with 0 value or untracked token on address
-- set all as gift with non zero ether transfers
-- figure out what to do with Spam token transfers
+- set capital gains as gift with non zero ether transfers from spam accounts
 - add checkbox to hide zero spam and untracked tokens on running balances
 - gift export
 - verify address balance button that calls current balance, highlights red/green, popup delta
 - add wallet name field to owned account
 - wallet capital gains starting in 2025
+- add total net worth on dashboard reconciled with zapper
 
 ## DONE
 

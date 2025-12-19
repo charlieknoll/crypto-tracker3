@@ -43,22 +43,23 @@ const props = defineProps({
 const page = ref(1);
 const ready = ref(false);
 const transactionTable = ref(null);
+const tableDimensions = computed(() => {
+  if (!ready.value || $q.screen.height == 0 || !transactionTable.value) return;
+  const el = transactionTable.value.$el;
+  const pixels = $q.screen.sm ? $q.screen.height : $q.screen.height - 50; //header assumed to be 50px
+  const titleHeight = el.firstChild.offsetHeight;
+  const headerHeight = el.children[1].firstChild.firstChild.offsetHeight;
+  const footerHeight = el.children[2].offsetHeight;
+  const rowPixels = pixels - titleHeight - headerHeight - footerHeight;
+  //the tableHeight needs to account for the header height
+  return { rowPixels, tablePixels: rowPixels + headerHeight };
+
+});
 const pagination = computed({
   get(x) {
-    if (!ready.value) return { rowsPerPage: 1 };
-    if ($q.screen.height == 0) return { rowsPerPage: 1 };
-    if (!transactionTable.value) return { rowsPerPage: 1 };
-    const el = transactionTable.value.$el;
-    const pixels = $q.screen.sm ? $q.screen.height : $q.screen.height - 50;
-    const titleHeight = el.firstChild.offsetHeight;
-    const headerHeight = el.children[1].firstChild.firstChild.offsetHeight;
-    const footerHeight = el.children[2].offsetHeight;
-    const rowPixels = pixels - titleHeight - headerHeight - footerHeight; //table title, row header, row-footer
-    //const rowPixels = pixels - 78 - 28 - 33; //table title, row header, row-footer
-
+    if (!tableDimensions.value) return { rowsPerPage: 1 };
     //TODO get an actual row height, don't hard code 28
-    const rows = Math.floor(rowPixels / 28);
-
+    const rows = Math.floor(tableDimensions.value.rowPixels / 28.5);
     return { rowsPerPage: rows, page: page.value };
   },
   set(val) {
@@ -66,12 +67,8 @@ const pagination = computed({
   },
 });
 const tableHeight = computed(() => {
-  if ($q.screen.height == 0) return;
-  const allRowsHeight = (props.data?.length ?? 0) * 28;
-  const maxHeight = $q.screen.sm ? $q.screen.height : $q.screen.height - 157;
-  return maxHeight + "px";
-  return maxHeight;
-  return (allRowsHeight < maxHeight ? allRowsHeight : maxHeight) + "px";
+  if (!tableDimensions.value) return;
+  return tableDimensions.value.tablePixels + "px";
 });
 
 //watch(() => this.data, () => { this.page = 1 })

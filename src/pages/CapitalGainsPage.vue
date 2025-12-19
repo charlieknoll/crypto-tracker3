@@ -1,6 +1,11 @@
 <template>
   <q-page>
-    <transactions-table title="Capital Gains" :rows="filtered" :columns="columns" @rowClick="showBuys" rowKey="cgId">
+    <transactions-table
+      title="Capital Gains"
+      :rows="filtered"
+      :columns="columns"
+      @rowClick="showBuys"
+      rowKey="cgId">
       <template v-slot:top-right>
         <div class="row">
           <account-filter :options="appStore.accounts"></account-filter>
