@@ -19,6 +19,11 @@ const routes = [
         component: () => import("src/pages/BackupPage.vue"),
       },
       {
+        name: "Help",
+        path: "help",
+        component: () => import("src/pages/HelpPage.vue"),
+      },
+      {
         name: "Addresses",
         path: "addresses",
         component: () => import("src/pages/AddressesPage.vue"),

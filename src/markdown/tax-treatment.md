@@ -1,6 +1,6 @@
 ## Tax Classification and Coding Rules
 
-### Spening Coding
+### Spending Coding
 
 Spending can be broken down into 4 types:
 
@@ -13,7 +13,7 @@ Expenses are determined using the type of the "To Account" of a chain tx>. In th
 
 Errored transaction fees are considered realized gains and classified as expenses as well.
 
-All amounts are converted to the amount * Base Currency Price on the day of the exchange.
+All amounts are converted to the amount \* Base Currency Price on the day of the exchange.
 
 ### Income Coding
 
@@ -25,9 +25,8 @@ Transfer fees paid using a utility token are considered a realized gain and adju
 
 ### Base currency Coding
 
-Base currency tokens can be exchanged with each other and are assumed to be 1:1 to the base currency.  So a trade of 900 USD for 1000 USDT would be considered an income event of 100 USD.
+Base currency tokens can be exchanged with each other and are assumed to be 1:1 to the base currency. So a trade of 900 USD for 1000 USDT would be considered an income event of 100 USD.
 
 ### Short vs Long Term Gains
 
 If the asset is held longer than 365 days, the gain is considered long term otherwise it is classified as short term.
-

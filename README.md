@@ -4,8 +4,8 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- fix window height for capital gains. Income, spending and running balances works
-- build help page which include readme files
+- Reconcile CRV on Unrealized, Balances and Income
+- Show Unrealized Gain/Loss on CRV?
 - set all non named accounts to spam if type not set using button
 - hide spam toggle on address
 - fix asset store to only show non spam tokens
@@ -22,6 +22,8 @@ Track crypto balances, gains and losses
 ## DONE
 
 - rate limit coingecko
+- fix window height for capital gains. Income, spending and running balances works
+- build help page which include readme files
 
 ## Install the dependencies
 
