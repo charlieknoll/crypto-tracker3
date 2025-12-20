@@ -7,7 +7,7 @@
 
 // Configuration for your app
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
-
+const { nodePolyfills } = require("vite-plugin-node-polyfills");
 const { configure } = require("quasar/wrappers");
 const configuration = require("./package.json");
 const VERSION = configuration.version;
@@ -71,6 +71,11 @@ module.exports = configure(function (/* ctx */) {
       // distDir
 
       extendViteConf(viteConf) {
+        viteConf.define = viteConf.define || {};
+        viteConf.define["process.version"] = JSON.stringify("v22.0.0"); // Any valid Node version string works
+        viteConf.define["process.env.NODE_ENV"] = JSON.stringify(
+          process.env.NODE_ENV || "development"
+        );
         viteConf.define.global = {};
 
         // Object.assign(viteConf.resolve, {
@@ -81,9 +86,24 @@ module.exports = configure(function (/* ctx */) {
       },
       // viteVuePluginOptions: {},
 
-      // vitePlugins: [
-      //   [ 'package-name', { ..options.. } ]
-      // ]
+      vitePlugins: [
+        // Other plugins if you have any...
+
+        // Add node polyfills
+        [
+          nodePolyfills,
+          {
+            globals: {
+              Buffer: true,
+              global: true,
+              process: true,
+            },
+            // Optionally include/exclude specific modules
+            // include: ['crypto', 'stream'],  // if you only need certain ones
+            protocolImports: true,
+          },
+        ],
+      ],
     },
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
