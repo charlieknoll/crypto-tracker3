@@ -1,6 +1,6 @@
-import { currency } from "src/utils/number-helpers";
+import { currency, perCent } from "src/utils/number-helpers";
 
-export const columns = [
+const columns = [
   {
     name: "date",
     label: "Date",
@@ -53,9 +53,59 @@ export const columns = [
   },
   {
     name: "gross",
-    label: "Spending",
+    label: "Cost",
     field: "gross",
     align: "right",
     format: (val, row) => currency(val),
   },
 ];
+const assetTotalColumns = [
+  {
+    name: "asset",
+    label: "Asset",
+    field: "asset",
+    align: "left",
+  },
+  {
+    name: "amount",
+    label: "Amount",
+    field: "amount",
+    align: "left",
+  },
+  {
+    name: "price",
+    label: "Current Price",
+    field: "price",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "cost",
+    label: "Cost",
+    field: "cost",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "currentValue",
+    label: "Current Value",
+    field: "currentValue",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "gain",
+    label: "Gain",
+    field: "gain",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "percentGain",
+    label: "% Gain",
+    field: "percentGain",
+    align: "right",
+    format: (val, row) => perCent(val),
+  },
+];
+export { columns, assetTotalColumns };

@@ -12,6 +12,9 @@ const multiplyCurrency = (args) => {
 
   return Math.round(result * 100) / 100;
 };
+const perCent = (val) =>
+  `${val || val == 0.0 ? `${parseFloat(val).toFixed(2)}%` : ""}`;
+
 const sBnToFloat = function (v, decimals = 18) {
   const bn = BigNumber.from(v, decimals);
   try {
@@ -21,4 +24,4 @@ const sBnToFloat = function (v, decimals = 18) {
     return 0.0;
   }
 };
-export { currency, multiplyCurrency, sBnToFloat };
+export { currency, multiplyCurrency, sBnToFloat, perCent };

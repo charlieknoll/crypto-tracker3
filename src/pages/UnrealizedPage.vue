@@ -3,7 +3,7 @@
     <transactions-table
       title="Unrealized Gains"
       :rows="filtered"
-      :columns="columns"
+      :columns="gainsGrouping == 'Detailed' ? columns : assetTotalColumns"
       rowKey="xx">
       <template v-slot:top-right>
         <div class="row">
@@ -28,13 +28,13 @@
 </template>
 <script setup>
 import { computed, ref, shallowRef } from "vue";
-import { columns } from "src/models/unrealized"
+import { columns, assetTotalColumns } from "src/models/unrealized"
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
 import { filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
 import { useCapitalGainsStore } from "src/stores/capital-gains-store";
-import {usePricesStore} from "src/stores/prices-store";
+import { usePricesStore } from "src/stores/prices-store";
 
 
 const appStore = useAppStore();
@@ -44,7 +44,7 @@ const prices = shallowRef([]);
 const capitalGainsStore = useCapitalGainsStore();
 const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Asset Totals");
-const getCurrentPrices = async function() {
+const getCurrentPrices = async function () {
 
 }
 const filtered = computed(() => {
@@ -68,46 +68,54 @@ const filtered = computed(() => {
     }
   })
 
-  return txs;
+
   // if (appStore.taxYear != "All") {
   //   txs = filterByYear(txs, appStore.taxYear);
   // }
 
   if (gainsGrouping.value == "Detailed") return txs;
+
   let totals = [];
   for (const tx of txs) {
-    let total = totals.find((t) => t.asset == tx.asset && t.taxCode == tx.taxCode);
+    let total = totals.find((t) => t.asset == tx.asset);
     if (!total) {
       total = {
         asset: tx.asset,
-        taxCode: tx.taxCode,
         amount: 0.0,
-        gross: 0.0,
+        cost: 0.0,
       };
       totals.push(total);
     }
     total.amount += tx.amount;
-    total.gross += tx.gross;
+    total.cost += tx.gross;
   }
-  if (gainsGrouping.value == "Totals") {
-    let _totals = [];
+  //TOOD map totals price/amount to gross
+  totals.map((t) => {
+    t.price = priceStore.getMostRecentPrice(t.asset).price;
+    t.currentValue = t.amount * t.price;
+    t.gain = t.currentValue - t.cost;
+    t.percentGain = (t.cost != 0.0) ? (t.gain / t.cost) * 100.0 : 0.0;
+  })
+  if (gainsGrouping.value == "Asset Totals") return totals;
+
+  let _totals = [];
 
 
-    for (const t of totals) {
-      let total = _totals.find((tx) => t.asset == tx.asset && t.taxCode == tx.taxCode);
-      if (!total) {
-        total = {
-          taxCode: t.taxCode,
-          amount: 0.0,
-          gross: 0.0,
-        };
-        _totals.push(total);
-      }
-      total.amount += t.amount;
-      total.gross += t.gross;
-    }
-    totals = _totals;
-  }
+  // for (const t of totals) {
+  //   let total = _totals.find((tx) => t.asset == tx.asset && t.taxCode == tx.taxCode);
+  //   if (!total) {
+  //     total = {
+  //       taxCode: t.taxCode,
+  //       amount: 0.0,
+  //       gross: 0.0,
+  //     };
+  //     _totals.push(total);
+  //   }
+  //   total.amount += t.amount;
+  //   total.gross += t.gross;
+  // }
+  // totals = _totals;
+
   return totals;
 });
 

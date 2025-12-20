@@ -209,6 +209,7 @@ export const usePricesStore = defineStore("prices", {
         result.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
         return result[0];
       }
+      return { price: 0.0 };
     },
     calcPrices() {
       const settings = useSettingsStore();

@@ -5,7 +5,7 @@ Track crypto balances, gains and losses
 ## TODO
 
 - Reconcile CRV on Unrealized, Balances and Income
-- Show Unrealized Gain/Loss on CRV?
+- Sell Unrealized Gain/Loss on CRV? YES
 - set all non named accounts to spam if type not set using button
 - hide spam toggle on address
 - fix asset store to only show non spam tokens
