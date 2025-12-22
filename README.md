@@ -4,7 +4,8 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- Reconcile CRV on Unrealized, Balances and Income
+- Add account filter on unrealized, only show accounts with balance above enterable
+- Reconcile ETH on Unrealized
 - Sell Unrealized Gain/Loss on CRV? YES
 - set all non named accounts to spam if type not set using button
 - hide spam toggle on address
