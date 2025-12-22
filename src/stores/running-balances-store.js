@@ -124,7 +124,8 @@ function getRunningBalances() {
       }
       i++;
     } catch (err) {
-      debugger;
+      console.error(err);
+      //debugger;
     }
   }
 
@@ -162,7 +163,8 @@ function getRunningBalances() {
       }
       i++;
     } catch (err) {
-      debugger;
+      //debugger;
+      console.error(err);
     }
   }
 

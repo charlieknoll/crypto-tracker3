@@ -7,6 +7,7 @@
 
 // Configuration for your app
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
+//const { nodePolyfills } = require("vite-plugin-node-polyfills");
 const { nodePolyfills } = require("vite-plugin-node-polyfills");
 const { configure } = require("quasar/wrappers");
 const configuration = require("./package.json");
@@ -28,7 +29,7 @@ module.exports = configure(function (/* ctx */) {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli/boot-files
-    boot: ["axios"],
+    boot: ["polyfills", "axios"],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: ["app.scss"],
@@ -76,7 +77,22 @@ module.exports = configure(function (/* ctx */) {
         viteConf.define["process.env.NODE_ENV"] = JSON.stringify(
           process.env.NODE_ENV || "development"
         );
-        viteConf.define.global = {};
+        // viteConf.define.global = {};
+        // // Force pre-bundling csv-parse (and related packages if needed)
+        // viteConf.optimizeDeps = viteConf.optimizeDeps || {};
+        // viteConf.optimizeDeps.include = viteConf.optimizeDeps.include || [];
+        // viteConf.optimizeDeps.include.push("csv-parse", "csv-parse/sync");
+
+        // viteConf.build = viteConf.build || {};
+        // viteConf.build.commonjsOptions = viteConf.build.commonjsOptions || {};
+        // viteConf.build.commonjsOptions.include =
+        //   viteConf.build.commonjsOptions.include || [];
+        // // Exclude csv-parse from commonjs transformation
+        // viteConf.build.commonjsOptions.exclude =
+        //   viteConf.build.commonjsOptions.exclude || [];
+        // viteConf.build.commonjsOptions.exclude.push(
+        //   /node_modules\/csv-parse\/dist\/esm\/.*/
+        // );
 
         // Object.assign(viteConf.resolve, {
         //   alias: {
@@ -91,7 +107,21 @@ module.exports = configure(function (/* ctx */) {
 
         // Add node polyfills
         [
-          nodePolyfills,
+          nodePolyfills({
+            globals: {
+              Buffer: true,
+              global: true,
+              process: true,
+            },
+            protocolImports: true,
+            overrides: {
+              inject: {
+                include: [
+                  /node_modules\/(crypto-browserify|hash-base|create-hash|md5\.js|readable-stream|stream-browserify)/,
+                ],
+              },
+            },
+          }),
           {
             globals: {
               Buffer: true,
