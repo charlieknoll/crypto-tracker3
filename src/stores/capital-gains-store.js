@@ -386,7 +386,14 @@ function getAllocatedTxs(includeWashSales) {
       allocateCostBasis(tx, buyTxs);
     }
   }
-  const unrealized = buyTxs.filter((tx) => tx.amount > tx.disposedAmount);
+  //TODO add cost basis field
+  const unrealized = buyTxs
+    .filter((tx) => tx.amount > tx.disposedAmount)
+    .map((tx) => {
+      tx.unrealizedAmount = tx.amount - tx.disposedAmount;
+      return tx;
+    });
+
   return { sellTxs, splitTxs, unrealized };
 }
 export function getCapitalGains(applyWashSale) {

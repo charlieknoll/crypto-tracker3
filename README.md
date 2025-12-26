@@ -4,6 +4,7 @@ Track crypto balances, gains and losses
 
 ## TODO
 
+- why does $0.00 USD price get auto added when updating ETH price
 - Add account filter on unrealized, only show accounts with balance above enterable
 - Reconcile ETH on Unrealized
 - Sell Unrealized Gain/Loss on CRV? YES

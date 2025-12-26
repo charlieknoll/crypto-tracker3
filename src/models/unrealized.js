@@ -39,9 +39,9 @@ const columns = [
     align: "left",
   },
   {
-    name: "amount",
+    name: "unrealizedAmount",
     label: "Amount",
-    field: "amount",
+    field: "unrealizedAmount",
     align: "left",
   },
   {
@@ -67,9 +67,9 @@ const assetTotalColumns = [
     align: "left",
   },
   {
-    name: "amount",
+    name: "unrealizedAmount",
     label: "Amount",
-    field: "amount",
+    field: "unrealizedAmount",
     align: "left",
   },
   {

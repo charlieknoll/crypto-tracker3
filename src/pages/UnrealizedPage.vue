@@ -66,6 +66,7 @@ const filtered = computed(() => {
         timestamp: recentPrice.timestamp
       })
     }
+    //
   })
 
 
@@ -81,18 +82,19 @@ const filtered = computed(() => {
     if (!total) {
       total = {
         asset: tx.asset,
-        amount: 0.0,
+        unrealizedAmount: 0.0,
         cost: 0.0,
       };
       totals.push(total);
     }
-    total.amount += tx.amount;
+    total.unrealizedAmount += tx.unrealizedAmount;
+    //TODO use cost basis and fees
     total.cost += tx.gross;
   }
   //TOOD map totals price/amount to gross
   totals.map((t) => {
     t.price = priceStore.getMostRecentPrice(t.asset).price;
-    t.currentValue = t.amount * t.price;
+    t.currentValue = t.unrealizedAmount * t.price;
     t.gain = t.currentValue - t.cost;
     t.percentGain = (t.cost != 0.0) ? (t.gain / t.cost) * 100.0 : 0.0;
   })
