@@ -4,10 +4,11 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- why does $0.00 USD price get auto added when updating ETH price
+- test fee tx (transfer) is added to cost basis correctly, test using ETH fees too
+- test very large decimal support on buyTx
+- document skipInternal?
 - Add account filter on unrealized, only show accounts with balance above enterable
 - Reconcile ETH on Unrealized
-- Sell Unrealized Gain/Loss on CRV? YES
 - set all non named accounts to spam if type not set using button
 - hide spam toggle on address
 - fix asset store to only show non spam tokens
@@ -26,6 +27,8 @@ Track crypto balances, gains and losses
 - rate limit coingecko
 - fix window height for capital gains. Income, spending and running balances works
 - build help page which include readme files
+- why does $0.00 USD price get auto added when updating ETH price? A: USD was not set as a base currency
+- Sell Unrealized Gain/Loss on CRV? YES
 
 ## Install the dependencies
 

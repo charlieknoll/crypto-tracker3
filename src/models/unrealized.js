@@ -52,9 +52,9 @@ const columns = [
     format: (val, row) => currency(val),
   },
   {
-    name: "gross",
+    name: "costBasis",
     label: "Cost",
-    field: "gross",
+    field: "costBasis",
     align: "right",
     format: (val, row) => currency(val),
   },
@@ -80,9 +80,9 @@ const assetTotalColumns = [
     format: (val, row) => currency(val),
   },
   {
-    name: "cost",
+    name: "costBasis",
     label: "Cost",
-    field: "cost",
+    field: "costBasis",
     align: "right",
     format: (val, row) => currency(val),
   },
@@ -95,7 +95,7 @@ const assetTotalColumns = [
   },
   {
     name: "gain",
-    label: "Gain",
+    label: "Unrealized Gain",
     field: "gain",
     align: "right",
     format: (val, row) => currency(val),

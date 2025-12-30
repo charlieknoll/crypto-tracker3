@@ -5,6 +5,7 @@ const fields = [
   { name: "name", required: true, showColumn: true },
   { name: "type", required: false, showColumn: true },
   { name: "address", required: true, showColumn: true, key: 2 },
+  { name: "wallet", required: false, showColumn: true },
   {
     name: "chain",
     required: true,

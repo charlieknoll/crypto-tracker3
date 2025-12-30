@@ -20,6 +20,9 @@
     </div>
     <div class="row q-pa-sm">
       <div class="col-12 col-sm-8  q-pr-sm">
+        <q-input v-model="value.wallet" label="Wallet"></q-input>
+      </div>
+      <div class="col-12 col-sm-4  q-pr-sm">
         <q-checkbox v-model="value.skipInternal" label="Skip Internal" />
       </div>
     </div>
@@ -66,4 +69,3 @@ const options = [
   "Spam"
 ]
 </script>
-

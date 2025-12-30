@@ -24,7 +24,7 @@ export const useSettingsStore = defineStore("settings", {
     startYear: useLocalStorage("startYear", new Date().getFullYear()),
     etherscanApikey: useStorage("etherscanApikey", ""),
     bscApikey: useLocalStorage("bscApikey", ""),
-    baseCurrencies: useLocalStorage("baseCurrencies", "USDC,USDT,TUSD,DAI"),
+    baseCurrencies: useLocalStorage("baseCurrencies", "USD,USDC,USDT,TUSD,DAI"),
     trackedTokens: useLocalStorage("trackedTokens", ""),
     trackSpentTokens: useLocalStorage("trackSpentTokens", true),
     cbpApikey: useLocalStorage("cbpApikey", ""),

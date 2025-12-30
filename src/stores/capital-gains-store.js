@@ -30,15 +30,18 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     openingPositions.map((tx) => {
       const oTx = Object.assign({}, tx);
       oTx.gross = tx.amount * tx.price;
+      oTx.account = "OPENING";
       return oTx;
     })
   );
 
   buyTxs = buyTxs.map((tx) => {
-    tx.cost = tx.gross + tx.fee;
-    tx.disposedAmount = 0.0;
+    tx.costBasis = +tx.gross + +tx.fee;
     tx.adjDaysHeld = 0.0;
     tx.sellTxId = "";
+    //TODO test bigNumber support on disposed amount
+    tx.disposedAmount = 0.0;
+    tx.disposedCostBasis = 0.0;
     return tx;
   });
   buyTxs.sort((a, b) => a.timestamp - b.timestamp);
@@ -58,7 +61,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
     const feeTx = Object.assign({}, tx);
     feeTx.timestamp = tx.timestamp - 1;
     feeTx.amount = tx.gasFee;
-    feeTx.gross = tx.gasFee * tx.price;
+    feeTx.costBasisAdj = tx.gasFee * tx.price;
     return feeTx;
   });
 
@@ -73,7 +76,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
   tokenTransferTxs = tokenTransferTxs.map((tx) => {
     const ttx = Object.assign({}, tx);
     ttx.timestamp = tx.timestamp - 1;
-    ttx.gross = tx.fee;
+    ttx.costBasisAdj = +tx.fee ?? 0.0;
     return ttx;
   });
   //tokenFeeTxs
@@ -92,7 +95,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
     const feeTx = Object.assign({}, tx);
     feeTx.timestamp = tx.timestamp - 1;
     feeTx.amount = tx.gasFee;
-    feeTx.gross = tx.gasFee * tx.price;
+    feeTx.costBasisAdj = tx.gasFee * tx.price;
     return feeTx;
   });
   //error fees for chaintx type = "C" to token contract to token asset
@@ -112,7 +115,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
 
     feeTx.asset = token ?? tx.toAccount.name;
     feeTx.amount = tx.gasFee;
-    feeTx.gross = tx.gasFee * tx.price;
+    feeTx.costBasisAdj = tx.gasFee * tx.price;
     return feeTx;
   });
   //offchain.fee for type == "TRANSFER" for offchainTx
@@ -123,7 +126,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
   offChainTransferTxs = offChainTransferTxs.map((tx) => {
     const otx = Object.assign({}, tx);
     otx.timestamp = tx.timestamp - 1;
-    otx.gross = tx.fee;
+    otx.costBasisAdj = tx.fee;
     return otx;
   });
 
@@ -134,6 +137,10 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
     tokenErrorFeeTxs,
     offChainTransferTxs
   );
+  txs.map((tx) => {
+    tx.disposedAmount = 0.0;
+    return tx;
+  });
   return txs;
 }
 function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
@@ -260,6 +267,10 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
         : buyTx.amount - buyTx.disposedAmount;
     buyTx.disposedAmount += allocatedAmount;
     tx.allocatedAmount += allocatedAmount;
+    buyTx.disposedCostBasis +=
+      (allocatedAmount / +buyTx.amount) * buyTx.costBasis;
+
+    //TODO add array of sellTxIds to buyTx?
     buyTx.sellTxId = tx.txId;
     //TODO determine long vs short
     const daysHeld =
@@ -269,11 +280,13 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
         60 /
         24 +
       buyTx.adjDaysHeld;
+
     let gain =
       (allocatedAmount / tx.amount) * tx.proceeds -
-      (allocatedAmount / buyTx.amount) * buyTx.cost;
-    let proceeds = (allocatedAmount / tx.amount) * tx.proceeds;
-    let costBasis = (allocatedAmount / buyTx.amount) * buyTx.cost;
+      (allocatedAmount / buyTx.amount) * buyTx.costBasis;
+    let proceeds = (allocatedAmount / +tx.amount) * tx.proceeds;
+    let costBasis = (allocatedAmount / +buyTx.amount) * buyTx.costBasis;
+    //TODO figure out where these come from
     let costBasisFees =
       (allocatedAmount / buyTx.amount) * (buyTx.costBasisFees ?? 0.0);
     let realizedType = "";
@@ -306,10 +319,10 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
     splitTx.date = tx.date;
     splitTx.amount = allocatedAmount;
     splitTx.proceeds = proceeds;
-    splitTx.cost = costBasis;
+    splitTx.costBasis = costBasis;
     splitTx.fee = fee;
     splitTx.price = costBasis / allocatedAmount;
-    splitTx.costBasis = fee + splitTx.cost;
+    splitTx.costBasis = fee + splitTx.costBasis;
     splitTx.toName = tx.toName;
     splitTx.realizedType = realizedType;
     splitTx.gainOrLoss = gain;
@@ -322,27 +335,30 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
   }
 }
 function allocateCostBasis(tx, buyTxs) {
+  //This used for taxType not specified
   let buyTx = buyTxs.find(
     (btx) => btx.asset == tx.asset && btx.disposedAmount < btx.amount
   );
   //TODO adjust cost basis for fees from sale tx
   let i = 0;
 
-  //reset allocated
-  tx.allocatedAmount = 0.0;
-  while (tx.allocatedAmount != tx.amount && buyTx && i < 100) {
-    const remainingAmount = tx.amount - tx.allocatedAmount;
-    const allocatedAmount =
-      remainingAmount <= buyTx.amount - buyTx.disposedAmount
-        ? remainingAmount
-        : buyTx.amount - buyTx.disposedAmount;
+  //reset disposed wrong, don't reset because need to preserve for proceeds allocation
+  //tx.disposedAmount = 0.0;
+  while (tx.disposedAmount != tx.amount && buyTx && i < 100) {
+    //TOOD unititialized disposedAmount
+    const unAllocatedAmount = tx.amount - tx.disposedAmount;
 
-    const allocatedGross = (allocatedAmount / tx.amount) * tx.gross;
+    const costBasisAdjAmount =
+      unAllocatedAmount <= buyTx.amount - (buyTx.disposedAmount ?? 0.0)
+        ? unAllocatedAmount
+        : buyTx.amount - (buyTx.disposedAmount ?? 0.0);
 
-    tx.allocatedAmount += allocatedAmount;
+    const costBasisAdj = (costBasisAdjAmount / tx.amount) * tx.costBasisAdj;
 
-    buyTx.cost += allocatedGross;
-    buyTx.costBasisFees = (buyTx.costBasisFees ?? 0.0) + allocatedGross;
+    //TODO adjust cost basis for fees from sale tx
+    buyTx.costBasis += costBasisAdj;
+    tx.disposedAmount += costBasisAdjAmount;
+
     i++;
     buyTx = buyTxs.find(
       (btx) =>
@@ -379,6 +395,8 @@ function getAllocatedTxs(includeWashSales) {
       if (includeWashSales) applyWashSale(tx, buyTxs, splitTxs);
     }
 
+    //TODO check this works correctly, not sure how
+    //this assumes that costBasisTxs don't have taxTxType set, how does this handle fees on non USD sells?
     if (!tx.taxTxType) {
       // if (tx.asset == "yDAI+yUSDC+yUSDT+yTUSD") {
       //   debugger;
@@ -391,14 +409,24 @@ function getAllocatedTxs(includeWashSales) {
     .filter((tx) => tx.amount > tx.disposedAmount)
     .map((tx) => {
       tx.unrealizedAmount = tx.amount - tx.disposedAmount;
+      tx.costBasis = tx.costBasis - tx.disposedCostBasis;
       return tx;
     });
 
   return { sellTxs, splitTxs, unrealized };
 }
 export function getCapitalGains(applyWashSale) {
+  //TODO this needs to be reworked
+  // build a list of buys, transfers and sells
+  // switch on txType
+  // for transfers, "mini sell" the transfer amount and "mini buy" it preserving acquisition date and adding fees to cost basis
+  // one sell that disposes multiple buys should create multiple capital gains entries
+  // Also support wallet vs asset allocation modes switching 1/1/2025
+  // for interwallet transfers assign the cost basis to the receiving wallet
+
   const allocatedTxs = getAllocatedTxs(applyWashSale);
   const sellTxs = allocatedTxs.sellTxs.filter((tx) => tx.action != "GIFT");
+  //"splitTxs" are the detailed allocations of each sell to buys
   const splitTxs = allocatedTxs.splitTxs.filter(
     (tx) => tx.realizedType != "GIFT"
   );

@@ -49,7 +49,7 @@ const getCurrentPrices = async function () {
 }
 const filtered = computed(() => {
   let txs = capitalGainsStore.capitalGains.unrealized
-
+  //console.log(txs)
   //TODO map into long and short with gain/loss amount next long date, grouping by day
 
 
@@ -83,20 +83,20 @@ const filtered = computed(() => {
       total = {
         asset: tx.asset,
         unrealizedAmount: 0.0,
-        cost: 0.0,
+        costBasis: 0.0,
       };
       totals.push(total);
     }
     total.unrealizedAmount += tx.unrealizedAmount;
     //TODO use cost basis and fees
-    total.cost += tx.gross;
+    total.costBasis += tx.costBasis;
   }
   //TOOD map totals price/amount to gross
   totals.map((t) => {
     t.price = priceStore.getMostRecentPrice(t.asset).price;
     t.currentValue = t.unrealizedAmount * t.price;
-    t.gain = t.currentValue - t.cost;
-    t.percentGain = (t.cost != 0.0) ? (t.gain / t.cost) * 100.0 : 0.0;
+    t.gain = t.currentValue - t.costBasis;
+    t.percentGain = (t.costBasis != 0.0) ? (t.gain / t.costBasis) * 100.0 : 0.0;
   })
   if (gainsGrouping.value == "Asset Totals") return totals;
 
