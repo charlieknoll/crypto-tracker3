@@ -21,7 +21,7 @@ Any asset received from an account marked as "Income" or by an a chain tx initia
 
 ### Transfer Coding
 
-Transfer fees paid using a utility token are considered a realized gain and adjustment to the transferred amount of tokens' cost basis in base currency terms. These are applied on a FIFO basis so the cost basis can increase for the oldest tokens held.
+Transfer fees paid using a utility token are considered a realized gain and adjustment to the transferred amount of tokens' cost basis in base currency terms. These fees are applied to the total asset balance post transfer. After 12/31/2024 the fees are transferred to the receiving wallet asset balance. As of 1/3/2026 the IRS has not specified how transfer fees should be allocated to cost basis: https://www.irs.gov/irb/2024-31_irb?ref=blog.ghost.cointracker.io#REV-PROC-2024-28
 
 ### Base currency Coding
 

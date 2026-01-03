@@ -4,7 +4,7 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- test fee tx (transfer) is added to cost basis correctly, test using ETH fees too
+- test wallet transaction cutoff
 - test very large decimal support on buyTx
 - document skipInternal?
 - Add account filter on unrealized, only show accounts with balance above enterable
@@ -21,6 +21,7 @@ Track crypto balances, gains and losses
 - add wallet name field to owned account
 - wallet capital gains starting in 2025
 - add total net worth on dashboard reconciled with zapper
+- add Kraken integration
 
 ## DONE
 
@@ -29,6 +30,7 @@ Track crypto balances, gains and losses
 - build help page which include readme files
 - why does $0.00 USD price get auto added when updating ETH price? A: USD was not set as a base currency
 - Sell Unrealized Gain/Loss on CRV? YES
+- test fee tx (transfer) is added to cost basis correctly, test using ETH fees too
 
 ## Install the dependencies
 

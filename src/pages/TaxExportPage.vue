@@ -34,7 +34,7 @@ import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
 import { filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
-import { useCapitalGainsStore } from "src/stores/capital-gains-store";
+import { useCapitalGainsStore } from "src/stores/capital-gains-store-v2.bak";
 import { columns, generate8949 } from "../services/tax-export-provider";
 
 const appStore = useAppStore();

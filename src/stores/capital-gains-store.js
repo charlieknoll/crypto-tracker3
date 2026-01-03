@@ -3,10 +3,18 @@ import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
 import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
 import { defineStore } from "pinia";
+import constants from "../constants"; //
 
 const sortByTimeStampThenTxId = (a, b) => {
   return a.timestamp == b.timestamp
     ? a.txId > b.txId
+      ? 1
+      : -1
+    : a.timestamp - b.timestamp;
+};
+const sortByTimeStampThenSort = (a, b) => {
+  return a.timestamp == b.timestamp
+    ? a.sort > b.sort
       ? 1
       : -1
     : a.timestamp - b.timestamp;
@@ -121,7 +129,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
   //offchain.fee for type == "TRANSFER" for offchainTx
 
   let offChainTransferTxs = offchainTransfers.filter(
-    (tx) => (tx.type = "TRANSFER" && tx.fee > 0.0)
+    (tx) => tx.type == "TRANSFER" && tx.fee > 0.0
   );
   offChainTransferTxs = offChainTransferTxs.map((tx) => {
     const otx = Object.assign({}, tx);
@@ -139,6 +147,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
   );
   txs.map((tx) => {
     tx.disposedAmount = 0.0;
+    tx.taxTxType = "COST_BASIS_ADJ";
     return tx;
   });
   return txs;
@@ -229,12 +238,13 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   const _offChainFeeTxs = [];
   for (const tx of offChainFeeTxs) {
     //TODO fix
-    tx.gross = tx.fee;
-    tx.proceeds = tx.gross;
-    tx.action = "TF:" + tx.asset;
-    tx.fee = 0.0;
-    tx.asset = tx.asset;
-    _offChainFeeTxs.push(tx);
+    const feeTx = Object.assign({}, tx);
+    feeTx.gross = tx.fee;
+    feeTx.proceeds = feeTx.gross;
+    feeTx.action = "TF:" + tx.asset;
+    feeTx.fee = 0.0;
+    feeTx.asset = tx.asset;
+    _offChainFeeTxs.push(feeTx);
   }
   sellTxs = sellTxs.concat(_offChainFeeTxs);
   sellTxs = sellTxs.map((tx) => {
@@ -247,7 +257,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     tx.taxTxType = "SELL";
     return tx;
   });
-  sellTxs.sort((a, b) => a.timestamp - b.timestamp);
+  sellTxs.sort(sortByTimeStampThenSort);
   return sellTxs;
 }
 function allocateProceeds(tx, buyTxs, splitTxs) {
@@ -335,38 +345,24 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
   }
 }
 function allocateCostBasis(tx, buyTxs) {
-  //This used for taxType not specified
-  let buyTx = buyTxs.find(
-    (btx) => btx.asset == tx.asset && btx.disposedAmount < btx.amount
+  //TODO this should allocate equally to all non disposed assets and on a wallet basis if after 1/1/2025
+  //Get undisposed buys for the asset
+  buyTxs = buyTxs.filter(
+    (btx) =>
+      btx.asset == tx.asset &&
+      btx.disposedAmount < btx.amount &&
+      tx.timestamp >= btx.timestamp
   );
-  //TODO adjust cost basis for fees from sale tx
-  let i = 0;
+  //get total undisposed amount
+  const totalUndisposed = buyTxs.reduce(
+    (sum, btx) => sum + (btx.amount - (btx.disposedAmount ?? 0.0)),
+    0.0
+  );
+  buyTxs.map((btx) => {
+    const undisposed = btx.amount - (btx.disposedAmount ?? 0.0);
 
-  //reset disposed wrong, don't reset because need to preserve for proceeds allocation
-  //tx.disposedAmount = 0.0;
-  while (tx.disposedAmount != tx.amount && buyTx && i < 100) {
-    //TOOD unititialized disposedAmount
-    const unAllocatedAmount = tx.amount - tx.disposedAmount;
-
-    const costBasisAdjAmount =
-      unAllocatedAmount <= buyTx.amount - (buyTx.disposedAmount ?? 0.0)
-        ? unAllocatedAmount
-        : buyTx.amount - (buyTx.disposedAmount ?? 0.0);
-
-    const costBasisAdj = (costBasisAdjAmount / tx.amount) * tx.costBasisAdj;
-
-    //TODO adjust cost basis for fees from sale tx
-    buyTx.costBasis += costBasisAdj;
-    tx.disposedAmount += costBasisAdjAmount;
-
-    i++;
-    buyTx = buyTxs.find(
-      (btx) =>
-        btx.asset == tx.asset &&
-        btx.disposedAmount < btx.amount &&
-        btx.id != buyTx.id
-    );
-  }
+    btx.costBasis += (undisposed / totalUndisposed) * (tx.costBasisAdj ?? 0.0);
+  });
 }
 function getAllocatedTxs(includeWashSales) {
   const openingPositions = useOpeningPositionsStore().records;
@@ -386,9 +382,7 @@ function getAllocatedTxs(includeWashSales) {
   //Calc gains for each sell
 
   const splitTxs = [];
-  const txs = sellTxs
-    .concat(costBasisTxs)
-    .sort((a, b) => a.timestamp - b.timestamp);
+  const txs = sellTxs.concat(costBasisTxs).sort(sortByTimeStampThenSort);
   for (const tx of txs) {
     if (tx.taxTxType == "SELL") {
       allocateProceeds(tx, buyTxs, splitTxs);
@@ -397,11 +391,12 @@ function getAllocatedTxs(includeWashSales) {
 
     //TODO check this works correctly, not sure how
     //this assumes that costBasisTxs don't have taxTxType set, how does this handle fees on non USD sells?
-    if (!tx.taxTxType) {
+    if (tx.taxTxType == "COST_BASIS_ADJ") {
       // if (tx.asset == "yDAI+yUSDC+yUSDT+yTUSD") {
       //   debugger;
       // }
       allocateCostBasis(tx, buyTxs);
+      console.log("Test wallet timestamp:" + constants.WALLET_TIMESTAMP_CUTOFF);
     }
   }
   //TODO add cost basis field

@@ -53,8 +53,8 @@ const showBuys = (evt, row, index) => {
   console.log(txs)
 }
 const filtered = computed(() => {
-  let txs = capitalGainsStore.capitalGains.sellTxs;
-  //let txs = getCapitalGains(false).sellTxs;
+  //let txs = capitalGainsStore.capitalGains.realizedLots;
+  let txs = getCapitalGains(false).sellTxs;
   if (!txs) return [];
 
   txs = filterByAssets(txs, appStore.selectedAssets);
