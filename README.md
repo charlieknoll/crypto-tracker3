@@ -4,11 +4,12 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- test wallet transaction cutoff
 - test very large decimal support on buyTx
+- test wallet transaction cutoff for capital gains and unrealized
+- Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add export and import into opening positions, addresses
 - document skipInternal?
 - Add account filter on unrealized, only show accounts with balance above enterable
-- Reconcile ETH on Unrealized
+- Reconcile ETH on Unrealized using etherscan account balance
 - set all non named accounts to spam if type not set using button
 - hide spam toggle on address
 - fix asset store to only show non spam tokens
@@ -18,13 +19,13 @@ Track crypto balances, gains and losses
 - add checkbox to hide zero spam and untracked tokens on running balances
 - gift export
 - verify address balance button that calls current balance, highlights red/green, popup delta
-- add wallet name field to owned account
 - wallet capital gains starting in 2025
-- add total net worth on dashboard reconciled with zapper
 - add Kraken integration
+- add total net worth on dashboard reconciled with zapper
 
 ## DONE
 
+- add wallet name field to owned account
 - rate limit coingecko
 - fix window height for capital gains. Income, spending and running balances works
 - build help page which include readme files
