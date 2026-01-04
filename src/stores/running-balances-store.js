@@ -4,9 +4,11 @@ import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
 import { usePricesStore } from "src/stores/prices-store";
 import { defineStore } from "pinia";
+import { parseUnits, parseEther, formatEther } from "ethers/lib/utils";
 
 import { useAppStore } from "src/stores/app-store";
 import { computed } from "vue";
+import { format } from "quasar";
 const sortByTimeStampThenTxId = (a, b) => {
   return a.timestamp == b.timestamp
     ? a.txId > b.txId
@@ -16,6 +18,16 @@ const sortByTimeStampThenTxId = (a, b) => {
 };
 
 function getRunningBalances() {
+  //testing
+  const a = parseUnits("50.012345678901234567", 18);
+  console.log(`Test parseUnits: ${formatEther(a)}`);
+  let b = parseUnits("-5", 18);
+  console.log(`Test parseUnits negative: ${formatEther(b)}`);
+  b = a.add(b);
+  console.log(`Test addition: ${formatEther(b)}`);
+  b = b - parseUnits("10.012345678901234567", 18);
+  console.log(`Test subtraction: ${formatEther(b)}`);
+  //
   let mappedData = [];
 
   const openingPositions = useOpeningPositionsStore().records;
@@ -189,6 +201,7 @@ function getRunningBalances() {
   const accountAssets = [];
   let assets = [];
   for (const tx of mappedData) {
+    tx.biAmount = parseUnits(tx.amount.toString(), 18);
     tx.amount = parseFloat(tx.amount);
     let asset = assets.find((a) => a.symbol == tx.asset);
     if (!asset) {
@@ -196,11 +209,20 @@ function getRunningBalances() {
         endingTxs: {},
         symbol: tx.asset,
         amount: 0.0,
+        biAmount: parseUnits("0", 18),
       };
       assets.push(asset);
     }
     asset.amount += tx.amount;
+    asset.biAmount = tx.biAmount + asset.biAmount;
     tx.runningBalance = parseFloat(asset.amount);
+    tx.biRunningBalance = asset.biAmount;
+    // console.log(
+    //   `Tx ${tx.txId} ${tx.asset} Amount: ${
+    //     tx.amount
+    //   } Running Bal: ${formatEther(tx.biRunningBalance)}`
+    // );
+    console.log(formatEther(tx.biRunningBalance));
     asset.endingTxs[tx.date.substring(0, 4)] = tx;
 
     let accountAsset = accountAssets.find(
