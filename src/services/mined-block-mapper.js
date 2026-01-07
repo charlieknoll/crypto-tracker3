@@ -1,7 +1,6 @@
 import { getTaxCode } from "./tax-code-mapper";
 import { multiplyCurrency, sBnToFloat } from "src/utils/number-helpers";
 import { timestampToDateStr } from "src/utils/date-helper";
-import { BigNumber } from "ethers";
 import { useAddressStore } from "src/stores/address-store";
 import { useMethodStore } from "src/stores/methods-store";
 import { usePricesStore } from "src/stores/prices-store";
@@ -46,7 +45,7 @@ const mapMinedBlock = function (tx, addresses, prices) {
   let gasFee =
     tx.gasUsed == "0"
       ? 0.0
-      : sBnToFloat(BigNumber.from(tx.gasUsed).mul(BigNumber.from(tx.gasPrice)));
+      : sBnToFloat(BigInt(tx.gasUsed) * BigInt(tx.gasPrice));
   let fee = tx.gasUsed == "0" ? 0.0 : multiplyCurrency([gasFee, price]);
   let id = tx.to + tx.blockNumber + tx.gasType.toLowerCase();
 

@@ -66,9 +66,10 @@ import { vAlphaNumeric } from 'src/directives/vAlphaNumeric'
 import { useChainTxsStore } from "src/stores/chain-txs-store";
 import { useAddressStore } from "src/stores/address-store";
 import { useMethodStore } from "src/stores/methods-store";
-import { useQuasar } from "quasar";
+import { date, useQuasar } from "quasar";
 import BaseSelect from "src/components/Base/BaseSelect.vue";
 import { useChainStore } from "src/stores/chain-store";
+import { usePricesStore } from "src/stores/prices-store";
 import { onlyUnique } from "src/utils/array-helpers";
 import ChainTxForm from "src/components/ChainTxForm.vue"
 
@@ -91,10 +92,15 @@ const error = ref("")
 const record = reactive({})
 
 const edit = (evt, row, index) => {
+  if (evt.altKey) {
+    console.log(row)
+    return;
+  }
   const addresses = useAddressStore()
   const toAddress = addresses.records.find((a) => a.address == row.toAddress && a.chain == row.gasType)
   const fromAddress = addresses.records.find((a) => a.address == row.fromAddress && a.chain == row.gasType)
   if (!toAddress || !fromAddress) return
+
   error.value = ''
   Object.assign(record, {
     toAddress: toAddress.address,
@@ -105,7 +111,9 @@ const edit = (evt, row, index) => {
     fromName: fromAddress.name,
     method: row.method,
     methodName: row.methodName,
-    gasType: row.gasType
+    gasType: row.gasType,
+    price: row.price,
+    timestamp: row.timestamp,
 
   })
   editing.value = true
@@ -127,6 +135,12 @@ const save = function () {
 
   const methods = useMethodStore()
   methods.set({ id: record.method, name: record.methodName })
+  const prices = usePricesStore()
+  prices.set({
+    asset: record.gasType,
+    timestamp: record.timestamp,
+    price: record.price
+  })
 
   editing.value = false
   //console

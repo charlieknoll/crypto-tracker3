@@ -1,5 +1,6 @@
 import { useAppStore } from "src/stores/app-store";
 import { date } from "quasar";
+import { formatEther } from "ethers";
 import {
   getKeyFields,
   getRequiredFields,
@@ -40,7 +41,7 @@ const fields = [
     name: "gasFee",
     label: "Gas",
     align: "right",
-    format: (val, row) => `${val ? parseFloat(val).toFixed(6) : ""}`,
+    format: (val, row) => `${val ? formatEther(val) : ""}`,
   },
   { name: "price", format: (val, row) => currency(val) },
   { name: "asset" },

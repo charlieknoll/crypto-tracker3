@@ -147,7 +147,7 @@ export const processFile = async function (name, content) {
   if (name.substring(0, 8) == "all-data") {
     return processAllDataFile(content);
   }
-  //return message
+  return "invalid file name, needs to start with opening, trades, transfers, or all-data";
 };
 function showNotify(fileName) {
   const notif = Notify.create({

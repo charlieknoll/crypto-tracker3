@@ -1,4 +1,5 @@
 import { date } from "quasar";
+import { formatEther } from "ethers";
 
 const columns = [
   {
@@ -72,16 +73,22 @@ const columns = [
   {
     name: "runningAccountBalance",
     label: "Running Acct Balance",
-    field: "runningAccountBalance",
+    field: "biRunningAccountBalance",
     align: "right",
-    format: (val, row) => `${parseFloat(val ?? 0.0).toFixed(12)}`,
+    format: (val, row) => `${formatEther(val ?? 0.0)}`,
+    // format: (val, row) => `${parseFloat(val ?? 0.0).toFixed(12)}`,
+    //style: (row) => "color: red;",
+    style: (row) => {
+      return row.status === "not-matched" ? "color: red;" : "";
+    },
   },
+
   {
     name: "runningBalance",
     label: "Running Balance",
-    field: "runningBalance",
+    field: "biRunningBalance",
     align: "right",
-    format: (val, row) => `${parseFloat(val ?? 0.0).toFixed(12)}`,
+    format: (val, row) => `${formatEther(val ?? 0.0)}`,
   },
 ];
 

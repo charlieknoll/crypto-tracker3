@@ -1,7 +1,7 @@
 import { getTokenTaxCode } from "./tax-code-mapper";
 import { multiplyCurrency, sBnToFloat } from "src/utils/number-helpers";
 import { timestampToDateStr } from "src/utils/date-helper";
-import { BigNumber } from "ethers";
+
 import { useAddressStore } from "src/stores/address-store";
 import { useMethodStore } from "src/stores/methods-store";
 import { usePricesStore } from "src/stores/prices-store";

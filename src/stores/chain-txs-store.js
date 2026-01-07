@@ -23,7 +23,6 @@ export const useChainTxsStore = defineStore("chain-txs", {
     accountTxs: (state) => {
       const exchangeTrades = useExchangeTradesStore();
       //TODO make tokenTxs children of  either acct or internal tx and do it all in one pass
-      console.log("test1");
       let result = JSON.parse(JSON.stringify(state.rawAccountTxs));
       const tokenTxs = JSON.parse(JSON.stringify(state.rawTokenTxs));
       for (let i = 0; i < result.length; i++) {

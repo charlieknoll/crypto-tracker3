@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { id } from "ethers";
 
 const hasValue = (v) => {
   if (v === 0) return true;
@@ -25,7 +25,7 @@ const getId = (r, keyFields) => {
     }
   }
 
-  return ethers.utils.id(v).substring(2, 12);
+  return id(v).substring(2, 12);
 };
 const getTimestamp = (d) => {
   return Math.round(new Date(d.substring(0, 19)).getTime() / 1000);

@@ -40,6 +40,28 @@ async function getTokenTransactions(oa, provider) {
   }
   return txs;
 }
+export const getAccountBalance = async function getAccountBalance(oa) {
+  const settings = useSettingsStore();
+  let etherScanProvider = {
+    baseUrl: "https://api.etherscan.io/v2/api",
+    gasType: "ETH",
+    explorerUrl: "https://etherscan.io/tx/",
+    apikey: settings.etherscanApikey,
+    chainId: 1,
+  };
+  const balanceApiUrl =
+    `${etherScanProvider.baseUrl}?chainId=${etherScanProvider.chainId}&module=account&action=balance&address=` +
+    `${oa.address}&tag=latest&apikey=${etherScanProvider.apikey}`;
+  const result = await axios.get(balanceApiUrl);
+  if (result.data.status != "1") {
+    if (debug) console.log("balanceApiUrl: ", balanceApiUrl);
+    throw new Error(
+      "Invalid return status: " + result.data.message + ":" + result.data.result
+    );
+  }
+  const balance = result.data.result;
+  return balance;
+};
 async function getAccountTransactions(oa, provider) {
   const normalTxApiUrl =
     `${provider.baseUrl}?chainId=${provider.chainId}&module=account&action=txlist&address=` +

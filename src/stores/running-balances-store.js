@@ -4,11 +4,12 @@ import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
 import { usePricesStore } from "src/stores/prices-store";
 import { defineStore } from "pinia";
-import { parseUnits, parseEther, formatEther } from "ethers/lib/utils";
-
+import { parseUnits, parseEther, formatEther } from "ethers/utils";
+import { useAddressStore } from "src/stores/address-store";
 import { useAppStore } from "src/stores/app-store";
 import { computed } from "vue";
 import { format } from "quasar";
+import { sBnToFloat } from "src/utils/number-helpers";
 const sortByTimeStampThenTxId = (a, b) => {
   return a.timestamp == b.timestamp
     ? a.txId > b.txId
@@ -18,15 +19,15 @@ const sortByTimeStampThenTxId = (a, b) => {
 };
 
 function getRunningBalances() {
-  //testing
-  const a = parseUnits("50.012345678901234567", 18);
-  console.log(`Test parseUnits: ${formatEther(a)}`);
-  let b = parseUnits("-5", 18);
-  console.log(`Test parseUnits negative: ${formatEther(b)}`);
-  b = a.add(b);
-  console.log(`Test addition: ${formatEther(b)}`);
-  b = b - parseUnits("10.012345678901234567", 18);
-  console.log(`Test subtraction: ${formatEther(b)}`);
+  //TODO testing
+  // const a = parseUnits("50.012345678901234567", 18);
+  // console.log(`Test parseUnits: ${formatEther(a)}`);
+  // let b = parseUnits("-5", 18);
+  // console.log(`Test parseUnits negative: ${formatEther(b)}`);
+  // b = a + b;
+  // console.log(`Test addition: ${formatEther(b)}`);
+  // b = b - parseUnits("10.012345678901234567", 18);
+  // console.log(`Test subtraction: ${formatEther(b)}`);
   //
   let mappedData = [];
 
@@ -105,6 +106,7 @@ function getRunningBalances() {
       if (tx.toAccount?.type?.toLowerCase().includes("owned")) {
         mappedData.push({
           txId: "Ch-I-" + tx.id,
+          blockNumber: tx.blockNumber,
           timestamp: tx.timestamp,
           account: tx.toAccount.name,
           date: tx.date,
@@ -119,14 +121,17 @@ function getRunningBalances() {
       if (tx.fromAccount?.type?.toLowerCase().includes("owned")) {
         let gasFee = tx.gasFee;
         if (tx.fromAccount?.type?.toLowerCase() != "owned") {
-          gasFee = 0.0;
+          gasFee = "0";
         }
         mappedData.push({
           txId: "Ch-O-" + tx.id,
+          blockNumber: tx.blockNumber,
           timestamp: tx.timestamp,
           account: tx.fromAccount.name,
           date: tx.date,
-          amount: tx.isError ? -gasFee : -tx.amount - gasFee,
+          amount: formatEther(
+            tx.isError ? -BigInt(gasFee) : -BigInt(tx.value) - BigInt(gasFee)
+          ),
           asset: tx.asset,
           price: tx.price,
           type: "Chain-out",
@@ -137,7 +142,7 @@ function getRunningBalances() {
       i++;
     } catch (err) {
       console.error(err);
-      //debugger;
+      debugger;
     }
   }
 
@@ -222,7 +227,7 @@ function getRunningBalances() {
     //     tx.amount
     //   } Running Bal: ${formatEther(tx.biRunningBalance)}`
     // );
-    console.log(formatEther(tx.biRunningBalance));
+    //console.log(formatEther(tx.biRunningBalance));
     asset.endingTxs[tx.date.substring(0, 4)] = tx;
 
     let accountAsset = accountAssets.find(
@@ -233,24 +238,46 @@ function getRunningBalances() {
         endingTxs: {},
         symbol: tx.asset,
         amount: 0.0,
+        biAmount: parseUnits("0", 18),
         account: tx.account,
       };
       accountAssets.push(accountAsset);
     }
     accountAsset.endingTxs[tx.date.substring(0, 4)] = tx;
+
     accountAsset.amount += tx.amount;
+    accountAsset.biAmount = tx.biAmount + accountAsset.biAmount;
     tx.accountEndingYears = [];
     tx.assetEndingYears = [];
     tx.runningAccountBalance = accountAsset.amount;
+    tx.biRunningAccountBalance = accountAsset.biAmount;
     tx.year = parseInt(tx.date.substring(0, 4));
   }
   const app = useAppStore();
-
+  const addresses = useAddressStore().records;
   for (const aa of accountAssets) {
     let endingTx = null;
     for (const taxYear of app.taxYears) {
       const _taxYear = taxYear.toString();
-      if (_taxYear == "All") continue;
+      if (_taxYear == "All") {
+        //set status to not-matched if biRunningAccountBalance does not equal address current balance
+        const address = addresses.find(
+          (a) => a.name == aa.account && a.chain == aa.symbol
+        );
+        if (!address) continue;
+        //const addrBalance = parseEther(address.balance ?? "0.0");
+        if (aa.biAmount != BigInt(address.balance)) {
+          aa.endingTxs[aa.lastYear].status = "not-matched";
+          const calculatedBalance = formatEther(aa.biAmount);
+          const addressBalance = formatEther(BigInt(address.balance));
+          const delta = formatEther(aa.biAmount - BigInt(address.balance));
+          aa.endingTxs[
+            aa.lastYear
+          ].delta = `Calculated balance ${calculatedBalance} does not match address balance ${addressBalance}. Delta: ${delta}`;
+        }
+        continue;
+      }
+      aa.lastYear = taxYear;
       if (aa.endingTxs[_taxYear]) {
         aa.endingTxs[_taxYear].accountEndingYears.push(taxYear);
         endingTx = aa.endingTxs[_taxYear];
@@ -292,6 +319,14 @@ function getRunningBalances() {
 }
 export const useRunningBalancesStore = defineStore("runningBalances", {
   getters: {
-    runningBalances: () => getRunningBalances(),
+    runningBalances: () => {
+      try {
+        return getRunningBalances();
+      } catch (err) {
+        console.error(err);
+        debugger;
+      }
+      return [];
+    },
   },
 });

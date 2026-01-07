@@ -1,11 +1,11 @@
 import { getTaxCode } from "./tax-code-mapper";
 import { multiplyCurrency, sBnToFloat } from "src/utils/number-helpers";
 import { timestampToDateStr } from "src/utils/date-helper";
-import { BigNumber } from "ethers";
 import { useAddressStore } from "src/stores/address-store";
 import { useMethodStore } from "src/stores/methods-store";
 import { usePricesStore } from "src/stores/prices-store";
 import { sortByTimeStampThenId } from "src/utils/array-helpers";
+import { parseEther, formatEther } from "ethers";
 
 const mergeByHash = function (target, source) {
   let txs = JSON.parse(JSON.stringify(target));
@@ -37,14 +37,13 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
   const amount = sBnToFloat(tx.value);
   //const bnAmount = BigNumber.from(tx?.value ?? "0");
   const gross = multiplyCurrency([amount, price]);
-
+  //TODO check this gasFee calculation
   let gasFee =
     tx.gasUsed == "0"
-      ? 0.0
-      : sBnToFloat(
-          BigNumber.from(tx.gasUsed).mul(BigNumber.from(tx?.gasPrice ?? "0"))
-        );
-  let fee = tx.gasUsed == "0" ? 0.0 : multiplyCurrency([gasFee, price]);
+      ? "0"
+      : (BigInt(tx.gasUsed) * BigInt(tx?.gasPrice ?? "0")).toString();
+  let fee =
+    tx.gasUsed == "0" ? 0.0 : multiplyCurrency([sBnToFloat(gasFee), price]);
   let id = tx.hash.toLowerCase();
   if (tx.seqNo) {
     id += "-" + tx.seqNo;
@@ -63,7 +62,8 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
     tx.isError == "1",
     tx
   );
-  return {
+  const result = {
+    blockNumber: tx.blockNumber,
     id,
     hash: tx.hash,
     asset: tx.gasType,
@@ -76,7 +76,7 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
     fromAddress,
     isError: tx.isError == "1",
     amount,
-    //bnAmount,
+    value: tx.value,
     taxCode,
     method: tx.input.substring(0, 10),
     methodName: methods.getMethodName(tx.input),
@@ -89,6 +89,7 @@ const mapRawAccountTx = function (tx, addresses, methods, prices, txType) {
     txType,
     error: tx.isError,
   };
+  return result;
 };
 
 const getAccountTxs = function (rawAccountTxs, rawInternalTxs) {
@@ -96,15 +97,22 @@ const getAccountTxs = function (rawAccountTxs, rawInternalTxs) {
   const methods = useMethodStore();
   const prices = usePricesStore();
 
-  let result = rawAccountTxs.map((r) => {
-    return mapRawAccountTx(r, addresses.records, methods, prices, "C");
-  });
+  let result = [];
+  try {
+    result = result.concat(
+      rawAccountTxs.map((r) => {
+        return mapRawAccountTx(r, addresses.records, methods, prices, "C");
+      })
+    );
 
-  result = result.concat(
-    rawInternalTxs.map((r) => {
-      return mapRawAccountTx(r, addresses.records, methods, prices, "I");
-    })
-  );
+    result = result.concat(
+      rawInternalTxs.map((r) => {
+        return mapRawAccountTx(r, addresses.records, methods, prices, "I");
+      })
+    );
+  } catch (err) {
+    console.error(err);
+  }
 
   return result;
 };

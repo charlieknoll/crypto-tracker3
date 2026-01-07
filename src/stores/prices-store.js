@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { useLocalStorage } from "@vueuse/core";
 import { useAppStore } from "./app-store";
-import { Notify } from "quasar";
+import { Notify, date } from "quasar";
 import {
   getInitValue,
   validate,
@@ -98,7 +98,13 @@ export const usePricesStore = defineStore("prices", {
     set(upserted, recs) {
       const app = useAppStore();
       upserted.source = "Manual";
-
+      if (upserted.timestamp) {
+        upserted.time = date.formatDate(upserted.timestamp * 1000, "HH:mm:ss");
+        upserted.date = date.formatDate(
+          upserted.timestamp * 1000,
+          "YYYY-MM-DD"
+        );
+      }
       let errorMessage = validate(upserted, requiredFields);
 
       if (errorMessage) return errorMessage;
@@ -118,7 +124,9 @@ export const usePricesStore = defineStore("prices", {
       if (dup) return "Duplicate record";
 
       upserted.id = keyFunc(upserted);
-      upserted.timestamp = getTimestamp(upserted.date + "T" + upserted.time);
+      if (!upserted.timestamp) {
+        upserted.timestamp = getTimestamp(upserted.date + "T" + upserted.time);
+      }
 
       if (!record) {
         this.records.push(Object.assign({}, upserted));

@@ -52,6 +52,7 @@
           <q-btn class="q-ml-sm" color="secondary" label="Add" @click="add" />
           <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
           <q-btn class="q-ml-sm" color="negative" label="Clear Unnamed" @click="store.clearUnnamed" />
+          <q-btn class="q-ml-sm" color="primary" label="Update Balances" @click="store.updateBalances" />
         </div>
       </template>
     </q-table>

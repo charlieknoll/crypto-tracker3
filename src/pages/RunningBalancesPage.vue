@@ -1,6 +1,6 @@
 <template>
   <q-page>
-    <transactions-table title="Running Balances" :rows="filtered" :columns="columns">
+    <transactions-table title="Running Balances" :rows="filtered" :columns="columns" @rowClick="showDelta">
       <template v-slot:top-right>
         <div class="row">
           <account-filter :options="accounts"></account-filter>
@@ -20,6 +20,7 @@
             </q-list>
           </q-btn-dropdown>
 
+          <q-btn class="q-ml-lg" color="primary" label="Reconcile" />
         </div>
       </template>
     </transactions-table>
@@ -35,7 +36,11 @@ import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter
 import { useAppStore } from "src/stores/app-store";
 import { useRunningBalancesStore } from "src/stores/running-balances-store";
 import { onlyUnique } from "src/utils/array-helpers";
+const showDelta = (evt, row, index) => {
+  if (!row.delta) console.log(row)
 
+  console.log("Delta: " + row.delta);
+}
 const appStore = useAppStore();
 const runningBalancesStore = useRunningBalancesStore();
 

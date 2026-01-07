@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
 import { useLocalStorage } from "@vueuse/core";
 import { useAppStore } from "./app-store";
-import { ethers } from "ethers";
+import { getAddress } from "ethers";
+import { getAccountBalance } from "src/services/etherscan-provider";
 
 import {
   getId,
@@ -29,9 +30,7 @@ export const useAddressStore = defineStore("address", {
       let errorMessage = validate(upserted, requiredFields);
       try {
         if (upserted.address) {
-          upserted.address = ethers.utils.getAddress(
-            upserted.address.toLowerCase()
-          );
+          upserted.address = getAddress(upserted.address.toLowerCase());
           upserted.address = upserted.address.toLowerCase();
         }
       } catch (err) {
@@ -71,6 +70,21 @@ export const useAddressStore = defineStore("address", {
     },
     clearUnnamed() {
       this.records = this.records.filter((r) => r.address != r.name);
+    },
+    async updateBalances() {
+      const app = useAppStore();
+      app.importing = true;
+      try {
+        for (let i = 0; i < this.records.length; i++) {
+          const addr = this.records[i];
+          if (addr.type == "Owned") {
+            const balance = await getAccountBalance(addr);
+            addr.balance = balance;
+          }
+        }
+      } finally {
+        app.importing = false;
+      }
     },
   },
 });

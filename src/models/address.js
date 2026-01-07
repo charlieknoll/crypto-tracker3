@@ -1,3 +1,5 @@
+import { format } from "quasar";
+import { formatEther } from "ethers";
 import { getKeyFields, getRequiredFields } from "src/utils/model-helpers";
 
 const fields = [
@@ -12,6 +14,13 @@ const fields = [
     showColumn: true,
     defaultValue: "ETH",
     key: 1,
+  },
+  {
+    name: "balance",
+    required: false,
+    showColumn: true,
+    align: "right",
+    format: (val, row) => `${formatEther(val ?? 0.0)}`,
   },
   {
     name: "skipInternal",

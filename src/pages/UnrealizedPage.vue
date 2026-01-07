@@ -6,6 +6,7 @@
       :columns="gainsGrouping == 'Detailed' ? columns : assetTotalColumns"
       rowKey="xx">
       <template v-slot:top-right>
+
         <div class="row">
           <asset-filter></asset-filter>
           <q-btn-dropdown stretch flat :label="gainsGrouping">
@@ -21,7 +22,9 @@
               </q-item>
             </q-list>
           </q-btn-dropdown>
+
         </div>
+
       </template>
     </transactions-table>
   </q-page>
