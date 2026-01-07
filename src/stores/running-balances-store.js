@@ -110,7 +110,7 @@ function getRunningBalances() {
           timestamp: tx.timestamp,
           account: tx.toAccount.name,
           date: tx.date,
-          amount: tx.isError ? 0.0 : tx.amount,
+          amount: formatEther(tx.isError ? BigInt("0") : BigInt(tx.value)),
           asset: tx.asset,
           price: tx.price,
           type: "Chain-in",
@@ -266,11 +266,13 @@ function getRunningBalances() {
         );
         if (!address) continue;
         //const addrBalance = parseEther(address.balance ?? "0.0");
-        if (aa.biAmount != BigInt(address.balance)) {
-          aa.endingTxs[aa.lastYear].status = "not-matched";
+        if (aa.biAmount != BigInt(address.balance ?? "0")) {
+          aa.endingTxs[aa.lastYear].status = "red";
           const calculatedBalance = formatEther(aa.biAmount);
-          const addressBalance = formatEther(BigInt(address.balance));
-          const delta = formatEther(aa.biAmount - BigInt(address.balance));
+          const addressBalance = formatEther(BigInt(address.balance ?? "0"));
+          const delta = formatEther(
+            aa.biAmount - BigInt(address.balance ?? "0")
+          );
           aa.endingTxs[
             aa.lastYear
           ].delta = `Calculated balance ${calculatedBalance} does not match address balance ${addressBalance}. Delta: ${delta}`;

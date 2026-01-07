@@ -79,7 +79,7 @@ const columns = [
     // format: (val, row) => `${parseFloat(val ?? 0.0).toFixed(12)}`,
     //style: (row) => "color: red;",
     style: (row) => {
-      return row.status === "not-matched" ? "color: red;" : "";
+      return `color: ${row.status};`;
     },
   },
 

@@ -1,6 +1,7 @@
 <template>
   <q-page>
-    <transactions-table title="Running Balances" :rows="filtered" :columns="columns" @rowClick="showDelta">
+    <transactions-table title="Running Balances" :rows="filtered" :columns="columns" @rowClick="showDelta"
+      :key="tableKey" ref="tableRef">
       <template v-slot:top-right>
         <div class="row">
           <account-filter :options="accounts"></account-filter>
@@ -27,7 +28,7 @@
   </q-page>
 </template>
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, nextTick } from "vue";
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AccountFilter from "src/components/AccountFilter.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
@@ -35,11 +36,38 @@ import { columns } from "src/models/running-balances";
 import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
 import { useRunningBalancesStore } from "src/stores/running-balances-store";
+import { useAddressStore } from "src/stores/address-store";
 import { onlyUnique } from "src/utils/array-helpers";
-const showDelta = (evt, row, index) => {
-  if (!row.delta) console.log(row)
+import { getBalanceAtBlock } from "src/services/balance-provider";
+import { formatEther } from "ethers";
+const tableKey = ref(0);
+const tableRef = ref(null)
+const addressStore = useAddressStore();
+const showDelta = async (evt, row, index) => {
+  if (!row.delta) {
+    const addresss = addressStore.records.find((a) => a.name == row.account);
+    //TODO find balance
+    const balance = await getBalanceAtBlock(addresss.address, row.blockNumber);
+    if (balance != row.biRunningAccountBalance) {
+      //filtered.value[index].status = "not-matched"
+      row.status = "red"
+      const delta = formatEther(row.biRunningAccountBalance - balance);
 
-  console.log("Delta: " + row.delta);
+      row.delta = `Calculated balance ${row.biRunningAccountBalance} does not match address balance ${balance}. Delta: ${delta}`;
+    } else {
+      row.status = "green"
+    }
+    //filtered.value[index].status = "not-matched"
+    tableKey.value += 1
+    if (tableRef.value?.pagination?.page > 1) {
+      const pageNum = tableRef.value?.pagination?.page
+
+      await nextTick()
+      tableRef.value.pagination = { page: pageNum }
+    }
+  }
+
+  if (!row.delta) console.log("Delta: " + row.delta);
 }
 const appStore = useAppStore();
 const runningBalancesStore = useRunningBalancesStore();

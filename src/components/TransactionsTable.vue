@@ -67,6 +67,9 @@ const pagination = computed({
     page.value = val.page;
   },
 });
+defineExpose({
+  pagination
+})
 const tableHeight = computed(() => {
   if (!tableDimensions.value) return;
   return tableDimensions.value.tablePixels + "px";
