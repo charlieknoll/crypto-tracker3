@@ -8,6 +8,7 @@ import { getTokenTxs } from "src/services/token-tx-mapper";
 import { sortByTimeStampThenId } from "src/utils/array-helpers";
 import { useExchangeTradesStore } from "./exchange-trades-store";
 import { getMinedBlocks } from "src/services/mined-block-mapper";
+import { useAddressStore } from "./address-store";
 
 export const useChainTxsStore = defineStore("chain-txs", {
   state: () => ({
@@ -24,6 +25,7 @@ export const useChainTxsStore = defineStore("chain-txs", {
       const exchangeTrades = useExchangeTradesStore();
       //TODO make tokenTxs children of  either acct or internal tx and do it all in one pass
       let result = JSON.parse(JSON.stringify(state.rawAccountTxs));
+
       const tokenTxs = JSON.parse(JSON.stringify(state.rawTokenTxs));
       for (let i = 0; i < result.length; i++) {
         const tx = result[i];
@@ -50,17 +52,22 @@ export const useChainTxsStore = defineStore("chain-txs", {
       this.rawInternalTxs = [];
       this.rawTokenTxs = [];
       this.rawMinedBlocks = [];
+      const addressStore = useAddressStore();
+      addressStore.clearLastBlockSyncs();
+      addressStore.clearUnnamed();
     },
 
     async import() {
       const txs = await getTransactions();
       this.rawAccountTxs = mergeByHash(this.rawAccountTxs, txs.accountTxs);
       this.rawInternalTxs = mergeByHash(this.rawInternalTxs, txs.internalTxs);
+      //this.rawTokenTxs = mergeByHash(this.rawTokenTxs, txs.tokenTxs);
 
+      //There is no way to merge token txs as they have no unique identifier except hash which is same for many txs
       let tempTokenTxs = JSON.parse(JSON.stringify(this.rawTokenTxs));
       this.rawTokenTxs = tempTokenTxs.concat(txs.tokenTxs);
-      //No more mined blocks for now
-      //this.rawMinedBlocks = txs.minedBlocks;
+
+      this.rawMinedBlocks = txs.minedBlocks;
 
       const prices = usePricesStore();
       await prices.getPrices();

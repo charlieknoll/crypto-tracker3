@@ -24,6 +24,38 @@ function initParentTransaction(parentTx) {
   parentTx.usdProceeds = 0.0;
   parentTx.usdSpent = 0.0;
 }
+
+function setImpliedBaseCurrencyPrices(pt) {
+  const sellTxs = pt.inTokenTxs
+    .concat(pt.outTokenTxs)
+    .concat(pt.otherTokenTxs)
+    .filter((t) => t.amount != 0.0 && t.taxCode == "SELL");
+  const buyTxs = pt.inTokenTxs
+    .concat(pt.outTokenTxs)
+    .concat(pt.otherTokenTxs)
+    .filter((t) => t.amount != 0.0 && t.taxCode == "BUY");
+
+  const baseBuys = buyTxs.filter((t) => t.price == 1.0);
+  const baseSells = sellTxs.filter((t) => t.price == 1.0);
+  const nonBaseBuys = buyTxs.filter((t) => t.price != 1.0);
+  const nonBaseSells = sellTxs.filter((t) => t.price != 1.0);
+  if (baseBuys.length == 1 && nonBaseSells.length == 1) {
+    const baseBuy = baseBuys[0];
+    nonBaseSells[0].price = baseBuy.amount / Math.abs(nonBaseSells[0].amount);
+    nonBaseSells[0].gross = multiplyCurrency([
+      nonBaseSells[0].amount,
+      nonBaseSells[0].price,
+    ]);
+  }
+  if (baseSells.length == 1 && nonBaseBuys.length == 1) {
+    const baseSell = baseSells[0];
+    nonBaseBuys[0].price = Math.abs(baseSell.amount) / nonBaseBuys[0].amount;
+    nonBaseBuys[0].gross = multiplyCurrency([
+      nonBaseBuys[0].amount,
+      nonBaseBuys[0].price,
+    ]);
+  }
+}
 function distributeFee(pt) {
   const allTxs = pt.inTokenTxs.concat(pt.outTokenTxs).concat(pt.otherTokenTxs);
   const feeTxs = [];
@@ -36,7 +68,7 @@ function distributeFee(pt) {
     }
   }
   for (const t of feeTxs) {
-    t.fee = pt.fee / feeTxs.length;
+    t.fee = (pt.fee ?? 0.0) / feeTxs.length;
   }
 }
 
@@ -136,6 +168,7 @@ function init(tx, parentTx, addresses) {
   return {
     id,
     suffix,
+    blockNumber: tx.blockNumber,
     asset,
     parentTx,
     tokenDecimal,
@@ -180,12 +213,15 @@ const getTokenTxs = function (chainTxs, rawTokenTxs, fees) {
     let parentTx = parentTxs.find((pt) => pt.hash == rawTokenTx.hash);
     if (!parentTx) {
       //handle token txs initiated by non owned accounts
-      parentTx = { id: rawTokenTx.hash };
+      parentTx = { hash: rawTokenTx.hash, id: rawTokenTx.hash };
+
       initParentTransaction(parentTx);
+      parentTxs.push(parentTx);
     }
     //make a non reactive copy
     const tokenTx = init(rawTokenTx, parentTx, addresses.records);
     if (tokenTx.fromAccount?.type == "Spam") continue;
+    if (tokenTx.toAccount?.type == "Spam") continue;
     mappedTxs.push(tokenTx);
   }
 
@@ -198,6 +234,7 @@ const getTokenTxs = function (chainTxs, rawTokenTxs, fees) {
   //distribute baseCurrency costs/proceeds and fees to non baseCurrency
   for (const pt of parentTxs) {
     distributeFee(pt);
+    setImpliedBaseCurrencyPrices(pt);
   }
   //TODO add fees
   fees.map((f) => {

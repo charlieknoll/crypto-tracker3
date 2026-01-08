@@ -32,6 +32,7 @@
       :rows-per-page-options="[0]">
       <template v-slot:top-right>
         <div class="row">
+          <q-toggle label="Hide Spam" v-model="hideSpam" class="q-pr-sm"></q-toggle>
           <q-input
             clearable
             style="width: 300px; display: inline-block; min-height: 61px;"
@@ -84,6 +85,7 @@ const { clear } = repo
 const chainStore = useChainStore();
 
 const filter = ref("");
+const hideSpam = ref(true);
 const chainFilter = reactive([]);
 const error = ref("");
 
@@ -129,9 +131,13 @@ const filteredAddresses = computed(() => {
 
   const app = useAppStore()
 
-  if (!hasValue(filter.value) && app.selectedChains?.length == 0) return store.records;
+  let result = store.records;
+  if (hideSpam.value) {
+    result = result.filter((r) => r.type != "Spam");
+  }
+  if (!hasValue(filter.value) && app.selectedChains?.length == 0) return result;
 
-  let result = store.records
+  result
     .filter(
       (r) =>
         r.name.toLowerCase().includes((filter.value ?? "").toLowerCase()) ||

@@ -11,6 +11,7 @@ import {
   validate,
 } from "src/utils/model-helpers";
 import { fields, keyFields, requiredFields } from "src/models/address";
+import { sleep } from "src/utils/cacheUtils";
 const keyFunc = (r) => getId(r, keyFields);
 
 export const useAddressStore = defineStore("address", {
@@ -71,14 +72,20 @@ export const useAddressStore = defineStore("address", {
     clearUnnamed() {
       this.records = this.records.filter((r) => r.address != r.name);
     },
+    clearLastBlockSyncs() {
+      for (let i = 0; i < this.records.length; i++) {
+        this.records[i].lastBlockSync = 0;
+      }
+    },
     async updateBalances() {
       const app = useAppStore();
       app.importing = true;
       try {
         for (let i = 0; i < this.records.length; i++) {
           const addr = this.records[i];
-          if (addr.type == "Owned") {
+          if (addr.type == "Owned" && addr.chain == "ETH") {
             const balance = await getAccountBalance(addr);
+            await sleep(500);
             addr.balance = balance;
           }
         }

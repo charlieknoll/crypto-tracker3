@@ -169,6 +169,10 @@ async function getMinedBlocks(oa, provider) {
     result.data.message != "No transactions found"
   ) {
     if (debug) console.log("minedBlocksUrl: ", minedBlocksUrl);
+    console.log(
+      "Invalid return status: " + result.data.message + ":" + result.data.result
+    );
+    console.log("minedBlocksUrl: ", minedBlocksUrl);
     throw new Error(
       "Invalid return status: " + result.data.message + ":" + result.data.result
     );
@@ -197,6 +201,10 @@ async function getMinedBlocks(oa, provider) {
     result.data.status != "1" &&
     result.data.message != "No transactions found"
   ) {
+    console.log(
+      "Invalid return status: " + result.data.message + ":" + result.data.result
+    );
+    console.log("minedUnclesUrl: ", minedUnclesUrl);
     throw new Error(
       "Invalid return status: " + result.data.message + ":" + result.data.result
     );
@@ -277,10 +285,10 @@ export const getProviderTransactions = async function (provider) {
       result.tokenTxs = result.tokenTxs.concat(
         await getTokenTransactions(oa, provider)
       );
-      // lastRequestTime = await throttle(lastRequestTime, 1000);
-      // result.minedBlocks = result.minedBlocks.concat(
-      //   await getMinedBlocks(oa, provider)
-      // );
+      lastRequestTime = await throttle(lastRequestTime, 1000);
+      result.minedBlocks = result.minedBlocks.concat(
+        await getMinedBlocks(oa, provider)
+      );
 
       //setLastBlockSync
       //TODO only set if no error

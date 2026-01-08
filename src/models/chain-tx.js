@@ -41,7 +41,7 @@ const fields = [
     name: "gasFee",
     label: "Gas",
     align: "right",
-    format: (val, row) => `${val ? formatEther(val) : ""}`,
+    format: (val, row) => `${val ? formatEther(val).substring(0, 8) : ""}`,
   },
   { name: "price", format: (val, row) => currency(val) },
   { name: "asset" },

@@ -4,29 +4,48 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- Use getBalance to verify running balance at block for CDAI
-- Test and reconcile tokens
-- test etherscan import on 3 accounts
-- set capital gains as gift with non zero ether transfers from spam accounts
-- Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add export and import into opening positions, addresses
-- test very large decimal support on chain-tx, mined block, token-tx (git changes)
-- test wallet transaction cutoff for capital gains and unrealized
-- document skipInternal?
-- Add account filter on unrealized, only show accounts with balance above enterable
-- set all non named accounts to spam if type not set using button
-- hide spam toggle on address
+- fix address search
 - fix asset store to only show non spam tokens
-- hide spam toggle on chain tx that hides token-txs to/from spam and zero value ETH
+
+- Test and reconcile tokens, fix token contract missing addresses (CRV), maybe add a new field for token balance contract?
+- Change Gnosis Wallet to "Contract Owned" ?
+
+- test very large decimal support on chain-tx, mined block, token-tx (git changes)
+- Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add
+- Add account filter on unrealized, only show accounts with balance above enterable
+
+- Prices aren't updated on Spending for ENS
+- Prices service is requesting prices that return 401
+- Verify all prices set (Chain, Income, Spending, Offchain)
 - don't request non tracked token prices
-- add checkbox to hide zero spam and untracked tokens on running balances
-- gift export
-- verify address balance button that calls current balance, highlights red/green, popup delta
+- Price not saving on first CDAI (won't override api $1.00)
+
+- set capital gains as gift with non zero ether transfers from spam accounts
+
+- document skipInternal? (Gnosis wallet contract may have some extra tx's)
+- reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
+
+- export and import into opening positions, how will address balances be handled?
+
+- gift export/import
+
 - wallet capital gains starting in 2025
+
 - add Kraken integration
+- Add BNB support
 - add total net worth on dashboard reconciled with zapper
 
 ## DONE
 
+- verify address balance button that calls current balance, highlights red/green, popup delta
+- hide spam toggle on address
+- Add token balance reconciliation (latest and update on click)
+- test that if a spam account sends real ETH that the tx is not hidden due to "SPAM" type
+- figure out Presale Mining negative balance issue
+- 1113 token txs, 145 CDAI, 99 mined
+- why 3 USDC Token transfers for tx 0x648d49, should be 1
+- test etherscan import on 3 accounts
+- Use getBalance to verify running balance at block for CDAI
 - Reconcile ETH on Unrealized using etherscan account balance
 - fix chain tx units
 - why didn't the from account of the 2FA tx get added to addresses?

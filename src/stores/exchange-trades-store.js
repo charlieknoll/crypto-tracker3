@@ -54,7 +54,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           feeTx.id = "F-" + tx.id;
           feeTx.price = feeUSDPrice;
           feeTx.asset = tx.feeCurrency;
-          feeTx.amount = tx.fee;
+          feeTx.amount = tx.fee ? tx.fee.toFixed(18) : "0.0";
           feeTx.fee = 0.0;
           feeTx.feeCurrency = "USD";
           feeTx.currency = tx.feeCurrency;
@@ -90,7 +90,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           currencyTx.sort = currencyTx.action == "BUY" ? 2 : 0;
           currencyTx.price = currencyUSDPrice;
           currencyTx.asset = tx.currency;
-          currencyTx.amount = tx.amount * currencyPrice;
+          currencyTx.amount = (tx.amount * currencyPrice).toFixed(18);
           currencyTx.fee = currencyTx.action == "SELL" ? usdFee : 0.0;
           currencyTx.gross = multiplyCurrency([
             currencyTx.price,

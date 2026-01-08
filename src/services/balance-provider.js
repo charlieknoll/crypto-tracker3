@@ -1,4 +1,4 @@
-import { formatEther, JsonRpcProvider } from "ethers";
+import { formatEther, formatUnits, JsonRpcProvider, Contract } from "ethers";
 
 const getBalanceAtBlock = async function (address, blockNumber) {
   // Public Ethereum mainnet RPC endpoint
@@ -13,4 +13,37 @@ const getBalanceAtBlock = async function (address, blockNumber) {
   //console.log(`Balance at block ${blockNumber}: ${balanceEth} ETH`);
 };
 
-export { getBalanceAtBlock };
+async function getTokenBalanceAtBlock(
+  tokenName,
+  tokenAddress,
+  walletAddress,
+  blockNumber
+) {
+  const provider = new JsonRpcProvider("https://ethereum.publicnode.com");
+
+  // const contractAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // USDC
+  // const walletAddress = "0x003829f919A5F512d54319c5e6894c55E36a74E7"; // ENS
+  // const blockNumber = 24070850n; // BigInt for block number
+
+  // Minimal ERC20 ABI (just balanceOf)
+  //const erc20Abi = ["function balanceOf(address) view returns (uint256)"];
+  const erc20Abi = [
+    "function balanceOf(address) view returns (uint256)",
+    "function decimals() view returns (uint8)",
+  ];
+
+  const contract = new Contract(tokenAddress, erc20Abi, provider);
+
+  const balanceWei = await contract.balanceOf(walletAddress, {
+    blockTag: parseInt(blockNumber),
+  });
+  const decimals = await contract.decimals({ blockTag: parseInt(blockNumber) });
+  const balanceFormatted = formatUnits(balanceWei, decimals); // USDC has 6 decimals
+
+  console.log(
+    `${walletAddress} ${tokenName} balance at block ${blockNumber}: ${balanceFormatted}`
+  );
+  return balanceFormatted;
+}
+
+export { getBalanceAtBlock, getTokenBalanceAtBlock };

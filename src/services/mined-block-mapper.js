@@ -4,6 +4,7 @@ import { timestampToDateStr } from "src/utils/date-helper";
 import { useAddressStore } from "src/stores/address-store";
 import { useMethodStore } from "src/stores/methods-store";
 import { usePricesStore } from "src/stores/prices-store";
+import { formatEther, parseEther } from "ethers";
 
 const mergeMinedBlock = function (target, source) {
   let txs = JSON.parse(JSON.stringify(target));
@@ -24,7 +25,9 @@ const mergeMinedBlock = function (target, source) {
 
 const mapMinedBlock = function (tx, addresses, prices) {
   const toAccount = addresses.find((a) => a.address == tx.to);
-  const fromAccount = addresses.find((a) => a.address == tx.from);
+  const fromAccount = addresses.find(
+    (a) => a.address == "0x0000000000000000000000000000000000000000"
+  );
   const to =
     toAccount && toAccount.name != tx.to
       ? toAccount.name
@@ -39,7 +42,7 @@ const mapMinedBlock = function (tx, addresses, prices) {
   const date = timestampToDateStr(tx.timeStamp);
   const timestamp = parseInt(tx.timeStamp);
   const price = prices.getPrice(tx.gasType, date, timestamp);
-  const amount = sBnToFloat(tx.value);
+  const amount = formatEther(tx.value);
   const gross = multiplyCurrency([amount, price]);
 
   let gasFee =
@@ -61,6 +64,7 @@ const mapMinedBlock = function (tx, addresses, prices) {
     fromAccountName: from,
     fromAddress,
     amount,
+    value: tx.value,
     taxCode: "INCOME",
     timestamp,
     date,

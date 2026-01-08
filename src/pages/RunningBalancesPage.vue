@@ -38,36 +38,49 @@ import { useAppStore } from "src/stores/app-store";
 import { useRunningBalancesStore } from "src/stores/running-balances-store";
 import { useAddressStore } from "src/stores/address-store";
 import { onlyUnique } from "src/utils/array-helpers";
-import { getBalanceAtBlock } from "src/services/balance-provider";
-import { formatEther } from "ethers";
+import { getBalanceAtBlock, getTokenBalanceAtBlock } from "src/services/balance-provider";
+import { formatEther, parseEther } from "ethers";
 const tableKey = ref(0);
 const tableRef = ref(null)
 const addressStore = useAddressStore();
 const showDelta = async (evt, row, index) => {
-  if (!row.delta) {
-    const addresss = addressStore.records.find((a) => a.name == row.account);
-    //TODO find balance
+  if (!evt.altKey) return
+  const addresss = addressStore.records.find((a) => a.name == row.account);
+  let delta = ""
+  if (row.asset == 'ETH') {
     const balance = await getBalanceAtBlock(addresss.address, row.blockNumber);
     if (balance != row.biRunningAccountBalance) {
-      //filtered.value[index].status = "not-matched"
-      row.status = "red"
-      const delta = formatEther(row.biRunningAccountBalance - balance);
-
-      row.delta = `Calculated balance ${row.biRunningAccountBalance} does not match address balance ${balance}. Delta: ${delta}`;
-    } else {
-      row.status = "green"
+      delta = formatEther(row.biRunningAccountBalance - balance);
+      row.delta = `Calculated ${row.asset} balance ${row.biRunningAccountBalance} does not match address balance ${balance}. Delta: ${delta}`;
     }
-    //filtered.value[index].status = "not-matched"
-    tableKey.value += 1
-    if (tableRef.value?.pagination?.page > 1) {
-      const pageNum = tableRef.value?.pagination?.page
-
-      await nextTick()
-      tableRef.value.pagination = { page: pageNum }
+  } else {
+    //look asset token contract
+    const tokenAddress = addressStore.records.find((a) => {
+      if (a.name == row.asset && a.type == "Token") return true;
+      const splitName = a.name.split(":")
+      if (splitName.length != 2) return false;
+      return splitName[1] == row.asset
+    });
+    if (tokenAddress) {
+      const balance = await getTokenBalanceAtBlock(row.asset, tokenAddress.address, addresss.address, row.blockNumber);
+      if (parseEther(balance) != row.biRunningAccountBalance) {
+        delta = formatEther(row.biRunningAccountBalance - balance);
+        row.delta = `Calculated ${row.asset} balance ${formatEther(row.biRunningAccountBalance)} does not match address balance ${balance}. Delta: ${delta}`;
+      }
     }
+
   }
 
-  if (!row.delta) console.log("Delta: " + row.delta);
+  row.status = delta ? "red" : "green";
+
+  tableKey.value += 1
+  if (tableRef.value?.pagination?.page > 1) {
+    const pageNum = tableRef.value?.pagination?.page
+
+    await nextTick()
+    tableRef.value.pagination = { page: pageNum }
+  }
+  if (row.delta) console.log("Delta: " + row.delta);
 }
 const appStore = useAppStore();
 const runningBalancesStore = useRunningBalancesStore();

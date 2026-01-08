@@ -110,7 +110,9 @@ function getRunningBalances() {
           timestamp: tx.timestamp,
           account: tx.toAccount.name,
           date: tx.date,
-          amount: formatEther(tx.isError ? BigInt("0") : BigInt(tx.value)),
+          amount: formatEther(
+            tx.isError ? BigInt("0") : BigInt(tx.value ?? "0 ")
+          ),
           asset: tx.asset,
           price: tx.price,
           type: "Chain-in",
@@ -154,6 +156,8 @@ function getRunningBalances() {
         mappedData.push({
           txId: "To-I-" + tx.id,
           timestamp: tx.timestamp,
+          blockNumber: tx.blockNumber,
+
           account: tx.toAccount.name,
           date: tx.date,
           amount: tx.amount,
@@ -168,6 +172,8 @@ function getRunningBalances() {
         mappedData.push({
           txId: "Ch-O-" + tx.id,
           timestamp: tx.timestamp,
+          blockNumber: tx.blockNumber,
+
           account: tx.fromAccount.name,
           date: tx.date,
           amount: -tx.amount,
@@ -187,7 +193,11 @@ function getRunningBalances() {
 
   for (const tx of exchangeTrades) {
     //SELL and FEE should be negative
-    let amount = tx.action == "BUY" ? tx.amount : -tx.amount;
+    let amount =
+      tx.action == "BUY"
+        ? parseFloat(tx.amount).toFixed(18)
+        : parseFloat(-tx.amount).toFixed(18);
+    //amount = amount.toFixed(18);
     mappedData.push({
       txId: "Ex-" + tx.id.substring(0, 13),
       timestamp: tx.timestamp,
