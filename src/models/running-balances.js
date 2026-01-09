@@ -1,5 +1,5 @@
 import { date } from "quasar";
-import { formatEther } from "ethers";
+import { formatEther, formatUnits } from "ethers";
 
 const columns = [
   {

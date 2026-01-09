@@ -4,13 +4,8 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- fix address search
-- fix asset store to only show non spam tokens
+- Update column layout on Running Balances for Account and Asset views
 
-- Test and reconcile tokens, fix token contract missing addresses (CRV), maybe add a new field for token balance contract?
-- Change Gnosis Wallet to "Contract Owned" ?
-
-- test very large decimal support on chain-tx, mined block, token-tx (git changes)
 - Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add
 - Add account filter on unrealized, only show accounts with balance above enterable
 
@@ -22,7 +17,6 @@ Track crypto balances, gains and losses
 
 - set capital gains as gift with non zero ether transfers from spam accounts
 
-- document skipInternal? (Gnosis wallet contract may have some extra tx's)
 - reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
 
 - export and import into opening positions, how will address balances be handled?
@@ -33,10 +27,20 @@ Track crypto balances, gains and losses
 
 - add Kraken integration
 - Add BNB support
+- Check ENS expiration dates (charlieknoll, bikeparts) use addresses tab manage, add expiration check programatically
 - add total net worth on dashboard reconciled with zapper
+
+- document skipInternal? (Gnosis wallet contract may have some extra tx's)
+- Change Gnosis Wallet to "Contract Owned" ?
 
 ## DONE
 
+- test very large decimal support on chain-tx, mined block, token-tx (git changes)
+- Reconcile BNB, OP, OMG, LPT, crvUSD, GTC, TRX, XDATA, ViCA
+- Test and reconcile tokens, fix token contract missing addresses (CRV), maybe add a new field for token balance contract?
+- Fix red highlighting on running balances for Non ETH wallets, why isn't green showing?- Load Metamask wallet and make sure all non zero accounts are in CryptoTracker
+- fix asset store to only show non spam tokens
+- fix address search
 - verify address balance button that calls current balance, highlights red/green, popup delta
 - hide spam toggle on address
 - Add token balance reconciliation (latest and update on click)

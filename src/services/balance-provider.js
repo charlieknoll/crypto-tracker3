@@ -1,4 +1,11 @@
-import { formatEther, formatUnits, JsonRpcProvider, Contract } from "ethers";
+import {
+  formatEther,
+  formatUnits,
+  JsonRpcProvider,
+  Contract,
+  getAddress,
+} from "ethers";
+import { convertToWei } from "src/utils/number-helpers";
 
 const getBalanceAtBlock = async function (address, blockNumber) {
   // Public Ethereum mainnet RPC endpoint
@@ -27,23 +34,57 @@ async function getTokenBalanceAtBlock(
 
   // Minimal ERC20 ABI (just balanceOf)
   //const erc20Abi = ["function balanceOf(address) view returns (uint256)"];
-  const erc20Abi = [
+  let erc20Abi = [
     "function balanceOf(address) view returns (uint256)",
     "function decimals() view returns (uint8)",
   ];
+  let balanceWei;
+  let decimals;
+  if (tokenName == "OMG") {
+    tokenAddress = "0xd26114cd6EE289AccF82350c8d8487fedB8A0C07";
+    decimals = 18;
+    erc20Abi = [
+      "function balanceOf(address _owner) constant returns (uint balance)",
+    ];
+  }
+
+  if (tokenName == "GTC") {
+    tokenAddress = "0xDe30da39c46104798bB5aA3fe8B9e0e1F348163F";
+    decimals = 18;
+    erc20Abi = [
+      "function balanceOf(address account) external view returns (uint)",
+    ];
+  }
+  tokenAddress = getAddress(tokenAddress);
+  walletAddress = getAddress(walletAddress);
 
   const contract = new Contract(tokenAddress, erc20Abi, provider);
 
-  const balanceWei = await contract.balanceOf(walletAddress, {
-    blockTag: parseInt(blockNumber),
-  });
-  const decimals = await contract.decimals({ blockTag: parseInt(blockNumber) });
+  try {
+    // const code = await provider.getCode(
+    //   "0xd26114cd6EE289AccF82350c8d8487fedB8A0C07"
+    // );
+    // console.log("Contract code:", code); // "0x" = empty (no contract)
+
+    balanceWei = await contract.balanceOf(walletAddress, {
+      blockTag: parseInt(blockNumber),
+    });
+    if (!decimals) {
+      decimals = await contract.decimals({
+        blockTag: parseInt(blockNumber),
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return;
+  }
+
   const balanceFormatted = formatUnits(balanceWei, decimals); // USDC has 6 decimals
 
   console.log(
     `${walletAddress} ${tokenName} balance at block ${blockNumber}: ${balanceFormatted}`
   );
-  return balanceFormatted;
+  return convertToWei(balanceWei, decimals);
 }
 
 export { getBalanceAtBlock, getTokenBalanceAtBlock };

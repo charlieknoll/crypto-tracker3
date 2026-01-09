@@ -12,7 +12,7 @@ import { useAppStore } from "src/stores/app-store";
 import BaseSelect from "src/components/Base/BaseSelect.vue";
 
 const store = useAppStore();
-const accounts = store.accounts;
+const accounts = store.accounts.filter((a) => a.type != "Spam");
 
 const props = defineProps({
   options: {

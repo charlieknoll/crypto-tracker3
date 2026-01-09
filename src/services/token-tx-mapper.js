@@ -1,5 +1,9 @@
 import { getTokenTaxCode } from "./tax-code-mapper";
-import { multiplyCurrency, sBnToFloat } from "src/utils/number-helpers";
+import {
+  multiplyCurrency,
+  sBnToFloat,
+  convertToWei,
+} from "src/utils/number-helpers";
 import { timestampToDateStr } from "src/utils/date-helper";
 
 import { useAddressStore } from "src/stores/address-store";
@@ -162,7 +166,8 @@ function init(tx, parentTx, addresses) {
   const gasFee = 0.0;
   const tokenDecimal = tx.tokenDecimal;
   const hash = tx.hash.toLowerCase();
-  //const bnAmount = BigNumber.from(tx.value);
+
+  const value = convertToWei(tx.value, tokenDecimal);
   const amount = sBnToFloat(tx.value, parseFloat(tokenDecimal));
 
   return {
@@ -179,7 +184,7 @@ function init(tx, parentTx, addresses) {
     fromAccount,
     fromAccountName: from,
     fromAddress,
-    //bnAmount,
+    value,
     amount,
     gasFee,
     gasType,
@@ -187,6 +192,7 @@ function init(tx, parentTx, addresses) {
     tracked: false,
     date,
     txType: "T",
+    decimals: tx.tokenDecimal,
   };
 }
 const getTokenTxs = function (chainTxs, rawTokenTxs, fees) {

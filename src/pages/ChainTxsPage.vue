@@ -200,9 +200,9 @@ const filtered = computed(() => {
   if (hashFilter.value) {
     txs = txs.filter(
       (tx) =>
-        tx.id.includes(hashFilter.value) ||
-        tx.toAddress.includes(hashFilter.value) ||
-        tx.fromAddress.includes(hashFilter.value)
+        tx.hash?.includes(hashFilter.value) ||
+        tx.toAddress?.includes(hashFilter.value) ||
+        tx.fromAddress?.includes(hashFilter.value)
     );
   }
   if (app.selectedChains?.length > 0) {

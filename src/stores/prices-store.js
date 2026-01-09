@@ -201,11 +201,13 @@ export const usePricesStore = defineStore("prices", {
       );
       if (result) return result.price;
 
-      // const baseCurrencies = settings.baseCurrencies
-      //   .split(",")
-      //   .map((bc) => bc.trim());
+      const settings = useSettingsStore();
 
-      // if (baseCurrencies.indexOf(asset) > -1) return 1.0;
+      const baseCurrencies = settings.baseCurrencies
+        .split(",")
+        .map((bc) => bc.trim());
+
+      if (baseCurrencies.indexOf(asset) > -1) return 1.0;
 
       return 0.0;
     },

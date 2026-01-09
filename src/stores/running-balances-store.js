@@ -4,7 +4,7 @@ import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
 import { usePricesStore } from "src/stores/prices-store";
 import { defineStore } from "pinia";
-import { parseUnits, parseEther, formatEther } from "ethers/utils";
+import { parseUnits, parseEther, formatEther, formatUnits } from "ethers/utils";
 import { useAddressStore } from "src/stores/address-store";
 import { useAppStore } from "src/stores/app-store";
 import { computed } from "vue";
@@ -102,6 +102,7 @@ function getRunningBalances() {
   )) {
     if (tx?.fromAccountName.toLowerCase() == "genesis") continue;
     //if (tx.fromAccount.type == "Gift") continue;
+
     try {
       if (tx.toAccount?.type?.toLowerCase().includes("owned")) {
         mappedData.push({
@@ -160,7 +161,9 @@ function getRunningBalances() {
 
           account: tx.toAccount.name,
           date: tx.date,
-          amount: tx.amount,
+          amount: formatEther(
+            tx.isError ? BigInt("0") : BigInt(tx.value ?? "0 ")
+          ),
           asset: tx.asset,
           price: tx.price,
           type: "Token-in",
@@ -173,10 +176,9 @@ function getRunningBalances() {
           txId: "Ch-O-" + tx.id,
           timestamp: tx.timestamp,
           blockNumber: tx.blockNumber,
-
           account: tx.fromAccount.name,
           date: tx.date,
-          amount: -tx.amount,
+          amount: formatEther(tx.isError ? BigInt("0") : -BigInt(tx.value)),
           asset: tx.asset,
           price: tx.price,
           type: "Token-out",
@@ -216,7 +218,7 @@ function getRunningBalances() {
   const accountAssets = [];
   let assets = [];
   for (const tx of mappedData) {
-    tx.biAmount = parseUnits(tx.amount.toString(), 18);
+    tx.biAmount = tx.value ?? parseEther(tx.amount?.toString() ?? "0.0");
     tx.amount = parseFloat(tx.amount);
     let asset = assets.find((a) => a.symbol == tx.asset);
     if (!asset) {
@@ -248,7 +250,7 @@ function getRunningBalances() {
         endingTxs: {},
         symbol: tx.asset,
         amount: 0.0,
-        biAmount: parseUnits("0", 18),
+        biAmount: BigInt("0"),
         account: tx.account,
       };
       accountAssets.push(accountAsset);
@@ -276,7 +278,10 @@ function getRunningBalances() {
         );
         if (!address) continue;
         //const addrBalance = parseEther(address.balance ?? "0.0");
-        if (aa.biAmount != BigInt(address.balance ?? "0")) {
+        if (
+          aa.biAmount != BigInt(address.balance ?? "0") &&
+          address.type == "Owned"
+        ) {
           aa.endingTxs[aa.lastYear].status = "red";
           const calculatedBalance = formatEther(aa.biAmount);
           const addressBalance = formatEther(BigInt(address.balance ?? "0"));
@@ -286,6 +291,8 @@ function getRunningBalances() {
           aa.endingTxs[
             aa.lastYear
           ].delta = `Calculated balance ${calculatedBalance} does not match address balance ${addressBalance}. Delta: ${delta}`;
+        } else {
+          if (address.balance) aa.endingTxs[aa.lastYear].status = "green";
         }
         continue;
       }

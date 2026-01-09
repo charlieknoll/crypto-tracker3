@@ -63,15 +63,16 @@ const showDelta = async (evt, row, index) => {
     });
     if (tokenAddress) {
       const balance = await getTokenBalanceAtBlock(row.asset, tokenAddress.address, addresss.address, row.blockNumber);
-      if (parseEther(balance) != row.biRunningAccountBalance) {
+      if (balance && balance != row.biRunningAccountBalance) {
         delta = formatEther(row.biRunningAccountBalance - balance);
-        row.delta = `Calculated ${row.asset} balance ${formatEther(row.biRunningAccountBalance)} does not match address balance ${balance}. Delta: ${delta}`;
-      }
+        row.delta = `Calculated ${row.asset} balance ${formatEther(row.biRunningAccountBalance)} does not match address balance ${formatEther(balance)}. Delta: ${delta}`;
+      } else row.delta = null
+      if (balance === undefined) row.delta = 'No value found, check contract ABI'
     }
 
   }
-
-  row.status = delta ? "red" : "green";
+  console.log(row)
+  row.status = row.delta ? "red" : "green";
 
   tableKey.value += 1
   if (tableRef.value?.pagination?.page > 1) {

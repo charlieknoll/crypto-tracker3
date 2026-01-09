@@ -137,7 +137,7 @@ const filteredAddresses = computed(() => {
   }
   if (!hasValue(filter.value) && app.selectedChains?.length == 0) return result;
 
-  result
+  result = result
     .filter(
       (r) =>
         r.name.toLowerCase().includes((filter.value ?? "").toLowerCase()) ||

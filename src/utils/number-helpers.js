@@ -1,5 +1,14 @@
-import { formatUnits, parseUnits } from "ethers";
+import { formatUnits, parseUnits, parseEther } from "ethers";
 
+const convertToWei = function (val, decimals) {
+  //creates an ether  representation of a bigint, e.g. $1000.123456 USDC (6 dec) would have a val passed in of 1000123456/n
+
+  const decimalNum = formatUnits(
+    BigInt(val ?? "0"),
+    parseInt(decimals ?? 0) ?? 18
+  );
+  return parseEther(decimalNum);
+};
 const currency = (val, row) =>
   `${val || val == 0.0 ? `$${parseFloat(val).toFixed(2)}` : ""}`;
 const multiplyCurrency = (args) => {
@@ -24,4 +33,4 @@ const sBnToFloat = function (v, decimals = 18) {
     return 0.0;
   }
 };
-export { currency, multiplyCurrency, sBnToFloat, perCent };
+export { currency, multiplyCurrency, sBnToFloat, perCent, convertToWei };
