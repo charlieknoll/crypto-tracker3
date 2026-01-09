@@ -4,11 +4,12 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- Update column layout on Running Balances for Account and Asset views
+- Income: Totals view for all years is messed up (ETH summing as string?)
 
 - Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add
 - Add account filter on unrealized, only show accounts with balance above enterable
 
+- Get prices from Kraken ?
 - Prices aren't updated on Spending for ENS
 - Prices service is requesting prices that return 401
 - Verify all prices set (Chain, Income, Spending, Offchain)
@@ -17,15 +18,15 @@ Track crypto balances, gains and losses
 
 - set capital gains as gift with non zero ether transfers from spam accounts
 
-- reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
-
 - export and import into opening positions, how will address balances be handled?
 
 - gift export/import
 
-- wallet capital gains starting in 2025
+- WALLET capital gains starting in 2025
 
-- add Kraken integration
+- add Kraken integration or at least manually enter for 2025
+
+- reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
 - Add BNB support
 - Check ENS expiration dates (charlieknoll, bikeparts) use addresses tab manage, add expiration check programatically
 - add total net worth on dashboard reconciled with zapper
@@ -35,6 +36,9 @@ Track crypto balances, gains and losses
 
 ## DONE
 
+- Update column layout on Running Balances for Account and Asset views
+- Year filter should default to "All", don't use settings
+- Add toggle for only non-zero owned
 - test very large decimal support on chain-tx, mined block, token-tx (git changes)
 - Reconcile BNB, OP, OMG, LPT, crvUSD, GTC, TRX, XDATA, ViCA
 - Test and reconcile tokens, fix token contract missing addresses (CRV), maybe add a new field for token balance contract?

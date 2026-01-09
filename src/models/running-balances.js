@@ -1,5 +1,25 @@
 import { date } from "quasar";
 import { formatEther, formatUnits } from "ethers";
+import { currency } from "src/utils/number-helpers";
+const runningAccountBalanceColumn = {
+  name: "runningAccountBalance",
+  label: "Current Account Balance",
+  field: "biRunningAccountBalance",
+  align: "right",
+  format: (val, row) => `${formatEther(val ?? 0.0)}`,
+  // format: (val, row) => `${parseFloat(val ?? 0.0).toFixed(12)}`,
+  //style: (row) => "color: red;",
+  style: (row) => {
+    return `color: ${row.status};`;
+  },
+};
+const runningBalanceColumn = {
+  name: "runningBalance",
+  label: "Current Asset Balance",
+  field: "biRunningBalance",
+  align: "right",
+  format: (val, row) => `${formatEther(val ?? 0.0)}`,
+};
 
 const columns = [
   {
@@ -70,26 +90,57 @@ const columns = [
     align: "right",
     format: (val, row) => `$${val ? parseFloat(val).toFixed(2) : "0.00"}`,
   },
-  {
-    name: "runningAccountBalance",
-    label: "Running Acct Balance",
-    field: "biRunningAccountBalance",
-    align: "right",
-    format: (val, row) => `${formatEther(val ?? 0.0)}`,
-    // format: (val, row) => `${parseFloat(val ?? 0.0).toFixed(12)}`,
-    //style: (row) => "color: red;",
-    style: (row) => {
-      return `color: ${row.status};`;
-    },
-  },
-
-  {
-    name: "runningBalance",
-    label: "Running Balance",
-    field: "biRunningBalance",
-    align: "right",
-    format: (val, row) => `${formatEther(val ?? 0.0)}`,
-  },
+  runningAccountBalanceColumn,
+  runningBalanceColumn,
 ];
 
-export { columns };
+const summaryColumns = [
+  {
+    name: "date",
+    label: "Last Used",
+    field: "date",
+    align: "left",
+    // format: (val, row) => {
+    //   Object.assign(row, timestampToDateAndTime(row.timestamp));
+    //   return row.date;
+    // },
+  },
+  {
+    name: "account",
+    label: "Account",
+    field: "account",
+    align: "left",
+  },
+  {
+    name: "asset",
+    label: "Asset",
+    field: "asset",
+    align: "left",
+  },
+  {
+    name: "price",
+    label: "Price",
+    field: "price",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "currentPrice",
+    label: "Current Price",
+    field: "currentPrice",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "currentValue",
+    label: "Current Value",
+    field: "currentValue",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+];
+const totalColumns = summaryColumns.concat([runningBalanceColumn]);
+const accountTotalColumns = summaryColumns.concat([
+  runningAccountBalanceColumn,
+]);
+export { columns, accountTotalColumns, totalColumns };

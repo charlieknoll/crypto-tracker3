@@ -1,9 +1,10 @@
 <template>
   <q-page>
-    <transactions-table title="Running Balances" :rows="filtered" :columns="columns" @rowClick="showDelta"
+    <transactions-table title="Running Balances" :rows="filtered" :columns="currentColumns" @rowClick="showDelta"
       :key="tableKey" ref="tableRef">
       <template v-slot:top-right>
         <div class="row">
+          <q-toggle label="Owned & Non Zero" v-model="owned" class="q-pr-sm"></q-toggle>
           <account-filter :options="accounts"></account-filter>
           <asset-filter></asset-filter>
 
@@ -32,17 +33,20 @@ import { computed, ref, nextTick } from "vue";
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AccountFilter from "src/components/AccountFilter.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
-import { columns } from "src/models/running-balances";
+import { columns, accountTotalColumns, totalColumns } from "src/models/running-balances";
 import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
+import { usePricesStore } from "src/stores/prices-store";
 import { useRunningBalancesStore } from "src/stores/running-balances-store";
 import { useAddressStore } from "src/stores/address-store";
 import { onlyUnique } from "src/utils/array-helpers";
 import { getBalanceAtBlock, getTokenBalanceAtBlock } from "src/services/balance-provider";
 import { formatEther, parseEther } from "ethers";
 const tableKey = ref(0);
+const owned = ref(true);
 const tableRef = ref(null)
 const addressStore = useAddressStore();
+
 const showDelta = async (evt, row, index) => {
   if (!evt.altKey) return
   const addresss = addressStore.records.find((a) => a.name == row.account);
@@ -88,13 +92,24 @@ const runningBalancesStore = useRunningBalancesStore();
 
 const groups = ["Detailed", "Account", "Asset"]
 const balanceGrouping = ref("Account");
+const currentColumns = computed(() => {
+  if (balanceGrouping.value == "Detailed") return columns;
+  if (balanceGrouping.value == "Account") return accountTotalColumns;
+  if (balanceGrouping.value == "Asset") return totalColumns;
+  return columns;
+});
 const filtered = computed(() => {
   let txs = runningBalancesStore.runningBalances;
   if (!txs) return []
   let taxYear = appStore.taxYear;
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByAccounts(txs, appStore.selectedAccounts);
-  if (taxYear == "All") {
+  txs = txs.filter((tx) => {
+
+    const address = addressStore.records.find((a) => a.name == tx.account);
+    return (!address || address?.type == "Owned")
+  });
+  if (taxYear == "All" || balanceGrouping.value != "Detailed") {
     taxYear = appStore.taxYears[appStore.taxYears.length - 2];
   }
 
@@ -112,10 +127,28 @@ const filtered = computed(() => {
 
 
   }
+  if (owned.value) {
+    txs = txs.filter((tx) => {
+      return (tx.biRunningAccountBalance && parseFloat(formatEther(tx.biRunningAccountBalance)) != 0.0)
+    });
+  }
 
-
-  txs = filterByYear(txs, appStore.taxYear);
-
+  if (balanceGrouping.value == "Detailed") {
+    txs = filterByYear(txs, appStore.taxYear);
+  } else {
+    //get price and current value
+    const priceStore = usePricesStore();
+    for (const tx of txs) {
+      const currentPrice = priceStore.getMostRecentPrice(tx.asset);
+      tx.currentPrice = currentPrice.price;
+      if (balanceGrouping.value == "Asset") {
+        tx.currentValue = parseFloat(formatEther(tx.biRunningBalance)) * tx.currentPrice;
+      }
+      if (balanceGrouping.value == "Account") {
+        tx.currentValue = parseFloat(formatEther(tx.biRunningAccountBalance)) * tx.currentPrice;
+      }
+    }
+  }
   return txs;
 });
 const accounts = computed(() => {

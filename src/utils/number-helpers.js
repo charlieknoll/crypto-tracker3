@@ -9,8 +9,16 @@ const convertToWei = function (val, decimals) {
   );
   return parseEther(decimalNum);
 };
-const currency = (val, row) =>
-  `${val || val == 0.0 ? `$${parseFloat(val).toFixed(2)}` : ""}`;
+const usdFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+// const currency = (val) =>
+//   `${val || val == 0.0 ? `$${parseFloat(val).toFixed(2)}` : ""}`;
+const currency = (val) =>
+  `${val || val == 0.0 ? usdFormatter.format(val) : ""}`;
+
 const multiplyCurrency = (args) => {
   let result = 1.0;
   for (let i = 0; i < args.length; i++) {
