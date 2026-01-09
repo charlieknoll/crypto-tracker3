@@ -24,6 +24,7 @@ import StoreHelper from "src/utils/store-helpers";
 import { useChainTxsStore } from "./chain-txs-store";
 import { timestampToTime } from "src/utils/date-helper";
 import { onlyUnique } from "src/utils/array-helpers";
+import { parseCommaFloat } from "src/utils/number-helpers";
 
 const lock = new Semaphore(1);
 const keyFunc = (r) => getId(r, keyFields);
@@ -98,6 +99,7 @@ export const usePricesStore = defineStore("prices", {
     set(upserted, recs) {
       const app = useAppStore();
       upserted.source = "Manual";
+      upserted.price = parseCommaFloat(upserted.price);
       if (upserted.timestamp) {
         upserted.time = date.formatDate(upserted.timestamp * 1000, "HH:mm:ss");
         upserted.date = date.formatDate(
@@ -109,7 +111,7 @@ export const usePricesStore = defineStore("prices", {
 
       if (errorMessage) return errorMessage;
 
-      const record = this.records.find((r) => {
+      let record = this.records.find((r) => {
         return r.id == upserted.id;
       });
       upserted = setUpperCase(upserted, upperCaseFields);
@@ -121,7 +123,9 @@ export const usePricesStore = defineStore("prices", {
         });
       }
 
-      if (dup) return "Duplicate record";
+      if (dup) {
+        record = dup;
+      }
 
       upserted.id = keyFunc(upserted);
       if (!upserted.timestamp) {
@@ -170,7 +174,7 @@ export const usePricesStore = defineStore("prices", {
 
       let result = this.records.find(
         (r) =>
-          r.asset == asset &&
+          r.asset == asset.toUpperCase() &&
           r.timestamp == timestamp &&
           (r.source == "Manual" || r.source == "Calc")
       );
@@ -294,6 +298,8 @@ export const usePricesStore = defineStore("prices", {
       this.sort();
     },
     async getPrices() {
+      console.log("Getting prices...DISABLED");
+      return;
       await lock.acquire();
       const app = useAppStore();
       app.importing = true;

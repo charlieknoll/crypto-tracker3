@@ -60,7 +60,7 @@
     <div class="shadow-up-1 q-mt-sm">
       <div class="row q-pa-sm">
         <div class="col-12 col-sm-8  q-pr-sm">
-          <q-input v-model="value.price" label="Price" v-autofocus>
+          <q-input v-model="value.price" :label="`Price (${value.asset})`" v-autofocus>
           </q-input>
         </div>
       </div>

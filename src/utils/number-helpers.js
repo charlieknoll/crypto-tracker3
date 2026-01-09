@@ -19,6 +19,12 @@ const usdFormatter = new Intl.NumberFormat("en-US", {
 const currency = (val) =>
   `${val || val == 0.0 ? usdFormatter.format(val) : ""}`;
 
+const parseCommaFloat = (str) => {
+  const cleaned = String(str).replace(/,/g, "");
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
+};
+
 const multiplyCurrency = (args) => {
   let result = 1.0;
   for (let i = 0; i < args.length; i++) {
@@ -41,4 +47,11 @@ const sBnToFloat = function (v, decimals = 18) {
     return 0.0;
   }
 };
-export { currency, multiplyCurrency, sBnToFloat, perCent, convertToWei };
+export {
+  currency,
+  multiplyCurrency,
+  sBnToFloat,
+  perCent,
+  convertToWei,
+  parseCommaFloat,
+};

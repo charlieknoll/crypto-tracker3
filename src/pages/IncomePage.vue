@@ -64,8 +64,8 @@ const filtered = computed(() => {
       };
       totals.push(total);
     }
-    total.amount += tx.amount;
-    total.gross += tx.gross;
+    total.amount += parseFloat(tx.amount);
+    total.gross += parseFloat(tx.gross);
   }
   if (gainsGrouping.value == "Totals") {
     let _totals = [];

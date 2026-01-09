@@ -4,17 +4,8 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- Income: Totals view for all years is messed up (ETH summing as string?)
-
 - Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add
 - Add account filter on unrealized, only show accounts with balance above enterable
-
-- Get prices from Kraken ?
-- Prices aren't updated on Spending for ENS
-- Prices service is requesting prices that return 401
-- Verify all prices set (Chain, Income, Spending, Offchain)
-- don't request non tracked token prices
-- Price not saving on first CDAI (won't override api $1.00)
 
 - set capital gains as gift with non zero ether transfers from spam accounts
 
@@ -25,6 +16,9 @@ Track crypto balances, gains and losses
 - WALLET capital gains starting in 2025
 
 - add Kraken integration or at least manually enter for 2025
+- Get prices from Kraken ?
+- Prices service is requesting prices that return 401
+- don't request non tracked token prices
 
 - reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
 - Add BNB support
@@ -36,6 +30,10 @@ Track crypto balances, gains and losses
 
 ## DONE
 
+- Verify all prices set (Chain, Income, Spending, Offchain)
+- price not saving on ENS
+- Prices aren't updated on Spending for ENS
+- Income: Totals view for all years is messed up (ETH summing as string?)
 - Update column layout on Running Balances for Account and Asset views
 - Year filter should default to "All", don't use settings
 - Add toggle for only non-zero owned

@@ -72,6 +72,7 @@ import { useChainStore } from "src/stores/chain-store";
 import { usePricesStore } from "src/stores/prices-store";
 import { onlyUnique } from "src/utils/array-helpers";
 import ChainTxForm from "src/components/ChainTxForm.vue"
+import { assert } from "ethers";
 
 
 const store = useChainTxsStore();
@@ -112,6 +113,7 @@ const edit = (evt, row, index) => {
     method: row.method,
     methodName: row.methodName,
     gasType: row.gasType,
+    asset: row.asset,
     price: row.price,
     timestamp: row.timestamp,
 
@@ -137,7 +139,7 @@ const save = function () {
   methods.set({ id: record.method, name: record.methodName })
   const prices = usePricesStore()
   prices.set({
-    asset: record.gasType,
+    asset: record.asset,
     timestamp: record.timestamp,
     price: record.price
   })
