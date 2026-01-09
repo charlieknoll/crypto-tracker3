@@ -146,9 +146,9 @@ export const usePricesStore = defineStore("prices", {
       this.getPrices();
       return "";
     },
-    // delete(id) {
-    //   this.records = this.records.filter((r) => r.id != id);
-    // },
+    delete(id) {
+      this.records = this.records.filter((r) => r.id != id);
+    },
     clear(deletePrices) {
       const app = useAppStore();
       app.needsBackup = true;
