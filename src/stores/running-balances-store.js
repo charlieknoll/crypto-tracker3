@@ -17,24 +17,15 @@ const sortByTimeStampThenTxId = (a, b) => {
       : -1
     : a.timestamp - b.timestamp;
 };
-
-function getRunningBalances() {
-  //TODO testing
-  // const a = parseUnits("50.012345678901234567", 18);
-  // console.log(`Test parseUnits: ${formatEther(a)}`);
-  // let b = parseUnits("-5", 18);
-  // console.log(`Test parseUnits negative: ${formatEther(b)}`);
-  // b = a + b;
-  // console.log(`Test addition: ${formatEther(b)}`);
-  // b = b - parseUnits("10.012345678901234567", 18);
-  // console.log(`Test subtraction: ${formatEther(b)}`);
-  //
+function getMappedData() {
   let mappedData = [];
 
   const openingPositions = useOpeningPositionsStore().records;
   const offchainTransfers = useOffchainTransfersStore().split;
   const chainTransactions = useChainTxsStore().accountTxs;
   const exchangeTrades = useExchangeTradesStore().split;
+  const prices = usePricesStore();
+  //opening positions
   for (const tx of openingPositions) {
     let account = tx.account;
     if (account.includes("->")) {
@@ -53,8 +44,7 @@ function getRunningBalances() {
       action: "BUY",
     });
   }
-  const prices = usePricesStore();
-
+  //offchain transfers these are split into IN/OUT and FEE already
   for (const tx of offchainTransfers) {
     const price = prices.getPrice(tx.asset, tx.date, tx.timestamp);
     const feePrice = prices.getPrice(tx.feeCurrency, tx.date, tx.timestamp);
@@ -95,8 +85,7 @@ function getRunningBalances() {
       });
     }
   }
-  let i = 0;
-
+  //chain transactions not token
   for (const tx of chainTransactions.filter((tx) =>
     ["C", "I", "B", "U"].includes(tx.txType)
   )) {
@@ -142,13 +131,12 @@ function getRunningBalances() {
           action: tx.taxCode,
         });
       }
-      i++;
     } catch (err) {
       console.error(err);
       debugger;
     }
   }
-
+  //chain transactions token
   for (const tx of chainTransactions.filter((tx) => tx.txType == "T")) {
     if (tx?.fromAccountName.toLowerCase() == "genesis") continue;
     //if (tx.fromAccount.type == "Gift") continue;
@@ -186,13 +174,12 @@ function getRunningBalances() {
           hash: tx.hash,
         });
       }
-      i++;
     } catch (err) {
       //debugger;
       console.error(err);
     }
   }
-
+  //exchange trades, these are split into BUY/SELL and FEE already
   for (const tx of exchangeTrades) {
     //SELL and FEE should be negative
     let amount =
@@ -212,6 +199,12 @@ function getRunningBalances() {
       action: tx.action,
     });
   }
+  return mappedData;
+}
+function getRunningBalances() {
+  //TODO testing
+
+  let mappedData = getMappedData();
   mappedData = mappedData.sort(sortByTimeStampThenTxId);
   //Sort by timestamp
   //TODO set running balances
@@ -341,6 +334,15 @@ export const useRunningBalancesStore = defineStore("runningBalances", {
     runningBalances: () => {
       try {
         return getRunningBalances();
+      } catch (err) {
+        console.error(err);
+        debugger;
+      }
+      return [];
+    },
+    mappedData: () => {
+      try {
+        return getMappedData();
       } catch (err) {
         console.error(err);
         debugger;

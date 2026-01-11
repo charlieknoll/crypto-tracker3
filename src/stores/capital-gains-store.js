@@ -4,6 +4,8 @@ import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
 import { defineStore } from "pinia";
 import constants from "../constants"; //
+//import { parseEther } from "ethers";
+import { sBnToFloat } from "src/utils/number-helpers";
 
 const sortByTimeStampThenTxId = (a, b) => {
   return a.timestamp == b.timestamp
@@ -60,7 +62,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
   //gas Costs for transfers on chaintx
   let gasFeeTxs = chainTransactions.filter(
     (tx) =>
-      tx.gasFee > 0.0 &&
+      tx.gasFee > BigInt("0") &&
       tx.txType == "C" &&
       tx.fromAccount.type == "Owned" &&
       tx.taxCode == "TRANSFER"
@@ -68,8 +70,9 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
   gasFeeTxs = gasFeeTxs.map((tx) => {
     const feeTx = Object.assign({}, tx);
     feeTx.timestamp = tx.timestamp - 1;
-    feeTx.amount = tx.gasFee;
-    feeTx.costBasisAdj = tx.gasFee * tx.price;
+    feeTx.amount = sBnToFloat(tx.gasFee);
+    feeTx.value = tx.gasFee;
+    feeTx.costBasisAdj = tx.amount * tx.price;
     return feeTx;
   });
 
@@ -94,7 +97,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
   let errorFeeTxs = chainTransactions.filter(
     (tx) =>
       tx.isError &&
-      tx.gasFee > 0.0 &&
+      tx.gasFee > BigInt("0") &&
       tx.txType == "C" &&
       tx.fromAccount.type == "Owned" &&
       tx.toAccount.type != "Token"
@@ -102,15 +105,16 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
   errorFeeTxs = errorFeeTxs.map((tx) => {
     const feeTx = Object.assign({}, tx);
     feeTx.timestamp = tx.timestamp - 1;
-    feeTx.amount = tx.gasFee;
-    feeTx.costBasisAdj = tx.gasFee * tx.price;
+    feeTx.amount = sBnToFloat(tx.gasFee);
+    feeTx.value = tx.gasFee;
+    feeTx.costBasisAdj = tx.amount * tx.price;
     return feeTx;
   });
   //error fees for chaintx type = "C" to token contract to token asset
   let tokenErrorFeeTxs = chainTransactions.filter(
     (tx) =>
       tx.isError &&
-      tx.gasFee > 0.0 &&
+      tx.gasFee > BigInt("0") &&
       tx.txType == "C" &&
       tx.fromAccount.type == "Owned" &&
       tx.toAccount.type == "Token"
@@ -122,8 +126,8 @@ function getCostBasisTxs(chainTransactions, offchainTransfers) {
     let token = tx.toAccount.name?.split(":")[1];
 
     feeTx.asset = token ?? tx.toAccount.name;
-    feeTx.amount = tx.gasFee;
-    feeTx.costBasisAdj = tx.gasFee * tx.price;
+    feeTx.amount = sBnToFloat(tx.gasFee);
+    feeTx.costBasisAdj = tx.amount * tx.price;
     return feeTx;
   });
   //offchain.fee for type == "TRANSFER" for offchainTx
@@ -223,9 +227,9 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   gasFeeTxs = gasFeeTxs.map((tx) => {
     const feeTx = Object.assign({}, tx);
     feeTx.timestamp = tx.timestamp - 1;
-    feeTx.amount = tx.gasFee;
+    feeTx.amount = sBnToFloat(tx.gasFee);
     feeTx.fee = 0.0;
-    feeTx.gross = tx.gasFee * tx.price;
+    feeTx.gross = feeTx.amount * tx.price;
     feeTx.proceeds = feeTx.gross;
     feeTx.action = "FEE";
     feeTx.account = feeTx.fromAccountName;
@@ -325,6 +329,7 @@ function allocateProceeds(tx, buyTxs, splitTxs) {
     splitTx.costBasisFees = costBasisFees;
     splitTx.sellId = tx.id;
     splitTx.id = tx.id;
+    splitTx.timestamp = tx.timestamp;
     splitTx.daysHeld = daysHeld;
     splitTx.date = tx.date;
     splitTx.amount = allocatedAmount;
@@ -396,7 +401,7 @@ function getAllocatedTxs(includeWashSales) {
       //   debugger;
       // }
       allocateCostBasis(tx, buyTxs);
-      console.log("Test wallet timestamp:" + constants.WALLET_TIMESTAMP_CUTOFF);
+      //console.log("Test wallet timestamp:" + constants.WALLET_TIMESTAMP_CUTOFF);
     }
   }
   //TODO add cost basis field

@@ -35,9 +35,9 @@ const columns = [
   {
     label: "Time",
     name: "time",
-    field: "time",
+    field: "timestamp",
     align: "left",
-    format: (val, row) => date.formatDate(row.timestamp * 1000, "HH:mm:ss"),
+    format: (val, row) => date.formatDate(val * 1000, "HH:mm:ss"),
   },
   // {
   //   name: "timestamp",
@@ -90,8 +90,12 @@ const columns = [
     align: "right",
     format: (val, row) => `$${val ? parseFloat(val).toFixed(2) : "0.00"}`,
   },
-  runningAccountBalanceColumn,
-  runningBalanceColumn,
+  Object.assign({}, runningAccountBalanceColumn, {
+    label: "Running Acct Balance",
+  }),
+  Object.assign({}, runningBalanceColumn, {
+    label: "Running Asset Balance",
+  }),
 ];
 
 const summaryColumns = [

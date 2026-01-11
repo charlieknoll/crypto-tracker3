@@ -181,6 +181,10 @@ export const usePricesStore = defineStore("prices", {
       if (result) {
         return result.price;
       }
+      if (!date && timestamp) {
+        const dt = timestampToDateAndTime(timestamp);
+        date = dt.date;
+      }
       result = this.records.find(
         (r) => r.asset == asset && r.date == date && r.source == "Manual"
       );

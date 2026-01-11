@@ -16,8 +16,11 @@ const columns = [
     name: "time",
     field: "time",
     align: "left",
-    format: (val, row) =>
-      val ? date.formatDate(row.timestamp * 1000, "HH:mm:ss") : "",
+    format: (val, row) => {
+      return val ?? row.timestamp
+        ? date.formatDate(row.timestamp * 1000, "HH:mm:ss")
+        : "";
+    },
   },
   {
     name: "account",

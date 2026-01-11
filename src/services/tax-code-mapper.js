@@ -16,8 +16,10 @@ const getTaxCode = function (fromType, toType, toName, tokenTxCt, isError, tx) {
   )
     return "TRANSFER";
   if (fromType == "Income") return "INCOME";
-  //TODO clarify this with "GIFT RECEIVED, GIFT GIVEN"
-  if (toType == "Gift" || fromType == "Gift") return "GIFT";
+
+  if (fromType == "Spam") return "GIFT-IN";
+  if (fromType == "Gift") return "TRANSFER";
+  if (toType == "Gift") return "GIFT-OUT";
   if (toType.includes("Donation")) return "DONATION";
   if (toType == "Spending") return "SPENDING";
   if (toType == "Expense") return "EXPENSE";
