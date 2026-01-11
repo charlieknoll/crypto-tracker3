@@ -4,22 +4,24 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- Unlocking frozen using offline-tx-signer
+- distribute cost-basis for a zero amount sell that has a fee (add as a cost basis tx)
+- distribute cost-basis for a Zero amount BUY that has a fee
+
 - treat a GIFT tx from Spam as a "Buy" at market rates
 - Change a GIFT tx from openingPositon as a normal "TRANSFER"
 - treat a "GIFT-IN" as a TRANSFER from an openingPosition named the same as the fromAcccount.name
 - Handle EXPENSE REFUND as BUY
 - fix exchangeFees, convert to getter, fix id that is adding -F, reimport to clean up?
 - TRANSFER removes prorated costBasis and amount from accountInventory then adds prorates amount and costBasis + fee to toAccount inventory
-
-- rework capital gains to be buy lot focused
 - should GIFT-OUT really be a transfer? No it should only be a sell, we don't care about it
 - don't double count transfer fees from gas
 - fix timestampAndSort function to handle empty sort
 - keep a list of the buy lot transfer history including prorated costbasis assigned
 - only set wallet name after 1/1/2025 and then set account using tx.fromWallet ?? tx.fromName
+- Is there a way to undo a "SELL" from an expense transaction if there is an "EXPENSE REFUND?"
 
-- Running balances doesn't work on exchange accounts and doesn't include exchangeStore.fees
+- Test unlocking frozen using offline-tx-signer, copy json files to USB
+
 - Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add
 - Add account filter on unrealized, only show accounts with balance above enterable
 
@@ -41,11 +43,14 @@ Track crypto balances, gains and losses
 - Check ENS expiration dates (charlieknoll, bikeparts) use addresses tab manage, add expiration check programatically
 - add total net worth on dashboard reconciled with zapper
 
-- document skipInternal? (Gnosis wallet contract may have some extra tx's)
 - Change Gnosis Wallet to "Contract Owned" ?
 
 ## DONE
 
+- Running balances doesn't work on exchange accounts and doesn't include exchangeStore.fees
+- document skipInternal? (Gnosis wallet contract may have some extra tx's)
+- Through no api key error to user when trying to import
+- Add exchange fees to running balances to reconcile USDC
 - Capital Gains: fix gas fee unit issue on all cost basis types
 - Verify all prices set (Chain, Income, Spending, Offchain)
 - price not saving on ENS

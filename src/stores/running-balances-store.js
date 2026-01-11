@@ -24,6 +24,7 @@ function getMappedData() {
   const offchainTransfers = useOffchainTransfersStore().split;
   const chainTransactions = useChainTxsStore().accountTxs;
   const exchangeTrades = useExchangeTradesStore().split;
+  const exchangeFees = useExchangeTradesStore().fees;
   const prices = usePricesStore();
   //opening positions
   for (const tx of openingPositions) {
@@ -138,6 +139,7 @@ function getMappedData() {
   }
   //chain transactions token
   for (const tx of chainTransactions.filter((tx) => tx.txType == "T")) {
+    if (tx.asset == "ETH") continue;
     if (tx?.fromAccountName.toLowerCase() == "genesis") continue;
     //if (tx.fromAccount.type == "Gift") continue;
     try {
@@ -186,6 +188,7 @@ function getMappedData() {
       tx.action == "BUY"
         ? parseFloat(tx.amount).toFixed(18)
         : parseFloat(-tx.amount).toFixed(18);
+
     //amount = amount.toFixed(18);
     mappedData.push({
       txId: "Ex-" + tx.id.substring(0, 13),
@@ -199,6 +202,23 @@ function getMappedData() {
       action: tx.action,
     });
   }
+  //TODO convert to exchangeRewardFees to handle new Kraken rewards
+  //Exchange Fees get imported from Coinbase, no UI, just saved in localStorage
+
+  for (const tx of exchangeFees) {
+    mappedData.push({
+      txId: "Ef-" + tx.id.substring(0, 13),
+      timestamp: Math.floor(tx.timestamp),
+      account: tx.account,
+      date: tx.date,
+      amount: parseFloat(-tx.amount).toFixed(18),
+      asset: tx.asset,
+      price: tx.price,
+      type: tx.action,
+      action: tx.action,
+    });
+  }
+
   return mappedData;
 }
 function getRunningBalances() {

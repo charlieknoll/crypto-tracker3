@@ -6,6 +6,7 @@ import { defineStore } from "pinia";
 import constants from "../constants"; //
 //import { parseEther } from "ethers";
 import { sBnToFloat } from "src/utils/number-helpers";
+import { useCostBasisStore } from "./cost-basis-store";
 
 const sortByTimeStampThenTxId = (a, b) => {
   return a.timestamp == b.timestamp
@@ -423,6 +424,10 @@ export function getCapitalGains(applyWashSale) {
   // one sell that disposes multiple buys should create multiple capital gains entries
   // Also support wallet vs asset allocation modes switching 1/1/2025
   // for interwallet transfers assign the cost basis to the receiving wallet
+
+  const costBasisStore = useCostBasisStore();
+  const costBasis = costBasisStore.costBasis;
+  return {};
 
   const allocatedTxs = getAllocatedTxs(applyWashSale);
   const sellTxs = allocatedTxs.sellTxs.filter((tx) => tx.action != "GIFT");

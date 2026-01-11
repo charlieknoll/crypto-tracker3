@@ -9,6 +9,7 @@ import { sortByTimeStampThenId } from "src/utils/array-helpers";
 import { useExchangeTradesStore } from "./exchange-trades-store";
 import { getMinedBlocks } from "src/services/mined-block-mapper";
 import { useAddressStore } from "./address-store";
+import { useQuasar } from "quasar";
 
 export const useChainTxsStore = defineStore("chain-txs", {
   state: () => ({
@@ -59,6 +60,7 @@ export const useChainTxsStore = defineStore("chain-txs", {
 
     async import() {
       const txs = await getTransactions();
+
       this.rawAccountTxs = mergeByHash(this.rawAccountTxs, txs.accountTxs);
       this.rawInternalTxs = mergeByHash(this.rawInternalTxs, txs.internalTxs);
       //this.rawTokenTxs = mergeByHash(this.rawTokenTxs, txs.tokenTxs);

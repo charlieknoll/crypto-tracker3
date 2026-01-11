@@ -21,8 +21,6 @@
               </q-item>
             </q-list>
           </q-btn-dropdown>
-
-          <q-btn class="q-ml-lg" color="primary" label="Reconcile" />
         </div>
       </template>
     </transactions-table>
@@ -104,11 +102,11 @@ const filtered = computed(() => {
   let taxYear = appStore.taxYear;
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByAccounts(txs, appStore.selectedAccounts);
-  txs = txs.filter((tx) => {
+  // txs = txs.filter((tx) => {
 
-    const address = addressStore.records.find((a) => a.name == tx.account);
-    return (!address || address?.type == "Owned")
-  });
+  //   const address = addressStore.records.find((a) => a.name == tx.account);
+  //   return (!address || address?.type == "Owned")
+  // });
   if (taxYear == "All" || balanceGrouping.value != "Detailed") {
     taxYear = appStore.taxYears[appStore.taxYears.length - 2];
   }

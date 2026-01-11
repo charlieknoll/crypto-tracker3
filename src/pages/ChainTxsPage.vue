@@ -45,7 +45,7 @@
             :options="chainStore.chains"
             label="Chain" />
           <div>
-            <q-btn class="q-ml-sm" color="primary" label="Import" @click="store.import" />
+            <q-btn class="q-ml-sm" color="primary" label="Import" @click="importChainTxs" />
             <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
           </div>
         </div>
@@ -119,6 +119,28 @@ const edit = (evt, row, index) => {
 
   })
   editing.value = true
+}
+const importChainTxs = async function () {
+  try {
+    await store.import();
+  } catch (error) {
+    //console.error("Error importing chain txs:", error);
+
+    $q.notify({
+      message: "Could not download chain txs, please check Etherscan API key in settings...",
+      color: "negative",
+      icon: "warning",
+      timeout: 0,  // 0 = no auto-close
+      position: 'center',
+      //closeBtn: 'Close',  // Show close button
+      actions: [
+        {
+          label: 'Dismiss',
+          color: 'white'
+        }
+      ]
+    });
+  }
 }
 
 const save = function () {

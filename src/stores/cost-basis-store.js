@@ -1,6 +1,11 @@
 import { parseEther } from "ethers";
 import { defineStore } from "pinia";
 import { multiplyCurrency } from "src/utils/number-helpers";
+import { useOpeningPositionsStore } from "./opening-positions-store";
+import { useOffchainTransfersStore } from "./offchain-transfers-store";
+import { useChainTxsStore } from "./chain-txs-store";
+import { useExchangeTradesStore } from "./exchange-trades-store";
+import { formatEther } from "ethers";
 
 const sortByTimeStampThenSort = (a, b) => {
   return a.timestamp == b.timestamp
@@ -37,7 +42,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
   let tokenFeeTxs = chainTransactions.filter((tx) => tx.txType == "F");
   tokenFeeTxs = tokenFeeTxs.map((tx) => {
     const tokenFeeTx = {};
-    tokenFeeTx.account = tx.fromWallet ?? tx.fromName;
+    tokenFeeTx.account = tx.fromWalletName ?? tx.fromAccountName;
     tokenFeeTx.timestamp = tx.timestamp;
     //assign cost basis after initiating tx
     tokenFeeTx.sort = 1;
@@ -69,7 +74,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
   );
   chainTransfers = chainTransfers.map((tx) => {
     const transferTx = {};
-    transferTx.account = tx.toWallet ?? tx.toName;
+    transferTx.account = tx.toWalletName ?? tx.toAccountName;
     transferTx.timestamp = tx.timestamp;
     transferTx.sort = 1;
     transferTx.asset = tx.asset;
@@ -104,6 +109,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
 
 function validateSellTx(tx) {
   if (!tx.account) {
+    console.log(tx);
     throw new Error("Sell tx missing account: " + JSON.stringify(tx));
   }
   if (!tx.timestamp) {
@@ -112,14 +118,20 @@ function validateSellTx(tx) {
   if (!tx.asset) {
     throw new Error("Sell tx missing asset: " + JSON.stringify(tx));
   }
-  if (!tx.amount || parseFloat(formatEther(tx.amount)) <= 0.0) {
-    throw new Error("Sell tx missing amount: " + JSON.stringify(tx));
+  if (
+    !tx.amount ||
+    typeof tx.amount !== "bigint" ||
+    parseFloat(formatEther(tx.amount)) <= 0.0
+  ) {
+    console.log(tx);
+    throw new Error("Sell tx invalid amount: " + tx.amount);
   }
   if (
     tx.price === undefined ||
     tx.price === null ||
     isNaN(tx.price) ||
-    tx.price <= 0.0
+    tx.price < 0.0 ||
+    (tx.type == "GIFT-OUT" && tx.price != 0.0)
   ) {
     throw new Error("Sell tx missing price: " + JSON.stringify(tx));
   }
@@ -136,22 +148,26 @@ function validateSellTx(tx) {
 function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   let sellTxs = [];
 
-  let spendTxs = chainTransactions.filter(
-    (tx) => (tx.taxCode == "SPENDING" || tx.taxCode == "EXPENSE") && !tx.isError
+  let txs = chainTransactions.filter(
+    (tx) =>
+      (tx.taxCode == "SPENDING" || tx.taxCode == "EXPENSE") &&
+      !tx.isError &&
+      BigInt(tx.value) != BigInt("0")
   );
-  spendTxs = spendTxs.map((tx) => {
+  let spendTxs = [];
+  txs.forEach((tx) => {
+    //if (BigInt(tx.value) == BigInt("0")) return;
     const spendTx = {};
-    spendTx.account = tx.fromWallet ?? tx.fromName;
+    spendTx.account = tx.fromWalletName ?? tx.fromAccountName;
     spendTx.timestamp = tx.timestamp;
     spendTx.asset = tx.asset;
-    spendTx.amount = tx.value ?? BigInt("0");
+    spendTx.amount = BigInt(tx.value) ?? BigInt("0");
     spendTx.price = tx.price;
     spendTx.fee = tx.fee;
     spendTx.type = tx.taxCode;
     spendTx.id = tx.id;
-    //TODO implement validateSellTx
     validateSellTx(spendTx);
-    return spendTx;
+    spendTxs.push(spendTx);
   });
   sellTxs = sellTxs.concat(spendTxs);
 
@@ -162,10 +178,10 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   );
   giftTxs = giftTxs.map((tx) => {
     const giftTx = {};
-    giftTx.account = tx.fromWallet ?? tx.fromName;
+    giftTx.account = tx.fromWalletName ?? tx.fromAccountName;
     giftTx.timestamp = tx.timestamp;
     giftTx.asset = tx.asset;
-    giftTx.amount = tx.value ?? BigInt("0");
+    giftTx.amount = BigInt(tx.value) ?? BigInt("0");
     giftTx.price = 0.0;
     giftTx.fee = tx.fee;
     giftTx.type = tx.taxCode;
@@ -180,10 +196,10 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   );
   sellAssetTxs = sellAssetTxs.map((tx) => {
     const sellAssetTx = {};
-    sellAssetTx.account = tx.fromWallet ?? tx.fromName;
+    sellAssetTx.account = tx.fromWalletName ?? tx.fromAccountName;
     sellAssetTx.timestamp = tx.timestamp;
     sellAssetTx.asset = tx.asset;
-    sellAssetTx.amount = tx.value ?? BigInt("0");
+    sellAssetTx.amount = BigInt(tx.value) ?? BigInt("0");
     sellAssetTx.price = tx.price;
     sellAssetTx.fee = tx.fee;
     sellAssetTx.type = "CHAIN-SELL";
@@ -194,9 +210,11 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   sellTxs = sellTxs.concat(sellAssetTxs);
 
   //TODO is tx.fee always USD?
-  let exchangeTxs = exchangeTrades.filter((tx) => tx.action == "SELL");
-  exchangeTxs = exchangeTxs.map((exchangeTx) => {
-    exchangeTx = {};
+  let exchangeTxs = exchangeTrades.filter(
+    (tx) => tx.action == "SELL" && tx.amount != 0.0
+  );
+  exchangeTxs = exchangeTxs.map((tx) => {
+    const exchangeTx = {};
     exchangeTx.id = tx.id;
     exchangeTx.account = tx.account;
     exchangeTx.timestamp = tx.timestamp;
@@ -204,7 +222,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     exchangeTx.amount = parseEther(tx.amount.toString()) ?? BigInt("0");
     exchangeTx.price = tx.price;
     exchangeTx.fee = tx.fee;
-    exchangeTx.type = "CHAIN-SELL";
+    exchangeTx.type = "EXCH-SELL";
     validateSellTx(exchangeTx);
     return exchangeTx;
   });
@@ -222,13 +240,13 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   gasFeeTxs = gasFeeTxs.map((tx) => {
     const feeTx = {};
     feeTx.id = tx.id;
-    feeTx.account = feeTx.fromAccountName;
+    feeTx.account = tx.fromWalletName ?? tx.fromAccountName;
     feeTx.asset = tx.gasType;
     //TODO add sort intead of timestamp hack
     feeTx.timestamp = tx.timestamp;
     //fee is sold first, then the main tx sell should be handled after
     feeTx.sort = -1;
-    feeTx.amount = tx.gasFee ?? BigInt("0");
+    feeTx.amount = BigInt(tx.gasFee) ?? BigInt("0");
     feeTx.fee = 0.0;
     feeTx.price = tx.price;
     feeTx.type = "CHAIN-FEE";
@@ -240,22 +258,23 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   let offChainFeeTxs = offchainTransfers.filter(
     (tx) => tx.type == "FEE" && tx.amount > 0.0
   );
-  //TODO check that feeTxs are correct
-  debugger;
+
   const _offChainFeeTxs = [];
   for (const tx of offChainFeeTxs) {
     //TODO fix
     const feeTx = {};
     feeTx.id = tx.id;
-    feeTx.account = feeTx.fromAccount;
+    //No need to handle wallet here, account is always a wallt for an exchange
+    feeTx.account = tx.fromAccount;
     feeTx.asset = tx.asset;
     //TODO add sort intead of timestamp hack
     feeTx.timestamp = tx.timestamp;
     //fee is sold first, then the main tx sell should be handled after
     feeTx.sort = -1;
-    feeTx.amount = -parseEther(tx.amount) ?? BigInt("0");
+    feeTx.amount = parseEther(tx.amount.toString() ?? "0") ?? BigInt("0");
     feeTx.fee = 0.0;
-    feeTx.price = prices.getPrice(tx.feeCurrency, tx.date, tx.timestamp);
+    //feeTx.price = prices.getPrice(tx.feeCurrency, tx.date, tx.timestamp);
+    feeTx.price = tx.price;
     feeTx.type = "CHAIN-FEE";
     debugger;
     validateSellTx(feeTx);
@@ -307,16 +326,14 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     (tx) =>
       tx.taxCode == "BUY" ||
       tx.taxCode == "INCOME" ||
-      (tx.taxCode == "EXPENSE REFUND" && tx.amount > 0.0)
+      (tx.taxCode == "EXPENSE REFUND" && tx.value > BigInt("0") && !tx.isError)
   );
   buyTxs = buyTxs.map((tx) => {
     const buyTx = {};
-    buyTx.account = tx.toName;
+    buyTx.account = tx.toWalletName ?? tx.toAccountName;
     buyTx.timestamp = tx.timestamp;
     buyTx.asset = tx.asset;
-    buyTx.amount = formatEther(
-      tx.isError ? BigInt("0") : tx.value ?? BigInt("0")
-    );
+    buyTx.amount = BigInt(tx.value);
     buyTx.price = tx.price;
     buyTx.fee = tx.fee;
     buyTx.id = tx.id;
@@ -325,16 +342,15 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     return buyTx;
   });
   let giftTxs = chainTxs.filter(
-    (tx) => tx.taxCode == "GIFT-IN" && tx.amount > 0.0
+    (tx) => tx.taxCode == "GIFT-IN" && tx.value > BigInt("0") && !tx.isError
   );
   giftTxs = buyTxs.map((tx) => {
     const buyTx = {};
-    buyTx.account = tx.toName;
+    buyTx.account = tx.toWalletName ?? tx.toAccountName;
     buyTx.timestamp = tx.timestamp;
     buyTx.asset = tx.asset;
-    buyTx.amount = formatEther(
-      tx.isError ? BigInt("0") : tx.value ?? BigInt("0")
-    );
+    buyTx.amount = BigInt(tx.value);
+
     buyTx.price = tx.price;
     buyTx.fee = 0.0;
     buyTx.id = tx.id;
@@ -344,7 +360,9 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
   });
   buyTxs = buyTxs.concat(giftTxs);
 
-  let _buyExchangeTrades = exchangeTrades.filter((tx) => tx.action == "BUY");
+  let _buyExchangeTrades = exchangeTrades.filter(
+    (tx) => tx.action == "BUY" && tx.amount > 0.0
+  );
   _buyExchangeTrades = _buyExchangeTrades.map((tx) => {
     const buyTx = {};
     buyTx.account = tx.account;
@@ -355,18 +373,18 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     buyTx.price = tx.price;
     buyTx.fee = tx.fee;
     buyTx.id = tx.id;
-    buyTx.type = "CHAIN-" + tx.taxCode;
+    buyTx.type = "EXCH-" + tx.taxCode;
     validateBuyTx(buyTx);
     return buyTx;
   });
   buyTxs = buyTxs.concat(_buyExchangeTrades);
 
-  openingPositions.map((tx) => {
+  let _openingPostions = openingPositions.map((tx) => {
     const oTx = {};
     oTx.account = tx.account;
     oTx.timestamp = tx.timestamp;
     oTx.asset = tx.asset;
-    oTx.amount = tx.amount;
+    oTx.amount = parseEther(tx.amount.toString());
     oTx.price = tx.price;
     oTx.fee = tx.fee;
     oTx.id = tx.id;
@@ -374,7 +392,7 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     validateBuyTx(buyTx);
     return oTx;
   });
-  buyTxs = buyTxs.concat(openingPositions);
+  buyTxs = buyTxs.concat(_openingPostions);
 
   buyTxs = buyTxs.map((tx) => {
     tx.taxTxType = "BUY";
@@ -422,8 +440,8 @@ function getTransferTxs(chainTransactions, offchainTransfers) {
   );
   chainTransfers = chainTransfers.map((tx) => {
     const transferTx = {};
-    transferTx.fromAccount = tx.fromWallet ?? tx.fromName;
-    transferTx.toAccount = tx.toWallet ?? tx.toName;
+    transferTx.fromAccount = tx.fromWalletName ?? tx.fromAccountName;
+    transferTx.toAccount = tx.toWalletName ?? tx.toAccountName;
     transferTx.timestamp = tx.timestamp;
     transferTx.asset = tx.asset;
     transferTx.amount = tx.value ?? BigInt("0");
@@ -437,8 +455,8 @@ function getTransferTxs(chainTransactions, offchainTransfers) {
   offchainTransfers = offchainTransfers.filter((tx) => tx.type == "TRANSFER");
   offchainTransfers = offchainTransfers.map((tx) => {
     const transferTx = {};
-    transferTx.fromAccount = tx.fromAccount;
-    transferTx.toAccount = tx.toAccount;
+    transferTx.fromAccount = tx.fromWalletName ?? tx.fromAccountName;
+    transferTx.toAccount = tx.toWalletName ?? tx.toAccountName;
     transferTx.timestamp = tx.timestamp;
     transferTx.asset = tx.asset;
     transferTx.amount = parseEther(tx.amount.toString()) ?? BigInt("0");
