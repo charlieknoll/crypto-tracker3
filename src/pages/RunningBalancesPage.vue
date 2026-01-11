@@ -127,7 +127,7 @@ const filtered = computed(() => {
   }
   if (owned.value) {
     txs = txs.filter((tx) => {
-      return (tx.biRunningAccountBalance && parseFloat(formatEther(tx.biRunningAccountBalance)) != 0.0)
+      return (tx.biRunningAccountBalance && tx.biRunningAccountBalance > BigInt("10000000"));
     });
   }
 
