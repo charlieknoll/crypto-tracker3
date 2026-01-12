@@ -18,9 +18,15 @@ Track crypto balances, gains and losses
 - fix timestampAndSort function to handle empty sort
 - keep a list of the buy lot transfer history including prorated costbasis assigned
 - only set wallet name after 1/1/2025 and then set account using tx.fromWallet ?? tx.fromName
-- Is there a way to undo a "SELL" from an expense transaction if there is an "EXPENSE REFUND?"
+- Is there a way to undo a "SELL" from an expense transaction if there is an "EXPENSE REFUND"? (see charlie.eth bid), maybe total EXPENSE and EXPENSE REFUND for a given calendar year? New Tax Code type?
 
+- Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (withdraw BTC?), Binance)
 - Test unlocking frozen using offline-tx-signer, copy json files to USB
+
+- Properly handle ENS Registrar burn fees on charlie.eth and meetings.eth to 0x0000dead
+- The call to "unseal" bid from ENS burns ETH, it should be treated as Expense
+- The original send to ENS Regsitrar should be considered a TRANSFER if the interal tx = the Chain value to a "Contract Owned", if not equal the ETH not in "Contract Owned" should be considered EXPENSE (set 0x000dead to "Expense")
+- https://etherscan.io/tx/0x5b526e077d2fbdfac6dd0f080d5d05a1b46ccb5d9056d5067a9ce84e5772a37a
 
 - Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add
 - Add account filter on unrealized, only show accounts with balance above enterable

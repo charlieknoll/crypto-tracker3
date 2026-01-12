@@ -14,22 +14,27 @@ const sortByTimeStampThenSort = (a, b) => {
       : -1
     : a.timestamp - b.timestamp;
 };
-
-function validateCostBasisTx(tx) {
+function handleError(tx, source, error) {
+  console.log(tx);
+  console.log("Source:");
+  console.log(source);
+  throw new Error(error);
+}
+function validateCostBasisTx(tx, source) {
   if (!tx.account) {
-    throw new Error("Cost basis tx missing account: " + JSON.stringify(tx));
+    handleError(tx, source, "Cost basis tx missing account");
   }
   if (!tx.timestamp) {
-    throw new Error("Cost basis tx missing timestamp: " + JSON.stringify(tx));
+    handleError(tx, source, "Cost basis tx missing timestamp");
   }
   if (!tx.asset) {
-    throw new Error("Cost basis tx missing asset: " + JSON.stringify(tx));
+    handleError(tx, source, "Cost basis tx missing asset");
   }
   if (tx.fee === undefined || tx.fee === null || isNaN(tx.fee)) {
-    throw new Error("Cost basis tx missing fee: " + JSON.stringify(tx));
+    handleError(tx, source, "Cost basis tx missing fee");
   }
   if (!tx.id) {
-    throw new Error("Cost basis tx missing id: " + JSON.stringify(tx));
+    handleError(tx, source, "Cost basis tx missing id");
   }
 }
 
@@ -49,7 +54,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
     tokenFeeTx.asset = tx.asset;
     tokenFeeTx.fee = tx.fee;
     tokenFeeTx.id = tx.id;
-    validateCostBasisTx(tokenFeeTx);
+    validateCostBasisTx(tokenFeeTx, tx);
     return tokenFeeTx;
   });
   costBasisTxs = costBasisTxs.concat(tokenFeeTxs);
@@ -64,7 +69,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
     feeTx.asset = tx.asset;
     feeTx.fee = tx.proceeds;
     feeTx.id = tx.hash;
-    validateCostBasisTx(feeTx);
+    validateCostBasisTx(feeTx, tx);
     return feeTx;
   });
   costBasisTxs = costBasisTxs.concat(exchangeFeeTxs);
@@ -81,7 +86,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
     transferTx.fee = tx.fee;
     transferTx.type = "CHAIN-TRANSFER-FEE";
     transferTx.id = tx.id;
-    validateCostBasisTx(transferTx);
+    validateCostBasisTx(transferTx, tx);
     return transferTx;
   });
   costBasisTxs = costBasisTxs.concat(chainTransfers);
@@ -96,7 +101,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
     transferTx.fee = tx.fee;
     transferTx.type = "OFFCHAIN-TRANSFER-FEE";
     transferTx.id = tx.id;
-    validateCostBasisTx(transferTx);
+    validateCostBasisTx(transferTx, tx);
     return transferTx;
   });
   costBasisTxs = costBasisTxs.concat(offchainTransfers);
@@ -107,24 +112,22 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
   });
 }
 
-function validateSellTx(tx) {
+function validateSellTx(tx, source) {
   if (!tx.account) {
-    console.log(tx);
-    throw new Error("Sell tx missing account: " + JSON.stringify(tx));
+    handleError(tx, source, "Sell tx missing account");
   }
   if (!tx.timestamp) {
-    throw new Error("Sell tx missing timestamp: " + JSON.stringify(tx));
+    handleError(tx, source, "Sell tx missing timestamp");
   }
   if (!tx.asset) {
-    throw new Error("Sell tx missing asset: " + JSON.stringify(tx));
+    handleError(tx, source, "Sell tx missing asset");
   }
   if (
     !tx.amount ||
     typeof tx.amount !== "bigint" ||
     parseFloat(formatEther(tx.amount)) <= 0.0
   ) {
-    console.log(tx);
-    throw new Error("Sell tx invalid amount: " + tx.amount);
+    handleError(tx, source, "Sell tx invalid amount");
   }
   if (
     tx.price === undefined ||
@@ -133,16 +136,16 @@ function validateSellTx(tx) {
     tx.price < 0.0 ||
     (tx.type == "GIFT-OUT" && tx.price != 0.0)
   ) {
-    throw new Error("Sell tx missing price: " + JSON.stringify(tx));
+    handleError(tx, source, "Sell tx invalid price");
   }
   if (tx.fee === undefined || tx.fee === null || isNaN(tx.fee)) {
-    throw new Error("Sell tx missing fee: " + JSON.stringify(tx));
+    handleError(tx, source, "Sell tx missing fee");
   }
   if (tx.type === undefined || tx.type === null) {
-    throw new Error("Sell tx missing type: " + JSON.stringify(tx));
+    handleError(tx, source, "Sell tx missing type");
   }
   if (!tx.id) {
-    throw new Error("Sell tx missing id: " + JSON.stringify(tx));
+    handleError(tx, source, "Sell tx missing id");
   }
 }
 function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
@@ -166,7 +169,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     spendTx.fee = tx.fee;
     spendTx.type = tx.taxCode;
     spendTx.id = tx.id;
-    validateSellTx(spendTx);
+    validateSellTx(spendTx, tx);
     spendTxs.push(spendTx);
   });
   sellTxs = sellTxs.concat(spendTxs);
@@ -186,7 +189,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     giftTx.fee = tx.fee;
     giftTx.type = tx.taxCode;
     giftTx.id = tx.id;
-    validateSellTx(giftTx);
+    validateSellTx(giftTx, tx);
     return giftTx;
   });
   sellTxs = sellTxs.concat(giftTxs);
@@ -204,7 +207,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     sellAssetTx.fee = tx.fee;
     sellAssetTx.type = "CHAIN-SELL";
     sellAssetTx.id = tx.id;
-    validateSellTx(sellAssetTx);
+    validateSellTx(sellAssetTx, tx);
     return sellAssetTx;
   });
   sellTxs = sellTxs.concat(sellAssetTxs);
@@ -223,7 +226,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     exchangeTx.price = tx.price;
     exchangeTx.fee = tx.fee;
     exchangeTx.type = "EXCH-SELL";
-    validateSellTx(exchangeTx);
+    validateSellTx(exchangeTx, tx);
     return exchangeTx;
   });
   sellTxs = sellTxs.concat(exchangeTxs);
@@ -250,7 +253,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     feeTx.fee = 0.0;
     feeTx.price = tx.price;
     feeTx.type = "CHAIN-FEE";
-    validateSellTx(feeTx);
+    validateSellTx(feeTx, tx);
     return feeTx;
   });
   sellTxs = sellTxs.concat(gasFeeTxs);
@@ -276,8 +279,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     //feeTx.price = prices.getPrice(tx.feeCurrency, tx.date, tx.timestamp);
     feeTx.price = tx.price;
     feeTx.type = "CHAIN-FEE";
-    debugger;
-    validateSellTx(feeTx);
+    validateSellTx(feeTx, tx);
   }
   sellTxs = sellTxs.concat(_offChainFeeTxs);
 
@@ -291,32 +293,33 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   });
   return sellTxs;
 }
-function validateBuyTx(tx) {
+
+function validateBuyTx(tx, source) {
   if (!tx.account) {
-    throw new Error("Buy tx missing account: " + JSON.stringify(tx));
+    handleError(tx, source, "Buy tx missing account");
   }
   if (!tx.timestamp) {
-    throw new Error("Buy tx missing timestamp: " + JSON.stringify(tx));
+    handleError(tx, source, "Buy tx missing timestamp");
   }
   if (!tx.asset) {
-    throw new Error("Buy tx missing asset: " + JSON.stringify(tx));
+    handleError(tx, source, "Buy tx missing asset");
   }
-  if (!tx.amount || parseFloat(formatEther(tx.amount)) <= 0.0) {
-    throw new Error("Buy tx missing amount: " + JSON.stringify(tx));
+  if (!tx.amount || typeof tx.amount !== "bigint" || tx.amount <= BigInt("0")) {
+    handleError(tx, source, "Buy tx invalid amount");
   }
   if (
     tx.price === undefined ||
     tx.price === null ||
     isNaN(tx.price) ||
-    tx.price <= 0.0
+    tx.price < 0.0
   ) {
-    throw new Error("Buy tx missing price: " + JSON.stringify(tx));
+    handleError(tx, source, "Buy tx invalid price");
   }
   if (tx.fee === undefined || tx.fee === null || isNaN(tx.fee)) {
-    throw new Error("Buy tx missing fee: " + JSON.stringify(tx));
+    handleError(tx, source, "Buy tx missing fee");
   }
   if (!tx.id) {
-    throw new Error("Buy tx missing id: " + JSON.stringify(tx));
+    handleError(tx, source, "Buy tx missing id");
   }
 }
 function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
@@ -325,8 +328,9 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
   let buyTxs = chainTxs.filter(
     (tx) =>
       tx.taxCode == "BUY" ||
-      tx.taxCode == "INCOME" ||
-      (tx.taxCode == "EXPENSE REFUND" && tx.value > BigInt("0") && !tx.isError)
+      ((tx.taxCode == "INCOME" || tx.taxCode == "EXPENSE REFUND") &&
+        tx.value > BigInt("0") &&
+        !tx.isError)
   );
   buyTxs = buyTxs.map((tx) => {
     const buyTx = {};
@@ -338,24 +342,24 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     buyTx.fee = tx.fee;
     buyTx.id = tx.id;
     buyTx.type = "CHAIN-" + tx.taxCode;
-    validateBuyTx(buyTx);
+    validateBuyTx(buyTx, tx);
     return buyTx;
   });
   let giftTxs = chainTxs.filter(
-    (tx) => tx.taxCode == "GIFT-IN" && tx.value > BigInt("0") && !tx.isError
+    (tx) =>
+      tx.taxCode == "GIFT-IN" && BigInt(tx.value ?? "0") > 0 && !tx.isError
   );
-  giftTxs = buyTxs.map((tx) => {
+  giftTxs = giftTxs.map((tx) => {
     const buyTx = {};
     buyTx.account = tx.toWalletName ?? tx.toAccountName;
     buyTx.timestamp = tx.timestamp;
     buyTx.asset = tx.asset;
-    buyTx.amount = BigInt(tx.value);
-
+    buyTx.amount = BigInt(tx.value ?? "0");
     buyTx.price = tx.price;
     buyTx.fee = 0.0;
     buyTx.id = tx.id;
     buyTx.type = "CHAIN-" + tx.taxCode;
-    validateBuyTx(buyTx);
+    validateBuyTx(buyTx, tx);
     return buyTx;
   });
   buyTxs = buyTxs.concat(giftTxs);
@@ -374,7 +378,7 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     buyTx.fee = tx.fee;
     buyTx.id = tx.id;
     buyTx.type = "EXCH-" + tx.taxCode;
-    validateBuyTx(buyTx);
+    validateBuyTx(buyTx, tx);
     return buyTx;
   });
   buyTxs = buyTxs.concat(_buyExchangeTrades);
@@ -389,7 +393,7 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     oTx.fee = tx.fee;
     oTx.id = tx.id;
     oTx.type = "OPENING-POSITION";
-    validateBuyTx(buyTx);
+    validateBuyTx(buyTx, tx);
     return oTx;
   });
   buyTxs = buyTxs.concat(_openingPostions);
@@ -405,30 +409,30 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
 
   return buyTxs;
 }
-function validateTransferTx(tx) {
+function validateTransferTx(tx, source) {
   if (!tx.fromAccount) {
-    throw new Error("Transfer tx missing fromAccount: " + JSON.stringify(tx));
+    handleError(tx, source, "Transfer tx missing fromAccount");
   }
   if (!tx.toAccount) {
-    throw new Error("Transfer tx missing toAccount: " + JSON.stringify(tx));
+    handleError(tx, source, "Transfer tx missing toAccount");
   }
   if (!tx.timestamp) {
-    throw new Error("Transfer tx missing timestamp: " + JSON.stringify(tx));
+    handleError(tx, source, "Transfer tx missing timestamp");
   }
   if (!tx.asset) {
-    throw new Error("Transfer tx missing asset: " + JSON.stringify(tx));
+    handleError(tx, source, "Transfer tx missing asset");
   }
   if (!tx.amount || parseFloat(formatEther(tx.amount)) <= 0.0) {
-    throw new Error("Transfer tx missing amount: " + JSON.stringify(tx));
+    handleError(tx, source, "Transfer tx invalid amount");
   }
   if (!tx.id) {
-    throw new Error("Transfer tx missing id: " + JSON.stringify(tx));
+    handleError(tx, source, "Transfer tx missing id");
   }
   if (!tx.type) {
-    throw new Error("Transfer tx missing type: " + JSON.stringify(tx));
+    handleError(tx, source, "Transfer tx missing type");
   }
   if (tx.fee === undefined || tx.fee === null || isNaN(tx.fee)) {
-    throw new Error("Transfer tx missing fee: " + JSON.stringify(tx));
+    handleError(tx, source, "Transfer tx missing fee");
   }
 }
 function getTransferTxs(chainTransactions, offchainTransfers) {
@@ -447,7 +451,7 @@ function getTransferTxs(chainTransactions, offchainTransfers) {
     transferTx.amount = tx.value ?? BigInt("0");
     transferTx.type = "CHAIN-TRANSFER";
     transferTx.id = tx.id;
-    validateTransferTx(transferTx);
+    validateTransferTx(transferTx, tx);
     return transferTx;
   });
   transferTxs = transferTxs.concat(chainTransfers);
@@ -462,7 +466,7 @@ function getTransferTxs(chainTransactions, offchainTransfers) {
     transferTx.amount = parseEther(tx.amount.toString()) ?? BigInt("0");
     transferTx.type = "OFFCHAIN-TRANSFER";
     transferTx.id = tx.id;
-    validateTransferTx(transferTx);
+    validateTransferTx(transferTx, tx);
     return transferTx;
   });
   transferTxs = transferTxs.concat(offchainTransfers);
