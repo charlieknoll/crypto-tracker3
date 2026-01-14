@@ -1,18 +1,19 @@
 import { parseEther } from "ethers";
 import { defineStore } from "pinia";
-import { multiplyCurrency } from "src/utils/number-helpers";
+import { currencyRounded, multiplyCurrency } from "src/utils/number-helpers";
 import { useOpeningPositionsStore } from "./opening-positions-store";
 import { useOffchainTransfersStore } from "./offchain-transfers-store";
 import { useChainTxsStore } from "./chain-txs-store";
 import { useExchangeTradesStore } from "./exchange-trades-store";
 import { formatEther } from "ethers";
+import { timestamp } from "@vueuse/core";
 
 const sortByTimeStampThenSort = (a, b) => {
-  return a.timestamp == b.timestamp
-    ? a.sort > b.sort
-      ? 1
-      : -1
-    : a.timestamp - b.timestamp;
+  return a.timestamp != b.timestamp
+    ? a.timestamp - b.timestamp
+    : (a.sort ?? 0) > (b.sort ?? 0)
+    ? 1
+    : -1;
 };
 function handleError(tx, source, error) {
   console.log(tx);
@@ -36,6 +37,9 @@ function validateCostBasisTx(tx, source) {
   if (!tx.id) {
     handleError(tx, source, "Cost basis tx missing id");
   }
+  if (!tx.type) {
+    handleError(tx, source, "Cost basis tx missing type");
+  }
 }
 
 function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
@@ -54,6 +58,7 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
     tokenFeeTx.asset = tx.asset;
     tokenFeeTx.fee = tx.fee;
     tokenFeeTx.id = tx.id;
+    tokenFeeTx.type = "TOKEN-FEE";
     validateCostBasisTx(tokenFeeTx, tx);
     return tokenFeeTx;
   });
@@ -69,13 +74,14 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
     feeTx.asset = tx.asset;
     feeTx.fee = tx.proceeds;
     feeTx.id = tx.hash;
+    feeTx.type = "EXCHANGE-FEE";
     validateCostBasisTx(feeTx, tx);
     return feeTx;
   });
   costBasisTxs = costBasisTxs.concat(exchangeFeeTxs);
 
-  chainTransfers = chainTransactions.filter(
-    (tx) => tx.taxCode == "TRANSFER" && !txisError && tx.fee > 0.0
+  let chainTransfers = chainTransactions.filter(
+    (tx) => tx.taxCode == "TRANSFER" && !tx.isError && tx.fee > 0.0
   );
   chainTransfers = chainTransfers.map((tx) => {
     const transferTx = {};
@@ -91,7 +97,9 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
   });
   costBasisTxs = costBasisTxs.concat(chainTransfers);
 
-  offchainTransfers = offchainTransfers.filter((tx) => tx.type == "TRANSFER");
+  offchainTransfers = offchainTransfers.filter(
+    (tx) => tx.type == "TRANSFER" && tx.fee > 0.0
+  );
   offchainTransfers = offchainTransfers.map((tx) => {
     const transferTx = {};
     transferTx.account = tx.toAccount;
@@ -107,9 +115,11 @@ function getCostBasisTxs(chainTransactions, offchainTransfers, exchangeFees) {
   costBasisTxs = costBasisTxs.concat(offchainTransfers);
 
   costBasisTxs = costBasisTxs.map((tx) => {
-    tx.type = "COST-BASIS-FEE";
+    tx.taxTxType = "COST-BASIS";
+    tx.fee = currencyRounded(tx.fee);
     return tx;
   });
+  return costBasisTxs;
 }
 
 function validateSellTx(tx, source) {
@@ -252,7 +262,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     feeTx.amount = BigInt(tx.gasFee) ?? BigInt("0");
     feeTx.fee = 0.0;
     feeTx.price = tx.price;
-    feeTx.type = "CHAIN-FEE";
+    feeTx.type = "GAS-FEE-SPENT";
     validateSellTx(feeTx, tx);
     return feeTx;
   });
@@ -261,7 +271,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   let offChainFeeTxs = offchainTransfers.filter(
     (tx) => tx.type == "FEE" && tx.amount > 0.0
   );
-
+  //TODO should this be only non USD fees?
   const _offChainFeeTxs = [];
   for (const tx of offChainFeeTxs) {
     //TODO fix
@@ -278,14 +288,15 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     feeTx.fee = 0.0;
     //feeTx.price = prices.getPrice(tx.feeCurrency, tx.date, tx.timestamp);
     feeTx.price = tx.price;
-    feeTx.type = "CHAIN-FEE";
+    feeTx.type = "OFFCHAIN-FEE";
     validateSellTx(feeTx, tx);
   }
   sellTxs = sellTxs.concat(_offChainFeeTxs);
 
   sellTxs = sellTxs.map((tx) => {
-    tx.proceeds =
-      multiplyCurrency([tx.price, parseFloat(formatEther(tx.amount))]) - tx.fee;
+    tx.proceeds = currencyRounded(
+      multiplyCurrency([tx.price, parseFloat(formatEther(tx.amount))]) - tx.fee
+    );
     tx.remainingAmount = tx.amount; //BigInt
     tx.remainingProceeds = tx.proceeds;
     tx.taxTxType = "SELL";
@@ -320,6 +331,9 @@ function validateBuyTx(tx, source) {
   }
   if (!tx.id) {
     handleError(tx, source, "Buy tx missing id");
+  }
+  if (!tx.type) {
+    handleError(tx, source, "Buy tx missing type");
   }
 }
 function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
@@ -373,11 +387,11 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     buyTx.timestamp = tx.timestamp;
     buyTx.asset = tx.asset;
 
-    buyTx.amount = parseEther(tx.amount.toString()) ?? BigInt("0");
+    buyTx.amount = parseEther(parseFloat(tx.amount).toFixed(18)) ?? BigInt("0");
     buyTx.price = tx.price;
     buyTx.fee = tx.fee;
     buyTx.id = tx.id;
-    buyTx.type = "EXCH-" + tx.taxCode;
+    buyTx.type = "EXCH-BUY";
     validateBuyTx(buyTx, tx);
     return buyTx;
   });
@@ -388,20 +402,22 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     oTx.account = tx.account;
     oTx.timestamp = tx.timestamp;
     oTx.asset = tx.asset;
-    oTx.amount = parseEther(tx.amount.toString());
+    oTx.amount = parseEther(parseFloat(tx.amount).toFixed(18)) ?? BigInt("0");
     oTx.price = tx.price;
     oTx.fee = tx.fee;
     oTx.id = tx.id;
     oTx.type = "OPENING-POSITION";
-    validateBuyTx(buyTx, tx);
+    validateBuyTx(oTx, tx);
     return oTx;
   });
   buyTxs = buyTxs.concat(_openingPostions);
 
   buyTxs = buyTxs.map((tx) => {
     tx.taxTxType = "BUY";
-    tx.gross = multiplyCurrency([tx.price, parseFloat(formatEther(tx.amount))]);
-    tx.costBasis = +tx.gross + +tx.fee;
+    tx.gross = currencyRounded(
+      multiplyCurrency([tx.price, parseFloat(formatEther(tx.amount))])
+    );
+    tx.costBasis = currencyRounded(+tx.gross + +tx.fee);
     tx.remainingAmount = tx.amount ?? BigInt("0.0");
     tx.remainingCostBasis = tx.costBasis;
     return tx;
@@ -439,8 +455,9 @@ function getTransferTxs(chainTransactions, offchainTransfers) {
   //TODO
   let transferTxs = [];
 
-  chainTransfers = chainTransactions.filter(
-    (tx) => tx.taxCode == "TRANSFER" && !txisError
+  let chainTransfers = chainTransactions.filter(
+    (tx) =>
+      tx.taxCode == "TRANSFER" && !tx.isError && BigInt(tx.value) != BigInt("0")
   );
   chainTransfers = chainTransfers.map((tx) => {
     const transferTx = {};
@@ -448,31 +465,41 @@ function getTransferTxs(chainTransactions, offchainTransfers) {
     transferTx.toAccount = tx.toWalletName ?? tx.toAccountName;
     transferTx.timestamp = tx.timestamp;
     transferTx.asset = tx.asset;
-    transferTx.amount = tx.value ?? BigInt("0");
+    transferTx.amount = BigInt(tx.value ?? "0");
     transferTx.type = "CHAIN-TRANSFER";
     transferTx.id = tx.id;
+    transferTx.fee = tx.fee;
     validateTransferTx(transferTx, tx);
     return transferTx;
   });
   transferTxs = transferTxs.concat(chainTransfers);
 
-  offchainTransfers = offchainTransfers.filter((tx) => tx.type == "TRANSFER");
+  offchainTransfers = offchainTransfers.filter(
+    (tx) => tx.type == "TRANSFER" && tx.amount > 0.0
+  );
   offchainTransfers = offchainTransfers.map((tx) => {
     const transferTx = {};
-    transferTx.fromAccount = tx.fromWalletName ?? tx.fromAccountName;
-    transferTx.toAccount = tx.toWalletName ?? tx.toAccountName;
+    transferTx.fromAccount = tx.fromAccount;
+    transferTx.toAccount = tx.toAccount;
     transferTx.timestamp = tx.timestamp;
     transferTx.asset = tx.asset;
     transferTx.amount = parseEther(tx.amount.toString()) ?? BigInt("0");
     transferTx.type = "OFFCHAIN-TRANSFER";
     transferTx.id = tx.id;
+    transferTx.fee = tx.fee;
     validateTransferTx(transferTx, tx);
     return transferTx;
   });
   transferTxs = transferTxs.concat(offchainTransfers);
+  transferTxs = transferTxs.map((tx) => {
+    tx.fee = currencyRounded(tx.fee);
+    tx.taxTxType = "TRANSFER";
+    return tx;
+  });
   return transferTxs;
 }
 function findLot(tx, undisposedLots) {
+  //TODO handle wallet cutovers by resetting walletName on undisposedLots
   return undisposedLots.find(
     (lot) =>
       lot.asset == tx.asset &&
@@ -483,21 +510,33 @@ function findLot(tx, undisposedLots) {
 
 function getCostBasis() {
   //raw from localStorage
+  console.time("getStores-openingPositions");
   const openingPositions = useOpeningPositionsStore().records;
+  console.timeEnd("getStores-openingPositions");
+  console.time("getStores-offchainTransfers");
 
   const offchainTransfers = useOffchainTransfersStore().split;
+  console.timeEnd("getStores-offchainTransfers");
+  console.time("getStores-chainTransactions");
 
   const chainTransactions = useChainTxsStore().accountTxs;
+  console.timeEnd("getStores-chainTransactions");
+  console.time("getStores-exchangeTrades");
 
   const exchangeTrades = useExchangeTradesStore().split;
   //TODO this probably will include rewards for Kraken
   const exchangeFees = useExchangeTradesStore().fees;
+  console.timeEnd("getStores-exchangeTrades");
+
+  console.time("Sells");
 
   let sellTxs = getSellTxs(
     chainTransactions,
     exchangeTrades,
     offchainTransfers
   );
+  console.timeEnd("Sells");
+  console.time("Buys");
   let buyTxs = getBuyTxs(chainTransactions, exchangeTrades, openingPositions);
 
   let costBasisTxs = getCostBasisTxs(
@@ -505,9 +544,11 @@ function getCostBasis() {
     offchainTransfers,
     exchangeFees
   );
+  console.timeEnd("Buys");
+  console.time("Transfers");
 
   let transferTxs = getTransferTxs(chainTransactions, offchainTransfers);
-
+  console.timeEnd("Transfers");
   const undisposedLots = [];
   const soldLots = [];
 
@@ -520,46 +561,63 @@ function getCostBasis() {
   mappedData = mappedData.sort(sortByTimeStampThenSort);
   mappedData.forEach((tx) => {
     //TODO handle account/wallet cutover timestamp by resetting walletName on undisposedLots
-    if (tx.action.substring(0, 3) === "BUY") {
+    if (tx.taxTxType.substring(0, 3) === "BUY") {
       undisposedLots.push(tx);
     }
-    if (tx.action === "SELL") {
+    if (tx.taxTxType === "SELL") {
       let remainingAmount = tx.amount;
       let remainingProceeds = tx.proceeds;
-      let lot = findLot(tx);
+      let lot = findLot(tx, undisposedLots);
       while (remainingAmount > 0 && lot) {
         let lotAmount = lot.remainingAmount;
         if (lotAmount > remainingAmount) {
           lotAmount = remainingAmount;
         }
-        const costBasisPortion =
+        let costBasisPortion =
           (lot.costBasis / parseFloat(formatEther(lot.amount))) *
           parseFloat(formatEther(lotAmount));
-        const proceedsPortion =
+        if (currencyRounded(lot.costBasis - costBasisPortion) < 0.0) {
+          //Handle rare case where costBasis are negative due to rounding
+          costBasisPortion = lot.costBasis;
+        }
+        let proceedsPortion =
           (tx.proceeds / parseFloat(formatEther(tx.amount))) *
           parseFloat(formatEther(lotAmount));
+
+        if (currencyRounded(remainingProceeds - proceedsPortion) < 0.0) {
+          //Handle rare case where proceeds are negative due to rounding
+          proceedsPortion = remainingProceeds;
+        }
         const soldLot = {
           account: tx.account,
           asset: tx.asset,
           buyTxId: lot.id,
           buyTxType: lot.type,
-          sellTxId: tx.id,
-          sellTxType: tx.type,
           buyTimestamp: lot.timestamp,
-          sellTimestamp: tx.timestamp,
+          id: tx.id,
+          type: tx.type,
+          timestamp: tx.timestamp,
           amount: lotAmount,
-          costBasis: costBasisPortion,
-          proceeds: proceedsPortion,
-          gainLoss: proceedsPortion - costBasisPortion,
+          costBasis: currencyRounded(costBasisPortion),
+          proceeds: currencyRounded(proceedsPortion),
+          gainLoss: currencyRounded(proceedsPortion - costBasisPortion),
+          taxTxType: "SELL",
         };
         soldLots.push(soldLot);
-        debugger;
+
         //TOOD check that bigint works here
         lot.remainingAmount -= lotAmount;
-        lot.remainingCostBasis -= costBasisPortion;
+        lot.remainingCostBasis =
+          lot.remainingAmount == BigInt("0")
+            ? 0.0
+            : currencyRounded(lot.remainingCostBasis - costBasisPortion);
 
         remainingAmount -= lotAmount;
-        remainingProceeds -= proceedsPortion;
+        remainingProceeds =
+          remainingAmount == BigInt("0")
+            ? 0.0
+            : currencyRounded(remainingProceeds - proceedsPortion);
+
         if (lot.remainingAmount < BigInt("0")) {
           debugger;
           throw new Error("Lot remaining amount negative");
@@ -569,11 +627,12 @@ function getCostBasis() {
           throw new Error("Lot remaining cost basis negative");
         }
         if (remainingAmount > BigInt("0")) {
+          //find the next undisposed lot
           lot = findLot(tx, undisposedLots);
         } else lot = null;
       }
     }
-    if (tx.action === "COST-BASIS-FEE") {
+    if (tx.taxTxType === "COST-BASIS") {
       //Distribute cost basis fee across all undisposed lots in the account for the asset
       const relevantLots = undisposedLots.filter(
         (lot) =>
@@ -588,13 +647,13 @@ function getCostBasis() {
       for (const lot of relevantLots) {
         const lotAmount = parseFloat(formatEther(lot.remainingAmount));
         const costBasisPortion = (lotAmount / totalAmount) * tx.fee;
-        debugger;
+
         //TODO check this is working
-        lot.costBasis += costBasisPortion;
-        lot.remainingCostBasis += costBasisPortion;
+        lot.costBasis += currencyRounded(costBasisPortion);
+        lot.remainingCostBasis += currencyRounded(costBasisPortion);
       }
     }
-    if (tx.action === "TRANSFER") {
+    if (tx.taxTxType === "TRANSFER") {
       //first "mini-SELL" from fromAccount
       let remainingAmount = tx.amount;
       let lot = findLot(
@@ -604,38 +663,63 @@ function getCostBasis() {
         },
         undisposedLots
       );
+      let costBasisPortion = 0.0;
       while (remainingAmount > 0 && lot) {
         let lotAmount = lot.remainingAmount;
         if (lotAmount > remainingAmount) {
           lotAmount = remainingAmount;
         }
-        const costBasisPortion =
+        costBasisPortion =
           (lot.costBasis / parseFloat(formatEther(lot.amount))) *
           parseFloat(formatEther(lotAmount));
         //create a sold lot with zero proceeds and cost basis to track the transfer
-        // const soldLot = {
-        //   account: lot.account,
-        //   asset: lot.asset,
-        //   buyTxId: lot.id,
-        //   buyTxType: lot.type,
-        //   sellTxId: tx.id,
-        //   sellTxType: tx.type,
-        //   buyTimestamp: lot.timestamp,
-        //   sellTimestamp: tx.timestamp,
-        //   amount: lotAmount,
-        //   //calc used cost basis portion
-        //   costBasis: costBasisPortion,
-        //   proceeds: 0.0,
-        //   gainLoss: 0.0,
-        //   type: "TRANSFER",
-        // };
-        //soldLots.push(soldLot);
-        debugger;
-        //TOOD check that bigint works here
-        lot.remainingAmount -= lotAmount;
-        lot.remainingCostBasis -= costBasisPortion;
+        const soldLot = {
+          account: lot.account,
+          asset: lot.asset,
+          buyTxId: lot.id,
+          buyTxType: lot.type,
+          buyTimestamp: lot.timestamp,
+          id: tx.id,
+          type: tx.type,
+          timestamp: tx.timestamp,
+          amount: lotAmount,
+          costBasis: currencyRounded(costBasisPortion),
+          proceeds: 0.0,
+          gainLoss: 0.0,
+          taxTxType: "SELL-TRANSFER",
+        };
+        soldLots.push(soldLot);
 
-        remainingAmount -= lotAmount;
+        //then "mini-BUY" into toAccount
+
+        const newLot = {
+          account: tx.toAccount,
+          asset: tx.asset,
+          timestamp: lot.timestamp,
+          amount: lotAmount,
+          remainingAmount: lotAmount,
+          costBasis: currencyRounded(costBasisPortion),
+          remainingCostBasis: currencyRounded(costBasisPortion),
+          taxTxType: "BUY-TRANSFER",
+          id: tx.id,
+          type: tx.type,
+        };
+
+        undisposedLots.push(newLot);
+        mappedData = mappedData.sort(sortByTimeStampThenSort);
+
+        lot.remainingAmount -= lotAmount;
+        if (
+          currencyRounded(lot.remainingCostBasis - costBasisPortion) < 0.0 &&
+          lot.remainingAmount == BigInt("0")
+        ) {
+          debugger;
+          throw new Error("Lot remaining cost basis negative");
+        }
+        lot.remainingCostBasis =
+          lot.remainingAmount == BigInt("0")
+            ? 0.0
+            : currencyRounded(lot.remainingCostBasis - costBasisPortion);
         if (lot.remainingAmount < BigInt("0")) {
           debugger;
           throw new Error("Lot remaining amount negative");
@@ -644,6 +728,13 @@ function getCostBasis() {
           debugger;
           throw new Error("Lot remaining cost basis negative");
         }
+        if (typeof lotAmount !== "bigint") {
+          debugger;
+        }
+        if (typeof remainingAmount !== "bigint") {
+          debugger;
+        }
+        remainingAmount -= lotAmount;
         if (remainingAmount > BigInt("0")) {
           lot = findLot(
             {
@@ -654,36 +745,20 @@ function getCostBasis() {
           );
         } else lot = null;
       }
-      //then "mini-BUY" into toAccount
-      const transferredAmount = tx.amount - remainingAmount;
-      if (transferredAmount > BigInt("0")) {
-        const newLot = {
-          account: tx.toAccount,
-          asset: tx.asset,
-          timestamp: tx.timestamp,
-          amount: transferredAmount,
-          remainingAmount: transferredAmount,
-          costBasis: costBasisPortion,
-          remainingCostBasis: 0.0,
-          type: "BUY-TRANSFER",
-          id: tx.id,
-        };
-        undisposedLots.push(newLot);
-      }
     }
   });
-  //TODO filter out full disposed lots
+
   return { undisposedLots, soldLots };
 }
 
 export const useCostBasisStore = defineStore("costBasis", {
   getters: {
-    costBasis() {
+    costBasisData() {
       try {
         return getCostBasis();
       } catch (err) {
         console.error(err);
-        debugger;
+        //debugger;
       }
       return [];
     },

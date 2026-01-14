@@ -26,8 +26,7 @@
           <div class="col-12 col-md-4">
             <q-card flat bordered>
               <q-card-section>
-                <div class="text-caption text-grey">Diversification</div>
-                <div class="text-h5">Balanced</div>
+                <q-btn flat label="GET COST BASIS" color="primary" @click="getCostBasis" />
               </q-card-section>
             </q-card>
           </div>
@@ -87,8 +86,18 @@
 <script setup>
 import { ref } from 'vue';
 // import QCalendar from '@quasar/quasar-ui-qcalendar'
-
+import { useCostBasisStore } from 'src/stores/cost-basis-store';
 const today = ref(new Date().toISOString().split('T')[0]);
+const getCostBasis = () => {
+  // Placeholder function for GET COST BASIS button
+  const costBasisStore = useCostBasisStore();
+  try {
+    console.time('Get Cost Basis Total Time');
+    const result = costBasisStore.costBasisData;
+  } finally {
+    console.timeEnd('Get Cost Basis Total Time');
+  }
+};
 
 const assets = ref([
   { name: 'Apple Inc.', symbol: 'AAPL', value: '$50,000', percentage: '20%' },

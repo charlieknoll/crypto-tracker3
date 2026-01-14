@@ -24,6 +24,7 @@ const parseCommaFloat = (str) => {
   const num = parseFloat(cleaned);
   return isNaN(num) ? null : num;
 };
+const currencyRounded = (val) => Math.round(val * 100) / 100;
 
 const multiplyCurrency = (args) => {
   let result = 1.0;
@@ -54,4 +55,5 @@ export {
   perCent,
   convertToWei,
   parseCommaFloat,
+  currencyRounded,
 };
