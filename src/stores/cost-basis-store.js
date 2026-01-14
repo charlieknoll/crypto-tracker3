@@ -672,6 +672,11 @@ function getCostBasis() {
         costBasisPortion =
           (lot.costBasis / parseFloat(formatEther(lot.amount))) *
           parseFloat(formatEther(lotAmount));
+
+        if (currencyRounded(lot.costBasis - costBasisPortion) < 0.0) {
+          //Handle rare case where costBasis are negative due to rounding
+          costBasisPortion = lot.costBasis;
+        }
         //create a sold lot with zero proceeds and cost basis to track the transfer
         const soldLot = {
           account: lot.account,
@@ -709,13 +714,6 @@ function getCostBasis() {
         mappedData = mappedData.sort(sortByTimeStampThenSort);
 
         lot.remainingAmount -= lotAmount;
-        if (
-          currencyRounded(lot.remainingCostBasis - costBasisPortion) < 0.0 &&
-          lot.remainingAmount == BigInt("0")
-        ) {
-          debugger;
-          throw new Error("Lot remaining cost basis negative");
-        }
         lot.remainingCostBasis =
           lot.remainingAmount == BigInt("0")
             ? 0.0
@@ -728,12 +726,12 @@ function getCostBasis() {
           debugger;
           throw new Error("Lot remaining cost basis negative");
         }
-        if (typeof lotAmount !== "bigint") {
-          debugger;
-        }
-        if (typeof remainingAmount !== "bigint") {
-          debugger;
-        }
+        // if (typeof lotAmount !== "bigint") {
+        //   debugger;
+        // }
+        // if (typeof remainingAmount !== "bigint") {
+        //   debugger;
+        // }
         remainingAmount -= lotAmount;
         if (remainingAmount > BigInt("0")) {
           lot = findLot(

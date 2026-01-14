@@ -87,6 +87,8 @@
 import { ref } from 'vue';
 // import QCalendar from '@quasar/quasar-ui-qcalendar'
 import { useCostBasisStore } from 'src/stores/cost-basis-store';
+import { format } from 'quasar';
+import { formatEther } from 'ethers';
 const today = ref(new Date().toISOString().split('T')[0]);
 const getCostBasis = () => {
   // Placeholder function for GET COST BASIS button
@@ -94,6 +96,30 @@ const getCostBasis = () => {
   try {
     console.time('Get Cost Basis Total Time');
     const result = costBasisStore.costBasisData;
+    //log account/asset totals
+    const undisposedLotsByAccountAsset = result.undisposedLots.reduce((acc, lot) => {
+      acc[lot.account] = acc[lot.account] || {};
+      acc[lot.account][lot.asset] = (acc[lot.account][lot.asset] || BigInt("0")) + lot.remainingAmount;
+      return acc;
+    }, {});
+
+    //Iterate over undisposedLotsByAccountAsset and log totals
+    for (const [account, assets] of Object.entries(undisposedLotsByAccountAsset)) {
+      for (const [asset, amount] of Object.entries(assets)) {
+        const formattedAmount = formatEther(amount);
+        console.log(`Account: ${account}, Asset: ${asset}, Undisposed Amount: ${formattedAmount}`);
+      }
+    }
+
+
+
+    console.log('Undisposed Lots by Account and Asset:', undisposedLotsByAccountAsset);
+    // console.log('Total Cost Basis:', result.totalCostBasis);
+    // console.log('Total Proceeds:', result.totalProceeds);
+    // console.log('Total Gain/Loss:', result.totalGainLoss);
+
+
+
   } finally {
     console.timeEnd('Get Cost Basis Total Time');
   }
