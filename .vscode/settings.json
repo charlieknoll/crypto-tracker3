@@ -9,5 +9,7 @@
     "editor.defaultFormatter": "Vue.volar"
   },
   "editor.cursorSurroundingLines": 4,
-  "editor.linkedEditing": true
+  "editor.linkedEditing": true,
+  "editor.cursorWidth": 1,
+  "editor.cursorBlinking": "blink"
 }

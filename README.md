@@ -4,6 +4,10 @@ Track crypto balances, gains and losses
 
 ## TODO
 
+- Floating point gotchas:
+  -- tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
+  -- Math.abs(tx.value) should be floatToStrAbs(tx.value) Math.abs creates floating point
+
 - distribute cost-basis for a zero amount sell that has a fee (add as a cost basis tx)
 - distribute cost-basis for a Zero amount BUY that has a fee
 

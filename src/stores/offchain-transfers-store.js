@@ -17,7 +17,7 @@ import {
   upperCaseFields,
 } from "src/models/offchain-transfers";
 import { usePricesStore } from "./prices-store";
-import { multiplyCurrency } from "src/utils/number-helpers";
+import { multiplyCurrency, floatToStrAbs } from "src/utils/number-helpers";
 
 const keyFunc = (r) =>
   hasValue(r.transferId) ? r.transferId : getId(r, keyFields);
@@ -60,7 +60,7 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
         tx.sort = 0;
         tx.type = "TRANSFER";
         tx.feeCurrency = "USD";
-        tx.amount = Math.abs(tx.amount);
+        tx.amount = floatToStrAbs(tx.amount);
         tx.fee = usdFee;
         tx.feeCurrency = "USD";
         mappedData.push(tx);
@@ -144,7 +144,7 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
           memo: op.Memo,
           date: op.Date.substring(0, 10),
           time: time,
-          amount: parseFloat(op.Volume),
+          amount: op.Volume,
           fromAccount: op.FromAccount,
           toAccount: op.ToAccount,
           fee: hasValue(op.Fee) ? parseFloat(op.Fee) : 0.0,

@@ -18,7 +18,11 @@ import {
   requiredFields,
   upperCaseFields,
 } from "src/models/exchange-trades";
-import { multiplyCurrency } from "src/utils/number-helpers";
+import {
+  multiplyCurrency,
+  floatToStr,
+  floatToStrAbs,
+} from "src/utils/number-helpers";
 import { usePricesStore } from "./prices-store";
 import { importCbpTrades } from "src/services/coinbase-provider";
 
@@ -54,7 +58,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           feeTx.id = "F-" + tx.id;
           feeTx.price = feeUSDPrice;
           feeTx.asset = tx.feeCurrency;
-          feeTx.amount = tx.fee ? tx.fee.toFixed(18) : "0.0";
+          feeTx.amount = tx.fee;
           feeTx.fee = 0.0;
           feeTx.feeCurrency = "USD";
           feeTx.currency = tx.feeCurrency;
@@ -79,19 +83,21 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           const id = tx.id;
           tx.sort = tx.action == "BUY" ? 2 : 0;
           tx.price = currencyPrice * currencyUSDPrice;
+          const gross = tx.gross;
           tx.fee = tx.action == "SELL" ? usdFee : 0.0;
           tx.gross = multiplyCurrency([tx.amount, tx.price]);
           tx.net = tx.gross - tx.fee; //fee only non-zero for sell
           tx.id = id + (tx.action == "SELL" ? "S" : "B");
-
+          tx.amount = floatToStrAbs(tx.amount);
           const currencyTx = Object.assign({}, tx);
           currencyTx.action = tx.action == "SELL" ? "BUY" : "SELL";
-          currencyTx.id = id + (currencyTx.action == "SELL" ? "S" : "B") + id;
+          //currencyTx.id = id;
+          currencyTx.id = (currencyTx.action == "SELL" ? "S-" : "B-") + id;
           currencyTx.sort = currencyTx.action == "BUY" ? 2 : 0;
           currencyTx.price = currencyUSDPrice;
           currencyTx.asset = tx.currency;
-          currencyTx.amount = (tx.amount * currencyPrice).toFixed(18);
-          currencyTx.fee = currencyTx.action == "SELL" ? usdFee : 0.0;
+          currencyTx.amount = floatToStrAbs(gross);
+          currencyTx.fee = usdFee;
           currencyTx.gross = multiplyCurrency([
             currencyTx.price,
             currencyTx.amount,
@@ -100,7 +106,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           mappedData.push(tx);
           mappedData.push(currencyTx);
         } else {
-          tx.amount = Math.abs(tx.amount);
+          tx.amount = floatToStrAbs(tx.amount);
           tx.fee = usdFee;
           tx.gross = multiplyCurrency([tx.amount, tx.price]);
           tx.net = tx.gross + (tx.action == "SELL" ? -tx.fee : tx.fee);

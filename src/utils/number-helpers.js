@@ -1,4 +1,4 @@
-import { formatUnits, parseUnits, parseEther } from "ethers";
+import { formatUnits, parseUnits, parseEther, formatEther } from "ethers";
 
 const convertToWei = function (val, decimals) {
   //creates an ether  representation of a bigint, e.g. $1000.123456 USDC (6 dec) would have a val passed in of 1000123456/n
@@ -48,6 +48,29 @@ const sBnToFloat = function (v, decimals = 18) {
     return 0.0;
   }
 };
+const floatToWei = function (val) {
+  if (val == undefined) return;
+  let result = val.toString();
+  if (result?.includes("e")) {
+    return BigInt(Math.round((val ?? 0) * 1e18).toString());
+  }
+  const [whole, frac] = result.split(".");
+  if (!frac) return parseEther(result);
+  //round frc
+  result = whole + "." + frac.slice(0, 18);
+
+  return parseEther(result);
+};
+const floatToStr = function (val) {
+  if (val == undefined) return;
+  return formatEther(floatToWei(val));
+};
+const floatToStrAbs = function (val) {
+  if (val == undefined) return;
+  let result = formatEther(floatToWei(val));
+  if (result[0] == "-") result = result.slice(1);
+  return result;
+};
 export {
   currency,
   multiplyCurrency,
@@ -56,4 +79,7 @@ export {
   convertToWei,
   parseCommaFloat,
   currencyRounded,
+  floatToWei,
+  floatToStr,
+  floatToStrAbs,
 };

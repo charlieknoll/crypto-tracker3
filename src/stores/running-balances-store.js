@@ -9,7 +9,7 @@ import { useAddressStore } from "src/stores/address-store";
 import { useAppStore } from "src/stores/app-store";
 import { computed } from "vue";
 import { format } from "quasar";
-import { sBnToFloat } from "src/utils/number-helpers";
+import { sBnToFloat, floatToStr, floatToWei } from "src/utils/number-helpers";
 const sortByTimeStampThenTxId = (a, b) => {
   return a.timestamp == b.timestamp
     ? a.txId > b.txId
@@ -55,7 +55,7 @@ function getMappedData() {
         timestamp: tx.timestamp,
         account: tx.fromAccount,
         date: tx.date,
-        amount: -tx.amount,
+        amount: "-" + tx.amount,
         asset: tx.asset,
         type: "Transfer Fee",
         action: "TF:" + tx.asset,
@@ -78,7 +78,7 @@ function getMappedData() {
         timestamp: tx.timestamp,
         account: tx.fromAccount,
         date: tx.date,
-        amount: -tx.amount,
+        amount: "-" + tx.amount,
         asset: tx.asset,
         type: "Transfer Out",
         action: "TRANSFER",
@@ -185,9 +185,7 @@ function getMappedData() {
   for (const tx of exchangeTrades) {
     //SELL and FEE should be negative
     let amount =
-      tx.action == "BUY"
-        ? parseFloat(tx.amount).toFixed(18)
-        : parseFloat(-tx.amount).toFixed(18);
+      tx.action == "BUY" ? floatToStr(tx.amount) : "-" + floatToStr(tx.amount);
 
     //amount = amount.toFixed(18);
     mappedData.push({
@@ -211,7 +209,7 @@ function getMappedData() {
       timestamp: Math.floor(tx.timestamp),
       account: tx.account,
       date: tx.date,
-      amount: parseFloat(-tx.amount).toFixed(18),
+      amount: "-" + floatToStrAbs(tx.amount),
       asset: tx.asset,
       price: tx.price,
       type: tx.action,
@@ -231,7 +229,7 @@ function getRunningBalances() {
   const accountAssets = [];
   let assets = [];
   for (const tx of mappedData) {
-    tx.biAmount = tx.value ?? parseEther(tx.amount?.toString() ?? "0.0");
+    tx.biAmount = tx.value ?? floatToWei(tx.amount) ?? BigInt("0.0");
     tx.amount = parseFloat(tx.amount);
     let asset = assets.find((a) => a.symbol == tx.asset);
     if (!asset) {

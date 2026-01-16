@@ -1,20 +1,26 @@
 import { parseEther } from "ethers";
 import { defineStore } from "pinia";
-import { currencyRounded, multiplyCurrency } from "src/utils/number-helpers";
+import {
+  currencyRounded,
+  multiplyCurrency,
+  floatToWei,
+} from "src/utils/number-helpers";
 import { useOpeningPositionsStore } from "./opening-positions-store";
 import { useOffchainTransfersStore } from "./offchain-transfers-store";
 import { useChainTxsStore } from "./chain-txs-store";
 import { useExchangeTradesStore } from "./exchange-trades-store";
 import { formatEther } from "ethers";
 import { timestamp } from "@vueuse/core";
+import { useRunningBalancesStore } from "./running-balances-store";
+const sortByTimeStampThenSortThenId = (a, b) =>
+  a.timestamp - b.timestamp ||
+  (a.sort ?? 0) - (b.sort ?? 0) ||
+  (a.id ?? "").localeCompare(b.id ?? "");
+const sortByTimeStampThenSortThenTxId = (a, b) =>
+  a.timestamp - b.timestamp ||
+  (a.sort ?? 0) - (b.sort ?? 0) ||
+  (a.txId ?? "").localeCompare(b.txId ?? "");
 
-const sortByTimeStampThenSort = (a, b) => {
-  return a.timestamp != b.timestamp
-    ? a.timestamp - b.timestamp
-    : (a.sort ?? 0) > (b.sort ?? 0)
-    ? 1
-    : -1;
-};
 function handleError(tx, source, error) {
   console.log(tx);
   console.log("Source:");
@@ -232,7 +238,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     exchangeTx.account = tx.account;
     exchangeTx.timestamp = tx.timestamp;
     exchangeTx.asset = tx.asset;
-    exchangeTx.amount = parseEther(tx.amount.toString()) ?? BigInt("0");
+    exchangeTx.amount = floatToWei(tx.amount);
     exchangeTx.price = tx.price;
     exchangeTx.fee = tx.fee;
     exchangeTx.type = "EXCH-SELL";
@@ -284,7 +290,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     feeTx.timestamp = tx.timestamp;
     //fee is sold first, then the main tx sell should be handled after
     feeTx.sort = -1;
-    feeTx.amount = parseEther(tx.amount.toString() ?? "0") ?? BigInt("0");
+    feeTx.amount = floatToWei(tx.amount);
     feeTx.fee = 0.0;
     //feeTx.price = prices.getPrice(tx.feeCurrency, tx.date, tx.timestamp);
     feeTx.price = tx.price;
@@ -387,7 +393,7 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     buyTx.timestamp = tx.timestamp;
     buyTx.asset = tx.asset;
 
-    buyTx.amount = parseEther(parseFloat(tx.amount).toFixed(18)) ?? BigInt("0");
+    buyTx.amount = floatToWei(tx.amount);
     buyTx.price = tx.price;
     buyTx.fee = tx.fee;
     buyTx.id = tx.id;
@@ -402,7 +408,7 @@ function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     oTx.account = tx.account;
     oTx.timestamp = tx.timestamp;
     oTx.asset = tx.asset;
-    oTx.amount = parseEther(parseFloat(tx.amount).toFixed(18)) ?? BigInt("0");
+    oTx.amount = floatToWei(tx.amount);
     oTx.price = tx.price;
     oTx.fee = tx.fee;
     oTx.id = tx.id;
@@ -483,7 +489,7 @@ function getTransferTxs(chainTransactions, offchainTransfers) {
     transferTx.toAccount = tx.toAccount;
     transferTx.timestamp = tx.timestamp;
     transferTx.asset = tx.asset;
-    transferTx.amount = parseEther(tx.amount.toString()) ?? BigInt("0");
+    transferTx.amount = floatToWei(tx.amount);
     transferTx.type = "OFFCHAIN-TRANSFER";
     transferTx.id = tx.id;
     transferTx.fee = tx.fee;
@@ -506,6 +512,45 @@ function findLot(tx, undisposedLots) {
       lot.account == tx.account &&
       lot.remainingAmount > BigInt("0")
   );
+}
+function verifyBalance(tx, runningBalances, undisposedLots, soldLots) {
+  // if (undisposedLots.length == 6) {
+  //   console.log(undisposedLots);
+  // }
+
+  //running balances handles gas fees as part of transfer but cost basis consideres them spent before transfer
+  //so wait to verify balance on next tx
+  if (tx.sort == -1) return;
+
+  const calculatedBalance = undisposedLots.reduce((sum, lot) => {
+    if (lot.account == tx.account && lot.asset == tx.asset) {
+      return BigInt(sum) + BigInt(lot.remainingAmount);
+    }
+    return BigInt(sum);
+  }, BigInt("0"));
+
+  const relevantBalanceRec = runningBalances.find(
+    (rb) =>
+      rb.account == tx.account &&
+      rb.asset == tx.asset &&
+      rb.timestamp == tx.timestamp &&
+      rb.biRunningAccountBalance == calculatedBalance
+  );
+  if (!relevantBalanceRec) {
+    debugger;
+    return;
+  } else {
+    if (tx.account == "Poloniex" && tx.asset == "BTC") {
+      console.log(
+        `${new Date(tx.timestamp * 1000).toString()} ${tx.id.substring(
+          0,
+          20
+        )}: txAmount: ${formatEther(tx.amount)}, rbAmount: ${formatEther(
+          relevantBalanceRec.biAmount
+        )} rb: ${formatEther(relevantBalanceRec.biRunningAccountBalance)} `
+      );
+    }
+  }
 }
 
 function getCostBasis() {
@@ -549,7 +594,7 @@ function getCostBasis() {
 
   let transferTxs = getTransferTxs(chainTransactions, offchainTransfers);
   console.timeEnd("Transfers");
-  const undisposedLots = [];
+  let undisposedLots = [];
   const soldLots = [];
 
   //Merge all txs and sort by timestamp
@@ -558,11 +603,17 @@ function getCostBasis() {
   mappedData = mappedData.concat(buyTxs);
   mappedData = mappedData.concat(costBasisTxs);
   mappedData = mappedData.concat(transferTxs);
-  mappedData = mappedData.sort(sortByTimeStampThenSort);
+  mappedData = mappedData.sort(sortByTimeStampThenSortThenId);
+  const runningBalancesStore = useRunningBalancesStore();
+  let runningBalances = runningBalancesStore.runningBalances.sort(
+    sortByTimeStampThenSortThenTxId
+  );
+
   mappedData.forEach((tx) => {
     //TODO handle account/wallet cutover timestamp by resetting walletName on undisposedLots
     if (tx.taxTxType.substring(0, 3) === "BUY") {
       undisposedLots.push(tx);
+      verifyBalance(tx, runningBalances, undisposedLots, soldLots);
     }
     if (tx.taxTxType === "SELL") {
       let remainingAmount = tx.amount;
@@ -629,8 +680,17 @@ function getCostBasis() {
         if (remainingAmount > BigInt("0")) {
           //find the next undisposed lot
           lot = findLot(tx, undisposedLots);
+          if (lot == null) {
+            debugger;
+            throw new Error(
+              `Cannot find enough inventory for ${tx.account}:${
+                tx.asset
+              }, amount remaining: ${formatEther(remainingAmount)}`
+            );
+          }
         } else lot = null;
       }
+      verifyBalance(tx, runningBalances, undisposedLots, soldLots);
     }
     if (tx.taxTxType === "COST-BASIS") {
       //Distribute cost basis fee across all undisposed lots in the account for the asset
@@ -694,9 +754,13 @@ function getCostBasis() {
           taxTxType: "SELL-TRANSFER",
         };
         soldLots.push(soldLot);
+        lot.remainingAmount -= lotAmount;
+        lot.remainingCostBasis =
+          lot.remainingAmount == BigInt("0")
+            ? 0.0
+            : currencyRounded(lot.remainingCostBasis - costBasisPortion);
 
         //then "mini-BUY" into toAccount
-
         const newLot = {
           account: tx.toAccount,
           asset: tx.asset,
@@ -711,13 +775,8 @@ function getCostBasis() {
         };
 
         undisposedLots.push(newLot);
-        mappedData = mappedData.sort(sortByTimeStampThenSort);
+        undisposedLots = undisposedLots.sort(sortByTimeStampThenSortThenId);
 
-        lot.remainingAmount -= lotAmount;
-        lot.remainingCostBasis =
-          lot.remainingAmount == BigInt("0")
-            ? 0.0
-            : currencyRounded(lot.remainingCostBasis - costBasisPortion);
         if (lot.remainingAmount < BigInt("0")) {
           debugger;
           throw new Error("Lot remaining amount negative");
@@ -733,6 +792,16 @@ function getCostBasis() {
         //   debugger;
         // }
         remainingAmount -= lotAmount;
+        if (remainingAmount == BigInt("0")) {
+          verifyBalance(soldLot, runningBalances, undisposedLots, soldLots);
+
+          verifyBalance(
+            Object.assign(newLot, { timestamp: tx.timestamp }),
+            runningBalances,
+            undisposedLots,
+            soldLots
+          );
+        }
         if (remainingAmount > BigInt("0")) {
           lot = findLot(
             {
@@ -756,7 +825,7 @@ export const useCostBasisStore = defineStore("costBasis", {
         return getCostBasis();
       } catch (err) {
         console.error(err);
-        //debugger;
+        throw err;
       }
       return [];
     },

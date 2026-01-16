@@ -87,8 +87,10 @@
 import { ref } from 'vue';
 // import QCalendar from '@quasar/quasar-ui-qcalendar'
 import { useCostBasisStore } from 'src/stores/cost-basis-store';
-import { format } from 'quasar';
+import { format, useQuasar } from 'quasar';
 import { formatEther } from 'ethers';
+
+const $q = useQuasar();
 const today = ref(new Date().toISOString().split('T')[0]);
 const getCostBasis = () => {
   // Placeholder function for GET COST BASIS button
@@ -113,14 +115,32 @@ const getCostBasis = () => {
 
 
 
-    console.log('Undisposed Lots by Account and Asset:', undisposedLotsByAccountAsset);
+    //console.log('Undisposed Lots by Account and Asset:', undisposedLotsByAccountAsset);
     // console.log('Total Cost Basis:', result.totalCostBasis);
     // console.log('Total Proceeds:', result.totalProceeds);
     // console.log('Total Gain/Loss:', result.totalGainLoss);
 
 
 
-  } finally {
+  } catch (error) {
+    //console.error("Error importing chain txs:", error);
+
+    $q.notify({
+      message: error.message,
+      color: "negative",
+      icon: "warning",
+      timeout: 0,  // 0 = no auto-close
+      position: 'center',
+      //closeBtn: 'Close',  // Show close button
+      actions: [
+        {
+          label: 'Dismiss',
+          color: 'white'
+        }
+      ]
+    });
+  }
+  finally {
     console.timeEnd('Get Cost Basis Total Time');
   }
 };
