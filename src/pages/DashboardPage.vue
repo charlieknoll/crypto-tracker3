@@ -98,8 +98,9 @@ const getCostBasis = () => {
   try {
     console.time('Get Cost Basis Total Time');
     const result = costBasisStore.costBasisData;
-    //log account/asset totals
-    const undisposedLotsByAccountAsset = result.undisposedLots.reduce((acc, lot) => {
+    console.log(costBasisStore.costBasisData)
+    // log account/asset totals
+    const undisposedLotsByAccountAsset = result.heldLots.reduce((acc, lot) => {
       acc[lot.account] = acc[lot.account] || {};
       acc[lot.account][lot.asset] = (acc[lot.account][lot.asset] || BigInt("0")) + lot.remainingAmount;
       return acc;

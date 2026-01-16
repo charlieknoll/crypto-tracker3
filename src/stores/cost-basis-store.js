@@ -815,7 +815,7 @@ function getCostBasis() {
     }
   });
 
-  return { undisposedLots, soldLots };
+  return { heldLots: undisposedLots, soldLots };
 }
 
 export const useCostBasisStore = defineStore("costBasis", {
