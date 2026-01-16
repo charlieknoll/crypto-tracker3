@@ -64,7 +64,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           feeTx.currency = tx.feeCurrency;
           feeTx.net = multiplyCurrency([feeTx.amount, feeTx.price]);
           feeTx.gross = feeTx.net;
-          feeTx.sort = 1;
+          feeTx.sort = tx.action == "BUY" ? 1 : -1;
           // if (feeTx.amount != 0.0)
           mappedData.push(feeTx);
         } else {
@@ -79,11 +79,14 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
             tx.date,
             tx.timestamp
           );
+          if (!currencyUSDPrice)
+            throw new Error(
+              `${tx.currency} price needed on ${tx.date} to calculate non USD BUY/SELL`
+            );
           const currencyPrice = tx.price;
           const id = tx.id;
           tx.sort = tx.action == "BUY" ? 2 : 0;
           tx.price = currencyPrice * currencyUSDPrice;
-          const gross = tx.gross;
           tx.fee = tx.action == "SELL" ? usdFee : 0.0;
           tx.gross = multiplyCurrency([tx.amount, tx.price]);
           tx.net = tx.gross - tx.fee; //fee only non-zero for sell
@@ -92,11 +95,11 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           const currencyTx = Object.assign({}, tx);
           currencyTx.action = tx.action == "SELL" ? "BUY" : "SELL";
           //currencyTx.id = id;
-          currencyTx.id = (currencyTx.action == "SELL" ? "S-" : "B-") + id;
+          currencyTx.id = id + (currencyTx.action == "SELL" ? "S" : "B");
           currencyTx.sort = currencyTx.action == "BUY" ? 2 : 0;
           currencyTx.price = currencyUSDPrice;
           currencyTx.asset = tx.currency;
-          currencyTx.amount = floatToStrAbs(gross);
+          currencyTx.amount = floatToStrAbs(tx.gross / currencyUSDPrice);
           currencyTx.fee = usdFee;
           currencyTx.gross = multiplyCurrency([
             currencyTx.price,

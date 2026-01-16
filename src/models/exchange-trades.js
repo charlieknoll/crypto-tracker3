@@ -59,6 +59,10 @@ const fields = [
     name: "price",
     align: "right",
     key: 7,
+    format: (val, row) =>
+      row.currency == "USD"
+        ? currency(val)
+        : `${parseFloat(val ?? 0.0).toFixed(4)}`,
   },
   {
     name: "currency",
@@ -71,6 +75,10 @@ const fields = [
     name: "fee",
     align: "right",
     defaultValue: 0.0,
+    format: (val, row) =>
+      row.feeCurrency == "USD"
+        ? currency(val)
+        : `${parseFloat(val ?? 0.0).toFixed(4)}`,
   },
   {
     name: "feeCurrency",
@@ -116,7 +124,10 @@ const splitFields = [
   {
     name: "fee",
     align: "right",
-    format: currency,
+    format: (val, row) =>
+      row.feeCurrency == "USD"
+        ? currency(val)
+        : `${parseFloat(val ?? 0.0).toFixed(4)}`,
   },
 
   {

@@ -19,6 +19,7 @@ const fields = [
     defaultValue: () => moment().format("YYYY-MM-DD"),
   },
   { name: "time", defaultValue: "00:00:00", showColumn: true, key: 3 },
+  { name: "timestamp", defaultValue: null, showColumn: false, required: false },
   {
     name: "price",
     required: true,

@@ -100,7 +100,10 @@ export const usePricesStore = defineStore("prices", {
       const app = useAppStore();
       upserted.source = "Manual";
       upserted.price = parseCommaFloat(upserted.price);
-      if (upserted.timestamp) {
+      if (upserted.date && upserted.time) {
+        upserted.timestamp =
+          new Date(upserted.date + " " + upserted.time).getTime() / 1000;
+      } else if (upserted.timestamp) {
         upserted.time = date.formatDate(upserted.timestamp * 1000, "HH:mm:ss");
         upserted.date = date.formatDate(
           upserted.timestamp * 1000,

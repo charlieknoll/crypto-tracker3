@@ -4,6 +4,10 @@ Track crypto balances, gains and losses
 
 ## TODO
 
+- Set up Capital Gains and Unrealized using test data
+- Test charlie.knoll.eth chaintransactions with test data
+- Add wallet functionaltiy
+
 - Floating point gotchas:
   -- tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
   -- Math.abs(tx.value) should be floatToStrAbs(tx.value) Math.abs creates floating point
@@ -43,6 +47,7 @@ Track crypto balances, gains and losses
 - WALLET capital gains starting in 2025
 - export and import into opening positions, how will address balances be handled?
 
+- Updating date on a price doesn't work, it just takes the timestamp from the original record and overwrites it, probably should have timestamp+asset+source be the key, or at least check timestamp !=date
 - add Kraken integration or at least manually enter for 2025
 - Get prices from Kraken ?
 - Prices service is requesting prices that return 401

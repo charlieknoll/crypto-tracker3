@@ -27,6 +27,14 @@ function handleError(tx, source, error) {
   console.log(source);
   throw new Error(error);
 }
+function checkPrice(price, asset, timestamp, currency) {
+  if (!price)
+    throw new Error(
+      `Price not set for ${asset}:${currency} at ${new Date(
+        timestamp * 1000
+      ).toString()} `
+    );
+}
 function validateCostBasisTx(tx, source) {
   if (!tx.account) {
     handleError(tx, source, "Cost basis tx missing account");
@@ -181,6 +189,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     spendTx.timestamp = tx.timestamp;
     spendTx.asset = tx.asset;
     spendTx.amount = BigInt(tx.value) ?? BigInt("0");
+    checkPrice(tx.price, tx.asset, tx.timestamp);
     spendTx.price = tx.price;
     spendTx.fee = tx.fee;
     spendTx.type = tx.taxCode;
@@ -219,6 +228,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     sellAssetTx.timestamp = tx.timestamp;
     sellAssetTx.asset = tx.asset;
     sellAssetTx.amount = BigInt(tx.value) ?? BigInt("0");
+    checkPrice(tx.price, tx.asset, tx.timestamp);
     sellAssetTx.price = tx.price;
     sellAssetTx.fee = tx.fee;
     sellAssetTx.type = "CHAIN-SELL";
@@ -239,8 +249,10 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     exchangeTx.timestamp = tx.timestamp;
     exchangeTx.asset = tx.asset;
     exchangeTx.amount = floatToWei(tx.amount);
+    checkPrice(tx.price, tx.asset, tx.timestamp, tx.currency);
     exchangeTx.price = tx.price;
     exchangeTx.fee = tx.fee;
+    exchangeTx.sort = tx.sort;
     exchangeTx.type = "EXCH-SELL";
     validateSellTx(exchangeTx, tx);
     return exchangeTx;
@@ -267,6 +279,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     feeTx.sort = -1;
     feeTx.amount = BigInt(tx.gasFee) ?? BigInt("0");
     feeTx.fee = 0.0;
+    checkPrice(tx.price, tx.asset, tx.timestamp);
     feeTx.price = tx.price;
     feeTx.type = "GAS-FEE-SPENT";
     validateSellTx(feeTx, tx);
@@ -274,28 +287,30 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   });
   sellTxs = sellTxs.concat(gasFeeTxs);
 
+  //tx.type == "FEE" ensures only non USD
   let offChainFeeTxs = offchainTransfers.filter(
     (tx) => tx.type == "FEE" && tx.amount > 0.0
   );
-  //TODO should this be only non USD fees?
+
   const _offChainFeeTxs = [];
   for (const tx of offChainFeeTxs) {
-    //TODO fix
     const feeTx = {};
     feeTx.id = tx.id;
     //No need to handle wallet here, account is always a wallt for an exchange
     feeTx.account = tx.fromAccount;
     feeTx.asset = tx.asset;
-    //TODO add sort intead of timestamp hack
     feeTx.timestamp = tx.timestamp;
-    //fee is sold first, then the main tx sell should be handled after
-    feeTx.sort = -1;
+    //fee is sold after transfer and his applied to the receiver's cost basis
+    feeTx.sort = 1;
     feeTx.amount = floatToWei(tx.amount);
     feeTx.fee = 0.0;
+    checkPrice(tx.price, tx.asset, tx.timestamp);
+
     //feeTx.price = prices.getPrice(tx.feeCurrency, tx.date, tx.timestamp);
     feeTx.price = tx.price;
     feeTx.type = "OFFCHAIN-FEE";
     validateSellTx(feeTx, tx);
+    _offChainFeeTxs.push(feeTx);
   }
   sellTxs = sellTxs.concat(_offChainFeeTxs);
 
@@ -680,15 +695,15 @@ function getCostBasis() {
         if (remainingAmount > BigInt("0")) {
           //find the next undisposed lot
           lot = findLot(tx, undisposedLots);
-          if (lot == null) {
-            debugger;
-            throw new Error(
-              `Cannot find enough inventory for ${tx.account}:${
-                tx.asset
-              }, amount remaining: ${formatEther(remainingAmount)}`
-            );
-          }
         } else lot = null;
+      }
+      if (remainingAmount > BigInt("0")) {
+        debugger;
+        throw new Error(
+          `Cannot find enough inventory for ${tx.account}:${
+            tx.asset
+          }, amount remaining: ${formatEther(remainingAmount)}`
+        );
       }
       verifyBalance(tx, runningBalances, undisposedLots, soldLots);
     }
@@ -811,6 +826,14 @@ function getCostBasis() {
             undisposedLots
           );
         } else lot = null;
+      }
+      if (remainingAmount > BigInt("0")) {
+        debugger;
+        throw new Error(
+          `Cannot find enough transfer inventory for ${tx.account}:${
+            tx.asset
+          }, amount remaining: ${formatEther(remainingAmount)}`
+        );
       }
     }
   });

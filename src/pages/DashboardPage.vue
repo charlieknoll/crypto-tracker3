@@ -98,6 +98,7 @@ const getCostBasis = () => {
   try {
     console.time('Get Cost Basis Total Time');
     const result = costBasisStore.costBasisData;
+    if (!result) throw new Error("error getting cost basis")
     console.log(costBasisStore.costBasisData)
     // log account/asset totals
     const undisposedLotsByAccountAsset = result.heldLots.reduce((acc, lot) => {

@@ -41,7 +41,7 @@ const props = defineProps({
 const value = ref({});
 
 const setDate = function () {
-  //value.value.date = "2020-10-10"
+  //console.log(value.value)
 }
 const emit = defineEmits(["update:modelValue"]);
 
