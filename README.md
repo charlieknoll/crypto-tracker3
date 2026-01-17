@@ -60,6 +60,9 @@ Track crypto balances, gains and losses
 
 - Change Gnosis Wallet to "Contract Owned" ?
 
+- add offline wallet and generate signed tx (including contract calls)
+- use icon genie to generate nicer icon for project
+
 ## DONE
 
 - distribute cost-basis for a zero amount sell that has a fee (add as a cost basis tx)

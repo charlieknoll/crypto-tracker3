@@ -84,11 +84,13 @@
   </q-page>
 </template>
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 // import QCalendar from '@quasar/quasar-ui-qcalendar'
 import { useCostBasisStore } from 'src/stores/cost-basis-store';
 import { format, useQuasar } from 'quasar';
 import { formatEther } from 'ethers';
+import { currency } from 'src/utils/number-helpers';
+import { usePricesStore } from 'src/stores/prices-store';
 
 const $q = useQuasar();
 const today = ref(new Date().toISOString().split('T')[0]);
@@ -147,21 +149,31 @@ const getCostBasis = () => {
   }
 };
 
-const assets = ref([
-  { name: 'Apple Inc.', symbol: 'AAPL', value: '$50,000', percentage: '20%' },
-  { name: 'Tesla Inc.', symbol: 'TSLA', value: '$40,000', percentage: '16%' },
-  { name: 'Bitcoin', symbol: 'BTC', value: '$30,000', percentage: '12%' },
-  { name: 'Gold ETF', symbol: 'GLD', value: '$25,000', percentage: '10%' },
-  { name: 'Real Estate Fund', symbol: 'REIT', value: '$20,000', percentage: '8%' },
-]);
+const assets = ref([]);
 
 const assetColumns = [
-  { name: 'name', label: 'Asset Name', field: 'name', align: 'left' },
-  { name: 'symbol', label: 'Symbol', field: 'symbol', align: 'center' },
-  { name: 'value', label: 'Value', field: 'value', align: 'right' },
-  { name: 'percentage', label: 'Percentage', field: 'percentage', align: 'right' },
-];
+  { name: 'asset', label: 'Asset', field: 'asset', align: 'left' },
+  { name: 'price', label: 'Price', field: 'price', align: 'right', format: currency },
 
+];
+onMounted(async () => {
+  // Placeholder data for major assets held
+  const pricesStore = usePricesStore();
+  assets.value = await pricesStore.getCurrentPrices();
+  // TODO save current prices to store as type "Current", save previous day's price as type "Previous", this will allow gain/loss percentage
+  //TODO: add tracked tokens
+  //TODO Get current balances for assets
+  //TODO set current balance and value on assets
+  //TODO sort assets by value
+  //TODO add icons?
+  //TODO add link to running balances
+  // TODO add refresh button to get latest prices
+  // TODO add refresh button to get chain txs
+  //TODO add refresh interval
+
+
+  console.log("Assets with current prices:", assets.value);
+})
 const events = ref([
   { title: 'iamtraci.eth Expires', date: '2030-03-06' },
   { title: 'charlieknoll.eth Expires', date: '2030-05-03' },

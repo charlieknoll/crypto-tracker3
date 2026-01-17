@@ -25,7 +25,7 @@
       <template v-slot:top-right>
         <asset-filter></asset-filter>
         <q-toggle label="Only Zero" v-model="onlyZero" class="q-pr-sm"></q-toggle>
-        <q-btn class="q-ml-lg" color="primary" label="Refresh" @click="store.getPrices" />
+        <q-btn class="q-ml-lg" color="primary" label="Refresh" @click="store.getCurrentPrices" />
         <q-btn class="q-ml-lg" color="secondary" label="Add" @click="add" />
         <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear(filtered)" />
       </template>

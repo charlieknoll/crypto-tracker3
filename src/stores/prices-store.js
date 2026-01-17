@@ -25,6 +25,8 @@ import { useChainTxsStore } from "./chain-txs-store";
 import { timestampToTime } from "src/utils/date-helper";
 import { onlyUnique } from "src/utils/array-helpers";
 import { parseCommaFloat } from "src/utils/number-helpers";
+import { useRunningBalancesStore } from "./running-balances-store";
+import { getCurrentPrice } from "src/services/kraken-provider";
 
 const lock = new Semaphore(1);
 const keyFunc = (r) => getId(r, keyFields);
@@ -304,6 +306,26 @@ export const usePricesStore = defineStore("prices", {
       app.needsBackup = true;
       this.sort();
     },
+
+    async getCurrentPrices() {
+      const assets = [
+        { asset: "BTC" },
+        { asset: "ETH" },
+        { asset: "OMG" },
+        { asset: "CRV" },
+      ];
+      await lock.acquire();
+      const app = useAppStore();
+      app.importing = true;
+      for (let i = 0; i < assets.length; i++) {
+        const asset = assets[i].asset;
+        assets[i].price = await getCurrentPrice(asset);
+      }
+      app.importing = false;
+      lock.release();
+      return assets;
+    },
+
     async getPrices() {
       console.log("Getting prices...DISABLED");
       return;
