@@ -1,5 +1,7 @@
+import { formatEther } from "ethers";
 import { date } from "quasar";
-import { currency } from "src/utils/number-helpers";
+import { timestampToDateStr } from "src/utils/date-helper";
+import { currency, floatToStr } from "src/utils/number-helpers";
 const columns = [
   {
     name: "date",
@@ -11,6 +13,7 @@ const columns = [
     //   return row.date;
     // },
   },
+
   {
     label: "Time",
     name: "time",
@@ -21,6 +24,12 @@ const columns = [
         ? date.formatDate(row.timestamp * 1000, "HH:mm:ss")
         : "";
     },
+  },
+  {
+    name: "buyTimestamp",
+    label: "Date Acquired",
+    field: "buyTimestamp",
+    format: (val) => timestampToDateStr(val),
   },
   {
     name: "account",
@@ -48,36 +57,16 @@ const columns = [
     align: "left",
   },
   {
-    name: "action",
-    label: "Action",
-    field: "action",
-    align: "left",
-  },
-  {
     name: "amount",
     label: "Amount",
     field: "amount",
     align: "right",
-    format: (val, row) => (val ? `${parseFloat(val ?? 0.0).toFixed(4)}` : ""),
+    format: (val, row) => formatEther(val),
   },
   {
-    name: "price",
-    label: "Price",
-    field: "price",
-    align: "right",
-    format: currency,
-  },
-  {
-    name: "gross",
-    label: "Gross",
-    field: "gross",
-    align: "right",
-    format: currency,
-  },
-  {
-    name: "fee",
-    label: "Fee",
-    field: "fee",
+    name: "costBasis",
+    label: "Cost Basis",
+    field: "costBasis",
     align: "right",
     format: currency,
   },
@@ -88,31 +77,19 @@ const columns = [
     align: "right",
     format: currency,
   },
+
   {
-    name: "shortTermGain",
-    label: "Short Term Gain",
-    field: "shortTermGain",
+    name: "gainLoss",
+    label: "GainLoss",
+    field: "gainLoss",
     align: "right",
     format: currency,
   },
 
   {
-    name: "longTermGain",
-    label: "Long Term Gain",
-    field: "longTermGain",
-    align: "right",
-    format: currency,
-  },
-  {
-    name: "longLots",
-    label: "L Lots",
-    field: "longLots",
-    align: "right",
-  },
-  {
-    name: "shortLots",
-    label: "S Lots",
-    field: "shortLots",
+    name: "daysHeld",
+    label: "Days Held",
+    field: "daysHeld",
     align: "right",
   },
 ];

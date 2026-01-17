@@ -36,41 +36,53 @@ import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
 import { filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
-import { useCapitalGainsStore } from "src/stores/capital-gains-store";
+
 import { usePricesStore } from "src/stores/prices-store";
+import { useCostBasisStore } from "src/stores/cost-basis-store";
+import { timestampToDateStr } from "src/utils/date-helper";
 
 
 const appStore = useAppStore();
 const priceStore = usePricesStore();
 //array of object.(price,date,symbol)
 const prices = shallowRef([]);
-const capitalGainsStore = useCapitalGainsStore();
+const costBasisStore = useCostBasisStore();
 const groups = ["Detailed", "Asset Totals", "Totals"];
-const gainsGrouping = ref("Asset Totals");
+const gainsGrouping = ref("Detailed");
 const getCurrentPrices = async function () {
 
 }
 const filtered = computed(() => {
-  let txs = capitalGainsStore.capitalGains.unrealized
+  let txs = costBasisStore.costBasisData.heldLots
+  if (!txs) return [];
+  txs = txs.filter(t => t.unrealizedAmount != 0);
+  txs = txs.map((t) => {
+    t.date = timestampToDateStr(t.timestamp);
+    return t;
+  })
+
+
   //console.log(txs)
   //TODO map into long and short with gain/loss amount next long date, grouping by day
 
+  //map new daysHeld field onto txs
 
 
   //let txs = getCapitalGains(false).sellTxs;
   if (!txs) return [];
   txs = filterByAssets(txs, appStore.selectedAssets);
-  txs.map((t) => {
-    if (!prices.value.find((p) => p.asset == t.asset)) {
-      const recentPrice = priceStore.getMostRecentPrice(t.asset)
-      prices.value.push({
-        asset: t.asset,
-        price: recentPrice.price,
-        timestamp: recentPrice.timestamp
-      })
-    }
-    //
-  })
+
+  // txs.map((t) => {
+  //   if (!prices.value.find((p) => p.asset == t.asset)) {
+  //     const recentPrice = priceStore.getMostRecentPrice(t.asset)
+  //     prices.value.push({
+  //       asset: t.asset,
+  //       price: recentPrice.price,
+  //       timestamp: recentPrice.timestamp
+  //     })
+  //   }
+  //   //
+  // })
 
 
   // if (appStore.taxYear != "All") {
@@ -79,6 +91,7 @@ const filtered = computed(() => {
 
   if (gainsGrouping.value == "Detailed") return txs;
 
+  return txs;
   let totals = [];
   for (const tx of txs) {
     let total = totals.find((t) => t.asset == tx.asset);

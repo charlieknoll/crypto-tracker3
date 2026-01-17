@@ -1,9 +1,12 @@
 import { currency, perCent } from "src/utils/number-helpers";
+import { date } from "quasar";
+import { formatEther } from "ethers";
+import { timestampToDateStr } from "src/utils/date-helper";
 
 const columns = [
   {
     name: "date",
-    label: "Date",
+    label: "Aquisition Date",
     field: "date",
     align: "left",
   },
@@ -12,26 +15,26 @@ const columns = [
     label: "Time",
     field: "time",
     align: "left",
+    format: (val, row) => {
+      return val ?? row.timestamp
+        ? date.formatDate(row.timestamp * 1000, "HH:mm:ss")
+        : "";
+    },
   },
   {
     name: "type",
-    label: "Type",
-    field: "taxCode",
+    label: "Source",
+    field: "type",
     align: "left",
   },
 
   {
-    name: "fromAccountName",
-    label: "From",
-    field: "fromAccountName",
+    name: "account",
+    label: "Account",
+    field: "account",
     align: "left",
   },
-  {
-    name: "toAccountName",
-    label: "To",
-    field: "toAccountName",
-    align: "left",
-  },
+
   {
     name: "asset",
     label: "Asset",
@@ -39,15 +42,16 @@ const columns = [
     align: "left",
   },
   {
-    name: "unrealizedAmount",
+    name: "remainingAmount",
     label: "Amount",
-    field: "unrealizedAmount",
-    align: "left",
+    field: "remainingAmount",
+    align: "right",
+    format: (val, row) => `${formatEther(val)}`,
   },
   {
-    name: "price",
-    label: "Price",
-    field: "price",
+    name: "currentPrice",
+    label: "Current Price",
+    field: "currentPrice",
     align: "right",
     format: (val, row) => currency(val),
   },
@@ -57,6 +61,27 @@ const columns = [
     field: "costBasis",
     align: "right",
     format: (val, row) => currency(val),
+  },
+  {
+    name: "currentValue",
+    label: "Current Value",
+    field: "currentValue",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "gainLoss",
+    label: "Gain/Loss",
+    field: "gainLoss",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  //daysHeld
+  {
+    name: "daysHeld",
+    label: "Days Held",
+    field: "daysHeld",
+    align: "right",
   },
 ];
 const assetTotalColumns = [

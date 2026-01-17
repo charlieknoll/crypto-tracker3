@@ -5,6 +5,7 @@ import {
   multiplyCurrency,
   floatToWei,
 } from "src/utils/number-helpers";
+import { daysDifference } from "src/utils/date-helper";
 import { useOpeningPositionsStore } from "./opening-positions-store";
 import { useOffchainTransfersStore } from "./offchain-transfers-store";
 import { useChainTxsStore } from "./chain-txs-store";
@@ -663,6 +664,7 @@ function getCostBasis() {
           id: tx.id,
           type: tx.type,
           timestamp: tx.timestamp,
+          daysHeld: daysDifference(tx.timestamp, lot.timestamp),
           amount: lotAmount,
           costBasis: currencyRounded(costBasisPortion),
           proceeds: currencyRounded(proceedsPortion),
@@ -779,7 +781,10 @@ function getCostBasis() {
         const newLot = {
           account: tx.toAccount,
           asset: tx.asset,
+          buyTxId: lot.id,
+          buyTxType: lot.type,
           timestamp: lot.timestamp,
+          transferTimestamp: tx.timestamp,
           amount: lotAmount,
           remainingAmount: lotAmount,
           costBasis: currencyRounded(costBasisPortion),
@@ -811,7 +816,7 @@ function getCostBasis() {
           verifyBalance(soldLot, runningBalances, undisposedLots, soldLots);
 
           verifyBalance(
-            Object.assign(newLot, { timestamp: tx.timestamp }),
+            Object.assign({}, newLot, { timestamp: tx.timestamp }),
             runningBalances,
             undisposedLots,
             soldLots

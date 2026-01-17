@@ -4,22 +4,22 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- Set up Capital Gains and Unrealized using test data
+- implement getCurrentPrices
+- finish unrealized fields, filter up to displayed year
 - Test charlie.knoll.eth chaintransactions with test data
+- Test GIFT-IN, GIFT-OUT(GIFT?)
+- Gift Export/import
 - Add wallet functionaltiy
 
 - Floating point gotchas:
   -- tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
   -- Math.abs(tx.value) should be floatToStrAbs(tx.value) Math.abs creates floating point
 
-- distribute cost-basis for a zero amount sell that has a fee (add as a cost basis tx)
-- distribute cost-basis for a Zero amount BUY that has a fee
-
 - treat a GIFT tx from Spam as a "Buy" at market rates
 - Change a GIFT tx from openingPositon as a normal "TRANSFER"
 - treat a "GIFT-IN" as a TRANSFER from an openingPosition named the same as the fromAcccount.name
 - Handle EXPENSE REFUND as BUY
-- fix exchangeFees, convert to getter, fix id that is adding -F, reimport to clean up?
+- fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
 - TRANSFER removes prorated costBasis and amount from accountInventory then adds prorates amount and costBasis + fee to toAccount inventory
 - should GIFT-OUT really be a transfer? No it should only be a sell, we don't care about it
 - don't double count transfer fees from gas
@@ -62,6 +62,9 @@ Track crypto balances, gains and losses
 
 ## DONE
 
+- distribute cost-basis for a zero amount sell that has a fee (add as a cost basis tx)
+- distribute cost-basis for a Zero amount BUY that has a fee
+- Set up Capital Gains and Unrealized using test data
 - Running balances doesn't work on exchange accounts and doesn't include exchangeStore.fees
 - document skipInternal? (Gnosis wallet contract may have some extra tx's)
 - Through no api key error to user when trying to import

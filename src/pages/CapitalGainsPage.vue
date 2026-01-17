@@ -5,7 +5,7 @@
       :rows="filtered"
       :columns="columns"
       @rowClick="showBuys"
-      rowKey="cgId">
+      rowKey="id">
       <template v-slot:top-right>
         <div class="row">
           <account-filter :options="appStore.accounts"></account-filter>
@@ -41,21 +41,29 @@ import { useAppStore } from "src/stores/app-store";
 import { useCapitalGainsStore } from "src/stores/capital-gains-store";
 import { getCapitalGains } from "src/stores/capital-gains-store";
 import { onlyUnique } from "src/utils/array-helpers";
+import { timestampToDateStr } from "src/utils/date-helper";
+import { useCostBasisStore } from "src/stores/cost-basis-store";
 
 const appStore = useAppStore();
-const capitalGainsStore = useCapitalGainsStore();
+const costBasisStore = useCostBasisStore();
 
 const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Detailed");
 const showBuys = (evt, row, index) => {
-  let txs = capitalGainsStore.capitalGains.splitTxs
-  txs = txs.filter((t) => t.sellId == row.id)
-  console.log(txs)
+  // let txs = capitalGainsStore.capitalGains.splitTxs
+  // txs = txs.filter((t) => t.sellId == row.id)
+  // console.log(txs)
 }
 const filtered = computed(() => {
   //let txs = capitalGainsStore.capitalGains.realizedLots;
-  let txs = getCapitalGains(false).sellTxs;
+  let txs = costBasisStore.costBasisData.soldLots;
   if (!txs) return [];
+  txs = txs.map((t) => {
+    t.date = timestampToDateStr(t.timestamp);
+
+    return t;
+
+  })
 
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByAccounts(txs, appStore.selectedAccounts);
@@ -64,6 +72,7 @@ const filtered = computed(() => {
   }
 
   if (gainsGrouping.value == "Detailed") return txs;
+  return txs;
   const totals = [];
   let ctr = 0;
   for (const tx of txs) {
