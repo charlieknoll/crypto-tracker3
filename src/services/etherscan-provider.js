@@ -348,7 +348,8 @@ export const getCurrentBlock = async function (provider) {
     provider.currentBlock = currentBlock;
     return currentBlock;
   } catch (err) {
-    if (debug) console.log("currentBlockUrl: ", apiUrl);
-    console.log("error getting current block: ", err);
+    //if (debug) console.log("currentBlockUrl: ", apiUrl);
+    //console.log("error getting current block: ", err);
+    throw err;
   }
 };

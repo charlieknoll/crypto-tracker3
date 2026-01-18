@@ -169,7 +169,7 @@ onMounted(async () => {
   let totalValue = 0.0;
   assetBalances.map((asset) => {
     const priceData = assetPrices.find(p => p.asset === asset.symbol);
-
+    if (!priceData) return;
     priceData.currentValue = parseFloat(formatEther(asset.biAmount)) * priceData.price;
     totalValue += priceData.currentValue;
 
