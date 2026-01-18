@@ -345,13 +345,14 @@ function getRunningBalances() {
   // store.accounts = accountNames;
   // store.runningBalances = mappedData;
   // store.updated = false;
-  return mappedData;
+  return { mappedData, assets, accountAssets };
 }
 export const useRunningBalancesStore = defineStore("runningBalances", {
   getters: {
     runningBalances: () => {
       try {
-        return getRunningBalances();
+        const runningBalances = getRunningBalances();
+        return runningBalances;
       } catch (err) {
         console.error(err);
         debugger;

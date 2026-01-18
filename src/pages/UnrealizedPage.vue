@@ -34,13 +34,13 @@ import { computed, ref, shallowRef } from "vue";
 import { columns, assetTotalColumns } from "src/models/unrealized"
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
-import { filterByAssets, filterByYear } from "src/utils/filter-helpers";
+import { filterByAssets, filterByYear, filterUpToYear } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
 
 import { usePricesStore } from "src/stores/prices-store";
 import { useCostBasisStore } from "src/stores/cost-basis-store";
 import { timestampToDateStr } from "src/utils/date-helper";
-
+import { formatEther } from "ethers"
 
 const appStore = useAppStore();
 const priceStore = usePricesStore();
@@ -78,17 +78,23 @@ const filtered = computed(() => {
   //     prices.value.push({
   //       asset: t.asset,
   //       price: recentPrice.price,
-  //       timestamp: recentPrice.timestamp
+  //       timestamp: recentPrice.timestampp
   //     })
   //   }
   //   //
   // })
 
 
-  // if (appStore.taxYear != "All") {
-  //   txs = filterByYear(txs, appStore.taxYear);
-  // }
-
+  if (appStore.taxYear != "All") {
+    txs = filterUpToYear(txs, appStore.taxYear);
+  }
+  for (const tx of txs) {
+    const currentPrice = priceStore.getMostRecentPrice(tx.asset);
+    tx.currentPrice = currentPrice.price;
+    tx.currentValue = parseFloat(formatEther(tx.remainingAmount)) * tx.currentPrice;
+    tx.gainLoss = tx.currentValue - tx.remainingCostBasis;
+    tx.daysHeld = Math.floor((Date.now() - tx.timestamp * 1000) / (1000 * 60 * 60 * 24));
+  }
   if (gainsGrouping.value == "Detailed") return txs;
 
   return txs;

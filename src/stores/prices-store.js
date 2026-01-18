@@ -320,6 +320,31 @@ export const usePricesStore = defineStore("prices", {
       for (let i = 0; i < assets.length; i++) {
         const asset = assets[i].asset;
         assets[i].price = await getCurrentPrice(asset);
+        const priceRecord = this.records.find((r) => {
+          return r.asset == asset && r.source == "Current";
+        });
+        if (priceRecord) {
+          priceRecord.price = assets[i].price;
+          priceRecord.timestamp = Math.floor(Date.now() / 1000);
+          priceRecord.date = date.formatDate(Date.now(), "YYYY-MM-DD");
+          priceRecord.time = date.formatDate(Date.now(), "HH:mm:ss");
+        } else {
+          this.records.push({
+            id: getId(
+              {
+                asset: asset,
+                source: "Current",
+              },
+              keyFields
+            ),
+            asset: asset,
+            price: assets[i].price,
+            source: "Current",
+            timestamp: Math.floor(Date.now() / 1000),
+            date: date.formatDate(Date.now(), "YYYY-MM-DD"),
+            time: date.formatDate(Date.now(), "HH:mm:ss"),
+          });
+        }
       }
       app.importing = false;
       lock.release();

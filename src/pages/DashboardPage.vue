@@ -11,7 +11,7 @@
             <q-card flat bordered>
               <q-card-section>
                 <div class="text-caption text-grey">Total Value</div>
-                <div class="text-h5">$250,000</div>
+                <div class="text-h5">{{ currency(totalAssetValue) }}</div>
               </q-card-section>
             </q-card>
           </div>
@@ -91,6 +91,7 @@ import { format, useQuasar } from 'quasar';
 import { formatEther } from 'ethers';
 import { currency } from 'src/utils/number-helpers';
 import { usePricesStore } from 'src/stores/prices-store';
+import { useRunningBalancesStore } from 'src/stores/running-balances-store';
 
 const $q = useQuasar();
 const today = ref(new Date().toISOString().split('T')[0]);
@@ -150,21 +151,36 @@ const getCostBasis = () => {
 };
 
 const assets = ref([]);
+const totalAssetValue = ref(0.0);
 
 const assetColumns = [
   { name: 'asset', label: 'Asset', field: 'asset', align: 'left' },
+  { name: 'currentValue', label: 'Current Value', field: 'currentValue', align: 'right', format: currency },
   { name: 'price', label: 'Price', field: 'price', align: 'right', format: currency },
 
 ];
 onMounted(async () => {
   // Placeholder data for major assets held
   const pricesStore = usePricesStore();
-  assets.value = await pricesStore.getCurrentPrices();
+  const assetPrices = await pricesStore.getCurrentPrices();
+  const runningBalancesStore = useRunningBalancesStore();
+  const assetBalances = runningBalancesStore.runningBalances.assets;
+
+  let totalValue = 0.0;
+  assetBalances.map((asset) => {
+    const priceData = assetPrices.find(p => p.asset === asset.symbol);
+
+    priceData.currentValue = parseFloat(formatEther(asset.biAmount)) * priceData.price;
+    totalValue += priceData.currentValue;
+
+  });
+  assets.value = assetPrices.sort((a, b) => b.currentValue - a.currentValue); //.slice(0, 5);
+  totalAssetValue.value = totalValue;
+
+
+
   // TODO save current prices to store as type "Current", save previous day's price as type "Previous", this will allow gain/loss percentage
   //TODO: add tracked tokens
-  //TODO Get current balances for assets
-  //TODO set current balance and value on assets
-  //TODO sort assets by value
   //TODO add icons?
   //TODO add link to running balances
   // TODO add refresh button to get latest prices

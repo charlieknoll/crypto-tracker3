@@ -33,3 +33,10 @@ export const filterByYear = function (txs, year) {
       : txs.filter((tx) => parseInt(tx.date.substring(0, 4)) == year);
   return txs;
 };
+export const filterUpToYear = function (txs, year) {
+  txs =
+    year == "All"
+      ? txs
+      : txs.filter((tx) => parseInt(tx.date.substring(0, 4)) <= year);
+  return txs;
+};

@@ -621,7 +621,7 @@ function getCostBasis() {
   mappedData = mappedData.concat(transferTxs);
   mappedData = mappedData.sort(sortByTimeStampThenSortThenId);
   const runningBalancesStore = useRunningBalancesStore();
-  let runningBalances = runningBalancesStore.runningBalances.sort(
+  let runningBalances = runningBalancesStore.runningBalances.mappedData.sort(
     sortByTimeStampThenSortThenTxId
   );
 

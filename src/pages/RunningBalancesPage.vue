@@ -40,6 +40,7 @@ import { useAddressStore } from "src/stores/address-store";
 import { onlyUnique } from "src/utils/array-helpers";
 import { getBalanceAtBlock, getTokenBalanceAtBlock } from "src/services/balance-provider";
 import { formatEther, parseEther } from "ethers";
+
 const tableKey = ref(0);
 const owned = ref(true);
 const tableRef = ref(null)
@@ -97,7 +98,7 @@ const currentColumns = computed(() => {
   return columns;
 });
 const filtered = computed(() => {
-  let txs = runningBalancesStore.runningBalances;
+  let txs = runningBalancesStore.runningBalances.mappedData;
   if (!txs) return []
   let taxYear = appStore.taxYear;
   txs = filterByAssets(txs, appStore.selectedAssets);
@@ -151,7 +152,7 @@ const filtered = computed(() => {
 });
 const accounts = computed(() => {
   //const runningBalancesStore = useRunningBalancesStore();
-  let txs = runningBalancesStore.runningBalances;
+  let txs = runningBalancesStore.runningBalances.mappedData;
   if (!txs) return
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByYear(txs, appStore.taxYear);

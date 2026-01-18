@@ -4,8 +4,6 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- implement getCurrentPrices
-- finish unrealized fields, filter up to displayed year
 - Test charlie.knoll.eth chaintransactions with test data
 - Test GIFT-IN, GIFT-OUT(GIFT?)
 - Gift Export/import
@@ -65,6 +63,8 @@ Track crypto balances, gains and losses
 
 ## DONE
 
+- finish unrealized fields, filter up to displayed year
+- implement getCurrentPrices
 - distribute cost-basis for a zero amount sell that has a fee (add as a cost basis tx)
 - distribute cost-basis for a Zero amount BUY that has a fee
 - Set up Capital Gains and Unrealized using test data
