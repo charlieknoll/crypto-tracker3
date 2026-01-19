@@ -12,10 +12,12 @@
       <q-toolbar-title>
         {{ appName }}
       </q-toolbar-title>
+
       <q-spinner
         color="white"
         size="3em"
         :class="[appStore.importing ? '' : 'hidden']" />
+      <div :class="[appStore.importing ? '' : 'hidden']">{{ appStore.importingMessage }}</div>
       <q-btn-dropdown stretch flat :label="appStore.taxYear">
         <q-list>
           <q-item
@@ -51,11 +53,10 @@
           v-ripple>
           <q-item-section avatar>
             <q-icon
-              :style="
-                menuItem.icon == 'mdi-alert' && appStore.needsBackup
-                  ? 'color: red;'
-                  : ''
-              "
+              :style="menuItem.icon == 'mdi-alert' && appStore.needsBackup
+                ? 'color: red;'
+                : ''
+                "
               :name="menuItem.icon" />
           </q-item-section>
           <q-item-section>
@@ -65,11 +66,7 @@
         <q-separator :key="'sep' + index" v-if="menuItem.separator" />
       </template>
       <q-item>
-        <q-file
-          v-model="files"
-          label="Import .csv/json"
-          filled
-          multiple />
+        <q-file v-model="files" label="Import .csv/json" filled multiple />
       </q-item>
     </q-list>
   </q-drawer>
@@ -95,8 +92,9 @@ useImportFiles(files)
 
 </script>
 <style>
-.q-list--dense > .q-item, .q-item--dense {
-    min-height: 32px;
-    padding: 6px 16px;
+.q-list--dense>.q-item,
+.q-item--dense {
+  min-height: 32px;
+  padding: 6px 16px;
 }
 </style>

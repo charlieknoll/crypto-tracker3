@@ -229,6 +229,7 @@ async function getMinedBlocks(oa, provider) {
 export const getTransactions = async function () {
   const app = useAppStore();
   app.importing = true;
+  app.importingMessage = "Importing transactions from scan providers...";
   try {
     const scanProviders = getScanProviders();
     const result = {

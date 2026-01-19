@@ -11,6 +11,24 @@ coinGeckoSymbolMap["BNB"] = "binancecoin";
 coinGeckoSymbolMap["EPS"] = "ellipsis";
 
 let lastRequestTime = 0;
+
+export const getEthApiPrice = async function (hash) {
+  let apiUrl = `/get-price?url=https://etherscan.io/tx/${hash}`;
+
+  try {
+    const result = await axios.get(apiUrl);
+    return parseFloat(result.data.price);
+  } catch (error) {
+    // console.log(apiUrl);
+    // console.log(`Error getting ETH price for tx ${hash}:`);
+    // console.error(error);
+    console.log("Full error:", error);
+    console.log("Response:", error.response?.data);
+    console.log("Request:", error.request);
+    return 0.0;
+  }
+};
+
 export const getApiPrice = async function (symbol, tradeDate, throttleFn) {
   const cgTradeDate =
     tradeDate.substring(8, 10) +

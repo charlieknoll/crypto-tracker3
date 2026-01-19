@@ -46,6 +46,7 @@
             label="Chain" />
           <div>
             <q-btn class="q-ml-sm" color="primary" label="Import" @click="importChainTxs" />
+            <q-btn class="q-ml-sm" color="primary" label="Import ETH Prices" @click="importPrices" />
             <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
           </div>
         </div>
@@ -119,6 +120,29 @@ const edit = (evt, row, index) => {
 
   })
   editing.value = true
+}
+const importPrices = async function () {
+  try {
+    const prices = usePricesStore()
+    await prices.getETHPrices();
+  } catch (error) {
+    console.error("Error importing ETH prices:", error);
+
+    $q.notify({
+      message: "Could not download ETH prices, please check that the Ether Price API is running on localhost:3000...",
+      color: "negative",
+      icon: "warning",
+      timeout: 0,  // 0 = no auto-close
+      position: 'center',
+      //closeBtn: 'Close',  // Show close button
+      actions: [
+        {
+          label: 'Dismiss',
+          color: 'white'
+        }
+      ]
+    });
+  }
 }
 const importChainTxs = async function () {
   try {

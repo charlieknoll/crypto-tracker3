@@ -18,7 +18,7 @@ import {
 import { useSettingsStore } from "./settings-store";
 import { useExchangeTradesStore } from "./exchange-trades-store";
 import Semaphore from "semaphore-async-await";
-import { getApiPrice } from "src/services/price-provider";
+import { getApiPrice, getEthApiPrice } from "src/services/price-provider";
 import { useOffchainTransfersStore } from "./offchain-transfers-store";
 import StoreHelper from "src/utils/store-helpers";
 import { useChainTxsStore } from "./chain-txs-store";
@@ -148,7 +148,7 @@ export const usePricesStore = defineStore("prices", {
         app.needsBackup = true;
         this.sort();
       }
-      this.getPrices();
+      //this.getPrices();
       return "";
     },
     delete(id) {
@@ -350,13 +350,55 @@ export const usePricesStore = defineStore("prices", {
       lock.release();
       return assets;
     },
-
-    async getPrices() {
-      console.log("Getting prices...DISABLED");
-      return;
+    async getETHPrices() {
       await lock.acquire();
       const app = useAppStore();
       app.importing = true;
+      app.importingMessage = "Getting ETH prices...";
+      const chainTxs = useChainTxsStore();
+
+      const prices = JSON.parse(JSON.stringify(this.records));
+
+      const ethTxs = chainTxs.accountTxs.filter(
+        (tx) => tx.asset == "ETH" && tx.price == 0.0
+      );
+      for (let u = 0; u < ethTxs.length; u++) {
+        const tx = ethTxs[u];
+        const price = await getEthApiPrice(tx.hash);
+        //find price record for timestamp
+        if (price == 0.0) continue;
+        const dateStr = date.formatDate(tx.timestamp * 1000, "YYYY-MM-DD");
+        let priceRecord = prices.find(
+          (r) =>
+            r.asset == "ETH" && r.timestamp == tx.timestamp && r.source == "API"
+        );
+        if (priceRecord) {
+          priceRecord.price = price;
+        } else {
+          priceRecord = {
+            asset: "ETH",
+            price: price,
+            date: dateStr,
+            time: timestampToTime(tx.timestamp),
+            timestamp: tx.timestamp,
+            source: "API",
+          };
+          priceRecord.id = keyFunc(priceRecord);
+          prices.push(priceRecord);
+        }
+      }
+      this.records = prices;
+      app.importing = false;
+      lock.release();
+    },
+
+    async getPrices() {
+      //console.log("Getting prices...DISABLED");
+
+      await lock.acquire();
+      const app = useAppStore();
+      app.importing = true;
+      app.importingMessage = "Getting ETH prices...";
       const exchangeTrades = useExchangeTradesStore();
       const offchainTransfers = useOffchainTransfersStore();
       const chainTxs = useChainTxsStore();

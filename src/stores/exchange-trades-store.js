@@ -159,7 +159,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
         app.needsBackup = true;
         this.sort();
         const prices = usePricesStore();
-        prices.getPrices();
+        //prices.getPrices();
       }
 
       return "";

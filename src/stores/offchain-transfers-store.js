@@ -108,7 +108,7 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
         app.needsBackup = true;
         this.sort();
         const prices = usePricesStore();
-        prices.getPrices();
+        //prices.getPrices();
       }
       return "";
     },

@@ -13,7 +13,7 @@ onMounted(() => {
   const settings = useSettingsStore()
   const app = useAppStore()
   const prices = usePricesStore()
-  console.log("APP vue")
+  //console.log("APP vue")
   const exchangeTrades = useExchangeTradesStore();
   settings.$subscribe((mutation, state) => {
     if (!app.importing) app.needsBackup = true

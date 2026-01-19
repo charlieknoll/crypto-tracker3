@@ -150,6 +150,10 @@ module.exports = configure(function (/* ctx */) {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/cbp-api/, ""),
         },
+        "/get-price": {
+          target: "http://localhost:3000",
+          changeOrigin: true,
+        },
       },
     },
 

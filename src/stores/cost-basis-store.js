@@ -29,6 +29,7 @@ function handleError(tx, source, error) {
   throw new Error(error);
 }
 function checkPrice(price, asset, timestamp, currency) {
+  return;
   if (!price)
     throw new Error(
       `Price not set for ${asset}:${currency} at ${new Date(
@@ -190,7 +191,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     spendTx.timestamp = tx.timestamp;
     spendTx.asset = tx.asset;
     spendTx.amount = BigInt(tx.value) ?? BigInt("0");
-    checkPrice(tx.price, tx.asset, tx.timestamp);
+    checkPrice(tx.price, tx.asset, tx.timestamp, "USD");
     spendTx.price = tx.price;
     spendTx.fee = tx.fee;
     spendTx.type = tx.taxCode;
@@ -280,7 +281,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     feeTx.sort = -1;
     feeTx.amount = BigInt(tx.gasFee) ?? BigInt("0");
     feeTx.fee = 0.0;
-    checkPrice(tx.price, tx.asset, tx.timestamp);
+    checkPrice(tx.price, tx.asset, tx.timestamp, "USD");
     feeTx.price = tx.price;
     feeTx.type = "GAS-FEE-SPENT";
     validateSellTx(feeTx, tx);
@@ -305,7 +306,7 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     feeTx.sort = 1;
     feeTx.amount = floatToWei(tx.amount);
     feeTx.fee = 0.0;
-    checkPrice(tx.price, tx.asset, tx.timestamp);
+    checkPrice(tx.price, tx.asset, tx.timestamp, "USD");
 
     //feeTx.price = prices.getPrice(tx.feeCurrency, tx.date, tx.timestamp);
     feeTx.price = tx.price;

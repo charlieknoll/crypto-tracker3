@@ -72,7 +72,7 @@ export const useChainTxsStore = defineStore("chain-txs", {
       this.rawMinedBlocks = txs.minedBlocks;
 
       const prices = usePricesStore();
-      await prices.getPrices();
+      //await prices.getPrices();
     },
   },
 });
