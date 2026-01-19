@@ -45,12 +45,18 @@ async function getTokenBalanceAtBlock() {
     "function decimals() view returns (uint8)",
     "function totalSupply() view returns (uint256)",
     "function sellTokens() view returns (uint8)",
+    "function symbol() view returns (string)",
   ];
   // const erc20Abi = [
   //   "function sellTokens(uint256 _amountOfTokens) returns (uint8)",
   // ];
 
   const contract = new ethers.Contract(tokenAddress, erc20Abi, provider);
+
+  const symbol = await contract.symbol();
+  console.log("Symbol:", symbol);
+
+  return;
 
   //const balanceWei = await contract.balanceOf(walletAddress);
   for (const a of addresses) {

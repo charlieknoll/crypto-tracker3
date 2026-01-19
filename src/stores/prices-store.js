@@ -320,7 +320,8 @@ export const usePricesStore = defineStore("prices", {
       for (let i = 0; i < assets.length; i++) {
         const asset = assets[i].asset;
         assets[i].price = await getCurrentPrice(asset);
-        const priceRecord = this.records.find((r) => {
+        if (!this.records) this.records = [];
+        const priceRecord = this.records?.find((r) => {
           return r.asset == asset && r.source == "Current";
         });
         if (priceRecord) {

@@ -836,7 +836,7 @@ function getCostBasis() {
       if (remainingAmount > BigInt("0")) {
         debugger;
         throw new Error(
-          `Cannot find enough transfer inventory for ${tx.account}:${
+          `Cannot find enough transfer inventory for ${tx.fromAccount}:${
             tx.asset
           }, amount remaining: ${formatEther(remainingAmount)}`
         );

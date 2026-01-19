@@ -111,7 +111,10 @@ function getMappedData() {
           action: tx.taxCode,
         });
       }
-      if (tx.fromAccount?.type?.toLowerCase().includes("owned")) {
+      if (
+        tx.fromAccount?.type?.toLowerCase().includes("owned") ||
+        tx.fromAccount?.type?.toLowerCase().includes("gift")
+      ) {
         let gasFee = tx.gasFee;
         if (tx.fromAccount?.type?.toLowerCase() != "owned") {
           gasFee = "0";
