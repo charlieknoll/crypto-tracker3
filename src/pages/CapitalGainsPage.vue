@@ -1,5 +1,10 @@
 <template>
   <q-page>
+    <q-banner @click="showUnreconciled" class="bg-negative text-white"
+      :class="costBasisStore.costBasisData.unreconciledAccounts.length == 0 ? 'hidden' : ''">
+      {{ costBasisStore.costBasisData.unreconciledAccounts.length }} unreconciled accounts found. Please review your
+      transactions to ensure all buys and sells are accounted for. (Click for console log)
+    </q-banner>
     <transactions-table
       title="Capital Gains"
       :rows="filtered"
@@ -8,6 +13,7 @@
       rowKey="id">
       <template v-slot:top-right>
         <div class="row">
+          <q-toggle label="Zero Prices" v-model="zeroPrices" class="q-pr-sm"></q-toggle>
           <account-filter :options="appStore.accounts"></account-filter>
           <asset-filter></asset-filter>
 
@@ -46,13 +52,18 @@ import { useCostBasisStore } from "src/stores/cost-basis-store";
 
 const appStore = useAppStore();
 const costBasisStore = useCostBasisStore();
-
+const zeroPrices = ref(false);
 const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Detailed");
 const showBuys = (evt, row, index) => {
   // let txs = capitalGainsStore.capitalGains.splitTxs
   // txs = txs.filter((t) => t.sellId == row.id)
   // console.log(txs)
+}
+const showUnreconciled = () => {
+  console.log("Unreconciled Accounts:");
+  console.log(costBasisStore.costBasisData.unreconciledAccounts.map(a =>
+    `Account: ${a.account}, Asset: ${a.asset}, Date/Time: ${new Date(a.timestamp * 1000).toISOString()}`).join("\n"));
 }
 const filtered = computed(() => {
   //let txs = capitalGainsStore.capitalGains.realizedLots;
@@ -64,7 +75,9 @@ const filtered = computed(() => {
     return t;
 
   })
-
+  if (zeroPrices.value) {
+    txs = txs.filter((t) => t.price == 0.0 || t.buyPrice == 0.0);
+  }
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByAccounts(txs, appStore.selectedAccounts);
   if (appStore.taxYear != "All") {

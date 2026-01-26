@@ -316,10 +316,40 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
   }
   sellTxs = sellTxs.concat(_offChainFeeTxs);
 
+  let offChainSellTxs = offchainTransfers.filter(
+    (tx) => tx.type != "FEE" && tx.type != "TRANSFER" && tx.amount > 0.0
+  );
+
+  const _offChainSellTxs = [];
+  for (const tx of offChainSellTxs) {
+    const stx = {};
+    stx.id = tx.id;
+    //No need to handle wallet here, account is always a wallt for an exchange
+    stx.account = tx.fromAccount;
+    stx.asset = tx.asset;
+    stx.timestamp = tx.timestamp;
+    //fee is sold after transfer and his applied to the receiver's cost basis
+    stx.sort = 0;
+    stx.amount = floatToWei(tx.amount);
+    stx.fee = 0.0;
+    checkPrice(tx.price, tx.asset, tx.timestamp, "USD");
+
+    // tx.price = prices.getPrice(tx.asset, tx.date, tx.timestamp);
+    stx.price = tx.price ?? 0.0;
+    stx.type = "OFFCHAIN-" + tx.type;
+    validateSellTx(stx, tx);
+    _offChainSellTxs.push(stx);
+  }
+  sellTxs = sellTxs.concat(_offChainSellTxs);
+
   sellTxs = sellTxs.map((tx) => {
     tx.proceeds = currencyRounded(
       multiplyCurrency([tx.price, parseFloat(formatEther(tx.amount))]) - tx.fee
     );
+    if (tx.type === "GIFT-OUT") {
+      //Gifts have no proceeds
+      tx.proceeds = 0.0;
+    }
     tx.remainingAmount = tx.amount; //BigInt
     tx.remainingProceeds = tx.proceeds;
     tx.taxTxType = "SELL";
@@ -507,7 +537,7 @@ function getTransferTxs(chainTransactions, offchainTransfers) {
     transferTx.timestamp = tx.timestamp;
     transferTx.asset = tx.asset;
     transferTx.amount = floatToWei(tx.amount);
-    transferTx.type = "OFFCHAIN-TRANSFER";
+    transferTx.type = tx.type;
     transferTx.id = tx.id;
     transferTx.fee = tx.fee;
     validateTransferTx(transferTx, tx);
@@ -537,7 +567,7 @@ function verifyBalance(tx, runningBalances, undisposedLots, soldLots) {
 
   //running balances handles gas fees as part of transfer but cost basis consideres them spent before transfer
   //so wait to verify balance on next tx
-  if (tx.sort == -1) return;
+  if (tx.sort == -1) return true;
 
   const calculatedBalance = undisposedLots.reduce((sum, lot) => {
     if (lot.account == tx.account && lot.asset == tx.asset) {
@@ -554,20 +584,22 @@ function verifyBalance(tx, runningBalances, undisposedLots, soldLots) {
       rb.biRunningAccountBalance == calculatedBalance
   );
   if (!relevantBalanceRec) {
-    debugger;
-    return;
-  } else {
-    if (tx.account == "Poloniex" && tx.asset == "BTC") {
-      console.log(
-        `${new Date(tx.timestamp * 1000).toString()} ${tx.id.substring(
-          0,
-          20
-        )}: txAmount: ${formatEther(tx.amount)}, rbAmount: ${formatEther(
-          relevantBalanceRec.biAmount
-        )} rb: ${formatEther(relevantBalanceRec.biRunningAccountBalance)} `
-      );
-    }
+    //debugger;
+    return false;
   }
+  // else {
+  //   if (tx.account == "Poloniex" && tx.asset == "BTC") {
+  //     console.log(
+  //       `${new Date(tx.timestamp * 1000).toString()} ${tx.id.substring(
+  //         0,
+  //         20
+  //       )}: txAmount: ${formatEther(tx.amount)}, rbAmount: ${formatEther(
+  //         relevantBalanceRec.biAmount
+  //       )} rb: ${formatEther(relevantBalanceRec.biRunningAccountBalance)} `
+  //     );
+  //   }
+  // }
+  return true;
 }
 
 function getCostBasis() {
@@ -591,6 +623,7 @@ function getCostBasis() {
   console.timeEnd("getStores-exchangeTrades");
 
   console.time("Sells");
+  const unreconciledAccounts = [];
 
   let sellTxs = getSellTxs(
     chainTransactions,
@@ -612,7 +645,7 @@ function getCostBasis() {
   let transferTxs = getTransferTxs(chainTransactions, offchainTransfers);
   console.timeEnd("Transfers");
   let undisposedLots = [];
-  const soldLots = [];
+  let soldLots = [];
 
   //Merge all txs and sort by timestamp
   let mappedData = [];
@@ -630,7 +663,13 @@ function getCostBasis() {
     //TODO handle account/wallet cutover timestamp by resetting walletName on undisposedLots
     if (tx.taxTxType.substring(0, 3) === "BUY") {
       undisposedLots.push(tx);
-      verifyBalance(tx, runningBalances, undisposedLots, soldLots);
+      if (!verifyBalance(tx, runningBalances, undisposedLots, soldLots)) {
+        unreconciledAccounts.push({
+          account: tx.account,
+          asset: tx.asset,
+          timestamp: tx.timestamp,
+        });
+      }
     }
     if (tx.taxTxType === "SELL") {
       let remainingAmount = tx.amount;
@@ -662,8 +701,10 @@ function getCostBasis() {
           buyTxId: lot.id,
           buyTxType: lot.type,
           buyTimestamp: lot.timestamp,
+          buyPrice: lot.price,
           id: tx.id,
           type: tx.type,
+          price: tx.price,
           timestamp: tx.timestamp,
           daysHeld: daysDifference(tx.timestamp, lot.timestamp),
           amount: lotAmount,
@@ -708,7 +749,14 @@ function getCostBasis() {
           }, amount remaining: ${formatEther(remainingAmount)}`
         );
       }
-      verifyBalance(tx, runningBalances, undisposedLots, soldLots);
+
+      if (!verifyBalance(tx, runningBalances, undisposedLots, soldLots)) {
+        unreconciledAccounts.push({
+          account: tx.account,
+          asset: tx.asset,
+          timestamp: tx.timestamp,
+        });
+      }
     }
     if (tx.taxTxType === "COST-BASIS") {
       //Distribute cost basis fee across all undisposed lots in the account for the asset
@@ -762,9 +810,11 @@ function getCostBasis() {
           buyTxId: lot.id,
           buyTxType: lot.type,
           buyTimestamp: lot.timestamp,
+          buyPrice: lot.price,
           id: tx.id,
           type: tx.type,
           timestamp: tx.timestamp,
+          price: lot.price,
           amount: lotAmount,
           costBasis: currencyRounded(costBasisPortion),
           proceeds: 0.0,
@@ -784,6 +834,8 @@ function getCostBasis() {
           asset: tx.asset,
           buyTxId: lot.id,
           buyTxType: lot.type,
+          buyPrice: lot.price,
+          price: lot.price,
           timestamp: lot.timestamp,
           transferTimestamp: tx.timestamp,
           amount: lotAmount,
@@ -814,14 +866,25 @@ function getCostBasis() {
         // }
         remainingAmount -= lotAmount;
         if (remainingAmount == BigInt("0")) {
-          verifyBalance(soldLot, runningBalances, undisposedLots, soldLots);
-
-          verifyBalance(
-            Object.assign({}, newLot, { timestamp: tx.timestamp }),
-            runningBalances,
-            undisposedLots,
-            soldLots
-          );
+          if (
+            !verifyBalance(soldLot, runningBalances, undisposedLots, soldLots)
+          ) {
+            unreconciledAccounts.push({
+              account: soldLot.account,
+              asset: soldLot.asset,
+              timestamp: soldLot.timestamp,
+            });
+          }
+          const tmpTx = Object.assign({}, newLot, { timestamp: tx.timestamp });
+          if (
+            !verifyBalance(tmpTx, runningBalances, undisposedLots, soldLots)
+          ) {
+            unreconciledAccounts.push({
+              account: tmpTx.account,
+              asset: tmpTx.asset,
+              timestamp: tmpTx.timestamp,
+            });
+          }
         }
         if (remainingAmount > BigInt("0")) {
           lot = findLot(
@@ -843,8 +906,8 @@ function getCostBasis() {
       }
     }
   });
-
-  return { heldLots: undisposedLots, soldLots };
+  soldLots = soldLots.filter((lot) => lot.type != "GIFT-OUT");
+  return { heldLots: undisposedLots, soldLots, unreconciledAccounts };
 }
 
 export const useCostBasisStore = defineStore("costBasis", {

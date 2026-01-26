@@ -62,17 +62,19 @@ function getMappedData() {
         price,
       });
     } else {
-      mappedData.push({
-        txId: "Tr-2-" + tx.id,
-        timestamp: tx.timestamp,
-        account: tx.toAccount,
-        date: tx.date,
-        amount: tx.amount,
-        asset: tx.asset,
-        type: "Transfer In",
-        action: "TRANSFER",
-        price,
-      });
+      if (tx.type == "TRANSFER") {
+        mappedData.push({
+          txId: "Tr-2-" + tx.id,
+          timestamp: tx.timestamp,
+          account: tx.toAccount,
+          date: tx.date,
+          amount: tx.amount,
+          asset: tx.asset,
+          type: "Transfer In",
+          action: tx.type,
+          price,
+        });
+      }
       mappedData.push({
         txId: "Tr-1-" + tx.id,
         timestamp: tx.timestamp,
@@ -81,7 +83,7 @@ function getMappedData() {
         amount: "-" + tx.amount,
         asset: tx.asset,
         type: "Transfer Out",
-        action: "TRANSFER",
+        action: tx.type,
         price,
       });
     }

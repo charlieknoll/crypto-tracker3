@@ -55,7 +55,7 @@ const getCurrentPrices = async function () {
 const filtered = computed(() => {
   let txs = costBasisStore.costBasisData.heldLots
   if (!txs) return [];
-  txs = txs.filter(t => t.unrealizedAmount != 0);
+  txs = txs.filter(t => t.remainingAmount != 0n);
   txs = txs.map((t) => {
     t.date = timestampToDateStr(t.timestamp);
     return t;

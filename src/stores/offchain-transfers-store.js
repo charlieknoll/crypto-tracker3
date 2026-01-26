@@ -18,6 +18,7 @@ import {
 } from "src/models/offchain-transfers";
 import { usePricesStore } from "./prices-store";
 import { multiplyCurrency, floatToStrAbs } from "src/utils/number-helpers";
+import { useAddressStore } from "./address-store";
 
 const keyFunc = (r) =>
   hasValue(r.transferId) ? r.transferId : getId(r, keyFields);
@@ -31,6 +32,7 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
     split(state) {
       let data = JSON.parse(JSON.stringify(state.records));
       const prices = usePricesStore();
+      const addresses = useAddressStore();
       const mappedData = [];
       for (const tx of data) {
         //a nonUSD fee tx will always be a sell
@@ -58,8 +60,17 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
           usdFee = tx.fee;
         }
         tx.sort = 0;
-        tx.type = "TRANSFER";
+        //TODO lookup to account and set type accordingly
+        const addresses = useAddressStore();
+
+        const toAddress = addresses.records.find((a) => a.name == tx.toAccount);
+        if (toAddress && toAddress.type.toUpperCase() !== "OWNED") {
+          tx.type = toAddress.type.toUpperCase();
+        } else {
+          tx.type = "TRANSFER";
+        }
         tx.feeCurrency = "USD";
+        tx.price = prices.getPrice(tx.asset, tx.date, tx.timestamp);
         tx.amount = floatToStrAbs(tx.amount);
         tx.fee = usdFee;
         tx.feeCurrency = "USD";

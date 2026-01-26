@@ -4,8 +4,9 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- GIFT-OUT shouldn't be coded as a capital gain
-- add chain tx filter for uncoded non zero eth and 0 price tx's
+- import balances on chaintx's import
+
+- add chain tx filter for uncoded non zero eth and 0 price tx's, or unnamed
 - Support offchain transfer to mint/burn, mint/burn shouln't show in running balances, and should be coded as account type in capital gains
 
 - Add warning if All value out tx's need to be coded as TRANSFER, GIFT-OUT, SELL, INCOME or EXPENSE or rb <> Cg balance
@@ -13,7 +14,7 @@ Track crypto balances, gains and losses
 - Add support for TF: tx's in capital gains or balances won't match (CDAI testing)
 
 - Capital Gains not finding relevant balance (due to non tax coded chain txs)
-- remove debugger on check balance
+- remove debugger on check balance, change to warnings
 - Gift Export/import
 - Add wallet functionaltiy
 
