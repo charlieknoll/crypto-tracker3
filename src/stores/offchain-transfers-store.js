@@ -64,10 +64,9 @@ export const useOffchainTransfersStore = defineStore("offchain-transfers", {
         const addresses = useAddressStore();
 
         const toAddress = addresses.records.find((a) => a.name == tx.toAccount);
-        if (toAddress && toAddress.type.toUpperCase() !== "OWNED") {
+        tx.type = "TRANSFER";
+        if (toAddress && !toAddress.type.toUpperCase().includes("OWNED")) {
           tx.type = toAddress.type.toUpperCase();
-        } else {
-          tx.type = "TRANSFER";
         }
         tx.feeCurrency = "USD";
         tx.price = prices.getPrice(tx.asset, tx.date, tx.timestamp);

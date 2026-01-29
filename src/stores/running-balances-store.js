@@ -9,7 +9,12 @@ import { useAddressStore } from "src/stores/address-store";
 import { useAppStore } from "src/stores/app-store";
 import { computed } from "vue";
 import { format } from "quasar";
-import { sBnToFloat, floatToStr, floatToWei } from "src/utils/number-helpers";
+import {
+  sBnToFloat,
+  floatToStr,
+  floatToWei,
+  floatToStrAbs,
+} from "src/utils/number-helpers";
 const sortByTimeStampThenTxId = (a, b) => {
   return a.timestamp == b.timestamp
     ? a.txId > b.txId
@@ -355,14 +360,8 @@ function getRunningBalances() {
 export const useRunningBalancesStore = defineStore("runningBalances", {
   getters: {
     runningBalances: () => {
-      try {
-        const runningBalances = getRunningBalances();
-        return runningBalances;
-      } catch (err) {
-        console.error(err);
-        debugger;
-      }
-      return [];
+      const runningBalances = getRunningBalances();
+      return runningBalances;
     },
     mappedData: () => {
       try {

@@ -83,7 +83,9 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
             throw new Error(
               `${tx.currency} price needed on ${tx.date} to calculate non USD BUY/SELL`
             );
+
           const currencyPrice = tx.price;
+          const currencyAmount = tx.gross;
           const id = tx.id;
           tx.sort = tx.action == "BUY" ? 2 : 0;
           tx.price = currencyPrice * currencyUSDPrice;
@@ -96,10 +98,10 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           currencyTx.action = tx.action == "SELL" ? "BUY" : "SELL";
           //currencyTx.id = id;
           currencyTx.id = id + (currencyTx.action == "SELL" ? "S" : "B");
-          currencyTx.sort = currencyTx.action == "BUY" ? 2 : 0;
+          currencyTx.sort = -1;
           currencyTx.price = currencyUSDPrice;
           currencyTx.asset = tx.currency;
-          currencyTx.amount = floatToStrAbs(tx.gross / currencyUSDPrice);
+          currencyTx.amount = currencyAmount;
           currencyTx.fee = usdFee;
           currencyTx.gross = multiplyCurrency([
             currencyTx.price,

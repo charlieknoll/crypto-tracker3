@@ -13,14 +13,7 @@ import { useExchangeTradesStore } from "./exchange-trades-store";
 import { formatEther } from "ethers";
 import { timestamp } from "@vueuse/core";
 import { useRunningBalancesStore } from "./running-balances-store";
-const sortByTimeStampThenSortThenId = (a, b) =>
-  a.timestamp - b.timestamp ||
-  (a.sort ?? 0) - (b.sort ?? 0) ||
-  (a.id ?? "").localeCompare(b.id ?? "");
-const sortByTimeStampThenSortThenTxId = (a, b) =>
-  a.timestamp - b.timestamp ||
-  (a.sort ?? 0) - (b.sort ?? 0) ||
-  (a.txId ?? "").localeCompare(b.txId ?? "");
+import { sortByTimeStampThenIdThenSort } from "src/utils/array-helpers";
 
 function handleError(tx, source, error) {
   console.log(tx);
@@ -653,10 +646,10 @@ function getCostBasis() {
   mappedData = mappedData.concat(buyTxs);
   mappedData = mappedData.concat(costBasisTxs);
   mappedData = mappedData.concat(transferTxs);
-  mappedData = mappedData.sort(sortByTimeStampThenSortThenId);
+  mappedData = mappedData.sort(sortByTimeStampThenIdThenSort);
   const runningBalancesStore = useRunningBalancesStore();
   let runningBalances = runningBalancesStore.runningBalances.mappedData.sort(
-    sortByTimeStampThenSortThenTxId
+    sortByTimeStampThenIdThenSort
   );
 
   mappedData.forEach((tx) => {
@@ -733,8 +726,8 @@ function getCostBasis() {
           throw new Error("Lot remaining amount negative");
         }
         if (lot.remainingCostBasis < 0.0) {
-          debugger;
-          throw new Error("Lot remaining cost basis negative");
+          // debugger;
+          // throw new Error("Lot remaining cost basis negative");
         }
         if (remainingAmount > BigInt("0")) {
           //find the next undisposed lot
@@ -742,12 +735,12 @@ function getCostBasis() {
         } else lot = null;
       }
       if (remainingAmount > BigInt("0")) {
-        debugger;
-        throw new Error(
-          `Cannot find enough inventory for ${tx.account}:${
-            tx.asset
-          }, amount remaining: ${formatEther(remainingAmount)}`
-        );
+        //debugger;
+        // throw new Error(
+        //   `Cannot find enough inventory for ${tx.account}:${
+        //     tx.asset
+        //   }, amount remaining: ${formatEther(remainingAmount)}`
+        // );
       }
 
       if (!verifyBalance(tx, runningBalances, undisposedLots, soldLots)) {
@@ -848,7 +841,7 @@ function getCostBasis() {
         };
 
         undisposedLots.push(newLot);
-        undisposedLots = undisposedLots.sort(sortByTimeStampThenSortThenId);
+        undisposedLots = undisposedLots.sort(sortByTimeStampThenIdThenSort);
 
         if (lot.remainingAmount < BigInt("0")) {
           debugger;
@@ -897,12 +890,12 @@ function getCostBasis() {
         } else lot = null;
       }
       if (remainingAmount > BigInt("0")) {
-        debugger;
-        throw new Error(
-          `Cannot find enough transfer inventory for ${tx.fromAccount}:${
-            tx.asset
-          }, amount remaining: ${formatEther(remainingAmount)}`
-        );
+        // debugger;
+        // throw new Error(
+        //   `Cannot find enough transfer inventory for ${tx.fromAccount}:${
+        //     tx.asset
+        //   }, amount remaining: ${formatEther(remainingAmount)}`
+        // );
       }
     }
   });

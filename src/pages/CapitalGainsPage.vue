@@ -1,8 +1,8 @@
 <template>
   <q-page>
     <q-banner @click="showUnreconciled" class="bg-negative text-white"
-      :class="costBasisStore.costBasisData.unreconciledAccounts.length == 0 ? 'hidden' : ''">
-      {{ costBasisStore.costBasisData.unreconciledAccounts.length }} unreconciled accounts found. Please review your
+      :class="costBasisStore.costBasisData?.unreconciledAccounts?.length == 0 ? 'hidden' : ''">
+      {{ costBasisStore?.costBasisData?.unreconciledAccounts?.length }} unreconciled accounts found. Please review your
       transactions to ensure all buys and sells are accounted for. (Click for console log)
     </q-banner>
     <transactions-table
@@ -10,7 +10,7 @@
       :rows="filtered"
       :columns="columns"
       @rowClick="showBuys"
-      rowKey="id">
+      rowKey="rowIndex">
       <template v-slot:top-right>
         <div class="row">
           <q-toggle label="Zero Prices" v-model="zeroPrices" class="q-pr-sm"></q-toggle>
@@ -49,12 +49,15 @@ import { getCapitalGains } from "src/stores/capital-gains-store";
 import { onlyUnique } from "src/utils/array-helpers";
 import { timestampToDateStr } from "src/utils/date-helper";
 import { useCostBasisStore } from "src/stores/cost-basis-store";
+import { useQuasar } from "quasar";
+import { showWarning } from "src/use/useShowWarning";
 
 const appStore = useAppStore();
 const costBasisStore = useCostBasisStore();
 const zeroPrices = ref(false);
 const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Detailed");
+const $q = useQuasar();
 const showBuys = (evt, row, index) => {
   // let txs = capitalGainsStore.capitalGains.splitTxs
   // txs = txs.filter((t) => t.sellId == row.id)
@@ -67,11 +70,19 @@ const showUnreconciled = () => {
 }
 const filtered = computed(() => {
   //let txs = capitalGainsStore.capitalGains.realizedLots;
-  let txs = costBasisStore.costBasisData.soldLots;
-  if (!txs) return [];
-  txs = txs.map((t) => {
-    t.date = timestampToDateStr(t.timestamp);
+  let txs;
+  try {
+    txs = costBasisStore.costBasisData.soldLots;
+  } catch (error) {
+    showWarning($q, error.message);
+  }
 
+  if (!txs) return [];
+
+
+  txs = txs.map((t, index) => {
+    t.date = timestampToDateStr(t.timestamp);
+    t.rowIndex = index + 1
     return t;
 
   })

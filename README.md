@@ -4,36 +4,24 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- import balances on chaintx's import
-
-- add chain tx filter for uncoded non zero eth and 0 price tx's, or unnamed
-- Support offchain transfer to mint/burn, mint/burn shouln't show in running balances, and should be coded as account type in capital gains
-
-- Add warning if All value out tx's need to be coded as TRANSFER, GIFT-OUT, SELL, INCOME or EXPENSE or rb <> Cg balance
-- Add warning if any tx's have zero prices and filter on chain tx's
+- sort by timestamp/txId/sort
+- add a checkUnique function
+- Remove spam from running balances
+- popup an exception message for all computeds errors especially Cap Gains, Unrealized and Running Blances
+- Move not enough inventory warning to message (catch errors on accessing costbasisstore)
 - Add support for TF: tx's in capital gains or balances won't match (CDAI testing)
-
-- Capital Gains not finding relevant balance (due to non tax coded chain txs)
-- remove debugger on check balance, change to warnings
 - Gift Export/import
+- fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
 - Add wallet functionaltiy
 
 - Floating point gotchas:
-  -- tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
+  -- -tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
   -- Math.abs(tx.value) should be floatToStrAbs(tx.value) Math.abs creates floating point
 
-- treat a GIFT tx from Spam as a "Buy" at market rates
 - Change a GIFT tx from openingPositon as a normal "TRANSFER"
 - treat a "GIFT-IN" as a TRANSFER from an openingPosition named the same as the fromAcccount.name
-- Handle EXPENSE REFUND as BUY
-- fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
-- TRANSFER removes prorated costBasis and amount from accountInventory then adds prorates amount and costBasis + fee to toAccount inventory
-- should GIFT-OUT really be a transfer? No it should only be a sell, we don't care about it
-- don't double count transfer fees from gas
-- fix timestampAndSort function to handle empty sort
 - keep a list of the buy lot transfer history including prorated costbasis assigned
 - only set wallet name after 1/1/2025 and then set account using tx.fromWallet ?? tx.fromName
-- Is there a way to undo a "SELL" from an expense transaction if there is an "EXPENSE REFUND"? (see charlie.eth bid), maybe total EXPENSE and EXPENSE REFUND for a given calendar year? New Tax Code type?
 
 - Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (withdraw BTC?), Binance)
 - Test unlocking frozen using offline-tx-signer, copy json files to USB

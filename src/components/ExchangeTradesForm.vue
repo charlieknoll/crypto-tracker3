@@ -44,6 +44,12 @@
     </div>
     <div class="row q-pa-sm">
       <div class="col-12 col-sm-4 q-pr-sm">
+        <q-input v-model="value.gross" label="Gross"></q-input>
+      </div>
+
+    </div>
+    <div class="row q-pa-sm">
+      <div class="col-12 col-sm-4 q-pr-sm">
         <q-input v-model="value.fee" label="Fee"></q-input>
       </div>
       <div class="col-12 col-sm-4 q-pr-sm">

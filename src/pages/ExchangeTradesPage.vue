@@ -6,8 +6,8 @@
           <q-banner v-if="error" inline-actions dense rounded class="text-white bg-red">
             <div class="text-caption" v-html="error"></div>
           </q-banner>
-          <exchangeTradesForm v-model="record" v-model:error="error">
-          </exchangeTradesForm>
+          <ExchangeTradesForm v-model="record" v-model:error="error">
+          </ExchangeTradesForm>
         </q-card-section>
         <q-card-actions align="right" class="text-primary">
           <q-btn v-if="record.id" flat color="red" label="Delete" @click="remove" />
@@ -44,7 +44,7 @@ import AssetFilter from "src/components/AssetFilter.vue";
 import { fields, splitFields } from "src/models/exchange-trades";
 import { useColumns } from "src/use/useColumns";
 import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
-import exchangeTradesForm from "components/exchangeTradesForm.vue";
+import ExchangeTradesForm from "src/components/ExchangeTradesForm.vue";
 import { useQuasar } from "quasar";
 import { useAppStore } from "src/stores/app-store";
 import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter-helpers";

@@ -5,6 +5,7 @@
       <template v-slot:top-right>
         <div class="row">
           <q-toggle label="Owned & Non Zero" v-model="owned" class="q-pr-sm"></q-toggle>
+          <q-toggle label="Negative" v-model="negative" class="q-pr-sm"></q-toggle>
           <account-filter :options="accounts"></account-filter>
           <asset-filter></asset-filter>
 
@@ -43,6 +44,7 @@ import { formatEther, parseEther } from "ethers";
 
 const tableKey = ref(0);
 const owned = ref(true);
+const negative = ref(false);
 const tableRef = ref(null)
 const addressStore = useAddressStore();
 
@@ -90,7 +92,7 @@ const appStore = useAppStore();
 const runningBalancesStore = useRunningBalancesStore();
 
 const groups = ["Detailed", "Account", "Asset"]
-const balanceGrouping = ref("Account");
+const balanceGrouping = ref("Detailed");
 const currentColumns = computed(() => {
   if (balanceGrouping.value == "Detailed") return columns;
   if (balanceGrouping.value == "Account") return accountTotalColumns;
@@ -129,6 +131,11 @@ const filtered = computed(() => {
   if (owned.value) {
     txs = txs.filter((tx) => {
       return (tx.biRunningAccountBalance && tx.biRunningAccountBalance > BigInt("10000000"));
+    });
+  }
+  if (negative.value) {
+    txs = txs.filter((tx) => {
+      return (tx.biRunningAccountBalance && tx.biRunningAccountBalance < BigInt("0"));
     });
   }
 

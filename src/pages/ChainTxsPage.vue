@@ -18,7 +18,8 @@
       title="Chain Transactions"
       :rows="filtered"
       :columns="columns"
-      @rowClick="edit">
+      @rowClick="edit"
+      @row-contextmenu="onRowRightClick">
       <template v-slot:top-right>
         <div class="row">
           <q-toggle label="Unnamed" v-model="unnamed" class="q-pr-sm"></q-toggle>
@@ -52,6 +53,23 @@
         </div>
       </template>
     </transactions-table>
+    <q-menu touch-position v-model="showMenu" :target="menuTarget">
+      <q-list dense>
+        <!-- <q-item clickable v-close-popup @click="edit">
+          <q-item-section avatar>
+            <q-icon name="edit" />
+          </q-item-section>
+          <q-item-section>Edit</q-item-section>
+        </q-item> -->
+
+        <q-item clickable v-close-popup @click="setSpam">
+          <q-item-section avatar>
+            <q-icon name="delete" color="negative" />
+          </q-item-section>
+          <q-item-section>Spam</q-item-section>
+        </q-item>
+      </q-list>
+    </q-menu>
   </q-page>
 </template>
 <script setup>
@@ -74,7 +92,7 @@ import { usePricesStore } from "src/stores/prices-store";
 import { onlyUnique } from "src/utils/array-helpers";
 import ChainTxForm from "src/components/ChainTxForm.vue"
 import { assert } from "ethers";
-
+import { showWarning } from "src/use/useShowWarning";
 
 const store = useChainTxsStore();
 const app = useAppStore()
@@ -83,7 +101,10 @@ const chainStore = useChainStore()
 
 const $q = useQuasar();
 
-const onlyUnnamed = ref(false);
+
+const clickedRow = ref(null);
+const showMenu = ref(false);
+const menuTarget = ref(null);
 
 const columns = ref(useColumns(fields));
 const hashFilter = ref("");
@@ -93,6 +114,29 @@ const editing = ref(false);
 const error = ref("")
 const record = reactive({})
 
+function onRowRightClick(evt, row) {
+  evt.preventDefault()  // stop browser context menu
+  clickedRow.value = row
+  menuTarget.value = evt.target
+  showMenu.value = true
+}
+const setSpam = () => {
+  if (!clickedRow.value) return;
+  const addresses = useAddressStore()
+  let toAddress = addresses.records.find((a) => a.address == clickedRow.value.toAddress && a.chain == clickedRow.value.gasType)
+  let fromAddress = addresses.records.find((a) => a.address == clickedRow.value.fromAddress && a.chain == clickedRow.value.gasType)
+  if (fromAddress && fromAddress.name.substring(0, 2) == '0x') {
+    fromAddress.name = 'Spam'
+    fromAddress.type = 'Spam'
+    addresses.set(fromAddress)
+  }
+  if (toAddress && toAddress.name.substring(0, 2) == '0x' && clickedRow.value.txType == 'T') {
+    toAddress.name = 'Spam'
+    toAddress.type = 'Spam'
+    addresses.set(fromAddress)
+  }
+
+}
 const edit = (evt, row, index) => {
   if (evt.altKey) {
     console.log(row)
@@ -102,6 +146,10 @@ const edit = (evt, row, index) => {
   const toAddress = addresses.records.find((a) => a.address == row.toAddress && a.chain == row.gasType)
   const fromAddress = addresses.records.find((a) => a.address == row.fromAddress && a.chain == row.gasType)
   if (!toAddress || !fromAddress) return
+  if (evt.shiftKey) {
+    console.log("To Address:", toAddress)
+    return;
+  }
 
   error.value = ''
   Object.assign(record, {
@@ -145,25 +193,13 @@ const importPrices = async function () {
   }
 }
 const importChainTxs = async function () {
+
+  const addresses = useAddressStore()
   try {
     await store.import();
+    await addresses.updateBalances()
   } catch (error) {
-    //console.error("Error importing chain txs:", error);
-
-    $q.notify({
-      message: "Could not download chain txs, please check Etherscan API key in settings...",
-      color: "negative",
-      icon: "warning",
-      timeout: 0,  // 0 = no auto-close
-      position: 'center',
-      //closeBtn: 'Close',  // Show close button
-      actions: [
-        {
-          label: 'Dismiss',
-          color: 'white'
-        }
-      ]
-    });
+    showWarning($q, "Could not download chain txs, please check Etherscan API key in settings:\n" + error.message);
   }
 }
 
@@ -231,8 +267,7 @@ const filtered = computed(() => {
     txs = txs.filter(
       (tx) =>
         tx.toAccountName.substring(0, 2) == '0x' ||
-        tx.fromAccountName.substring(0, 2) == "0x"
-    );
+        tx.fromAccountName.substring(0, 2) == "0x" || (tx.taxCode ?? "") == "");
   }
   if (onlyTokens.value) {
     // let tokenTxs = txs.filter(
