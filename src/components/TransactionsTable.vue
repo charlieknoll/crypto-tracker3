@@ -1,6 +1,6 @@
 <template>
   <q-table
-    :row-key="rowKey ?? 'id'"
+    :row-key="'rowKey' ?? 'id'"
     dense
     :title="title"
     :rows="rows"

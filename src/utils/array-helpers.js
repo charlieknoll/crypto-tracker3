@@ -27,12 +27,12 @@ const convertToCsvNoHeadher = function (arr, names, delimiter) {
     .join("\r\n");
   return content;
 };
-const sortByTimeStampThenSortThenId = (a, b) =>
-  a.timestamp - b.timestamp ||
-  (a.sort ?? 0) - (b.sort ?? 0) ||
-  (a.id ?? "").localeCompare(b.id ?? "");
 
 const sortByTimeStampThenIdThenSort = (a, b) =>
+  a.timestamp - b.timestamp ||
+  (a.id ?? "").localeCompare(b.id ?? "") ||
+  (a.sort ?? 0) - (b.sort ?? 0);
+const sortByTimeStampThenTxIdThenSort = (a, b) =>
   a.timestamp - b.timestamp ||
   (a.txId ?? "").localeCompare(b.txId ?? "") ||
   (a.sort ?? 0) - (b.sort ?? 0);
@@ -43,4 +43,5 @@ export {
   stringToArray,
   convertToCsvNoHeadher,
   sortByTimeStampThenIdThenSort,
+  sortByTimeStampThenTxIdThenSort,
 };

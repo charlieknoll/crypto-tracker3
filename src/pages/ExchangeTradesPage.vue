@@ -70,8 +70,13 @@ const importCbp = () => {
 const filtered = computed(() => {
   //return [{ id: 'test' }]
   const appStore = useAppStore();
-  let txs = split.value ? store.split : store.records;
+  let txs = split.value ? store.sortedSplit : store.trades;
   //console.log(txs.length)
+  txs = txs.map((t, index) => {
+    t.rowKey = index + 1
+    return t;
+
+  })
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByAccounts(txs, appStore.selectedAccounts);
   txs = filterByYear(txs, appStore.taxYear)
@@ -79,7 +84,7 @@ const filtered = computed(() => {
 });
 
 const accounts = computed(() => {
-  let txs = split.value ? store.split : store.records;
+  let txs = split.value ? store.sortedSplit : store.trades;
   const allAccounts = txs.map((tx) => tx.account);
   return allAccounts.filter(onlyUnique);
 })

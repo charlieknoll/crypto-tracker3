@@ -130,7 +130,7 @@ const filtered = computed(() => {
   }
   if (owned.value) {
     txs = txs.filter((tx) => {
-      return (tx.biRunningAccountBalance && tx.biRunningAccountBalance > BigInt("10000000"));
+      return (tx.biRunningAccountBalance && tx.biRunningAccountBalance != BigInt("0"));
     });
   }
   if (negative.value) {

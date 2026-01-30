@@ -553,14 +553,20 @@ function findLot(tx, undisposedLots) {
       lot.remainingAmount > BigInt("0")
   );
 }
-function verifyBalance(tx, runningBalances, undisposedLots, soldLots) {
+function verifyBalance(
+  tx,
+  runningBalances,
+  undisposedLots,
+  soldLots,
+  unreconciledAccounts
+) {
   // if (undisposedLots.length == 6) {
   //   console.log(undisposedLots);
   // }
 
   //running balances handles gas fees as part of transfer but cost basis consideres them spent before transfer
   //so wait to verify balance on next tx
-  if (tx.sort == -1) return true;
+  if (tx.sort <= -1) return unreconciledAccounts;
 
   const calculatedBalance = undisposedLots.reduce((sum, lot) => {
     if (lot.account == tx.account && lot.asset == tx.asset) {
@@ -578,7 +584,11 @@ function verifyBalance(tx, runningBalances, undisposedLots, soldLots) {
   );
   if (!relevantBalanceRec) {
     //debugger;
-    return false;
+    unreconciledAccounts.push({
+      account: tx.account,
+      asset: tx.asset,
+      timestamp: tx.timestamp,
+    });
   }
   // else {
   //   if (tx.account == "Poloniex" && tx.asset == "BTC") {
@@ -592,7 +602,13 @@ function verifyBalance(tx, runningBalances, undisposedLots, soldLots) {
   //     );
   //   }
   // }
-  return true;
+  // if (!unreconciledAccounts.filter) {
+  //   debugger;
+  // }
+  unreconciledAccounts = unreconciledAccounts.filter(
+    (ua) => !(ua.account == tx.account && ua.asset == tx.asset)
+  );
+  return unreconciledAccounts;
 }
 
 function getCostBasis() {
@@ -616,7 +632,8 @@ function getCostBasis() {
   console.timeEnd("getStores-exchangeTrades");
 
   console.time("Sells");
-  const unreconciledAccounts = [];
+  let unreconciledAccounts = [];
+  const noInventoryTxs = [];
 
   let sellTxs = getSellTxs(
     chainTransactions,
@@ -656,13 +673,14 @@ function getCostBasis() {
     //TODO handle account/wallet cutover timestamp by resetting walletName on undisposedLots
     if (tx.taxTxType.substring(0, 3) === "BUY") {
       undisposedLots.push(tx);
-      if (!verifyBalance(tx, runningBalances, undisposedLots, soldLots)) {
-        unreconciledAccounts.push({
-          account: tx.account,
-          asset: tx.asset,
-          timestamp: tx.timestamp,
-        });
-      }
+
+      unreconciledAccounts = verifyBalance(
+        tx,
+        runningBalances,
+        undisposedLots,
+        soldLots,
+        unreconciledAccounts
+      );
     }
     if (tx.taxTxType === "SELL") {
       let remainingAmount = tx.amount;
@@ -676,6 +694,8 @@ function getCostBasis() {
         let costBasisPortion =
           (lot.costBasis / parseFloat(formatEther(lot.amount))) *
           parseFloat(formatEther(lotAmount));
+        costBasisPortion = currencyRounded(costBasisPortion);
+
         if (currencyRounded(lot.costBasis - costBasisPortion) < 0.0) {
           //Handle rare case where costBasis are negative due to rounding
           costBasisPortion = lot.costBasis;
@@ -726,8 +746,9 @@ function getCostBasis() {
           throw new Error("Lot remaining amount negative");
         }
         if (lot.remainingCostBasis < 0.0) {
-          // debugger;
+          //debugger;
           // throw new Error("Lot remaining cost basis negative");
+          lot.remainingCostBasis = 0.0;
         }
         if (remainingAmount > BigInt("0")) {
           //find the next undisposed lot
@@ -735,7 +756,7 @@ function getCostBasis() {
         } else lot = null;
       }
       if (remainingAmount > BigInt("0")) {
-        //debugger;
+        noInventoryTxs.push(tx);
         // throw new Error(
         //   `Cannot find enough inventory for ${tx.account}:${
         //     tx.asset
@@ -743,13 +764,13 @@ function getCostBasis() {
         // );
       }
 
-      if (!verifyBalance(tx, runningBalances, undisposedLots, soldLots)) {
-        unreconciledAccounts.push({
-          account: tx.account,
-          asset: tx.asset,
-          timestamp: tx.timestamp,
-        });
-      }
+      unreconciledAccounts = verifyBalance(
+        tx,
+        runningBalances,
+        undisposedLots,
+        soldLots,
+        unreconciledAccounts
+      );
     }
     if (tx.taxTxType === "COST-BASIS") {
       //Distribute cost basis fee across all undisposed lots in the account for the asset
@@ -859,25 +880,22 @@ function getCostBasis() {
         // }
         remainingAmount -= lotAmount;
         if (remainingAmount == BigInt("0")) {
-          if (
-            !verifyBalance(soldLot, runningBalances, undisposedLots, soldLots)
-          ) {
-            unreconciledAccounts.push({
-              account: soldLot.account,
-              asset: soldLot.asset,
-              timestamp: soldLot.timestamp,
-            });
-          }
+          unreconciledAccounts = verifyBalance(
+            soldLot,
+            runningBalances,
+            undisposedLots,
+            soldLots,
+            unreconciledAccounts
+          );
+
           const tmpTx = Object.assign({}, newLot, { timestamp: tx.timestamp });
-          if (
-            !verifyBalance(tmpTx, runningBalances, undisposedLots, soldLots)
-          ) {
-            unreconciledAccounts.push({
-              account: tmpTx.account,
-              asset: tmpTx.asset,
-              timestamp: tmpTx.timestamp,
-            });
-          }
+          unreconciledAccounts = verifyBalance(
+            tmpTx,
+            runningBalances,
+            undisposedLots,
+            soldLots,
+            unreconciledAccounts
+          );
         }
         if (remainingAmount > BigInt("0")) {
           lot = findLot(
@@ -900,7 +918,12 @@ function getCostBasis() {
     }
   });
   soldLots = soldLots.filter((lot) => lot.type != "GIFT-OUT");
-  return { heldLots: undisposedLots, soldLots, unreconciledAccounts };
+  return {
+    heldLots: undisposedLots,
+    soldLots,
+    unreconciledAccounts,
+    noInventoryTxs,
+  };
 }
 
 export const useCostBasisStore = defineStore("costBasis", {

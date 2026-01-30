@@ -95,7 +95,7 @@ const splitFields = [
     key: 2,
     required: false,
   },
-  { name: "id", required: false, format: (v) => v.substring(0, 10) },
+  { name: "displayId", required: false },
 
   { name: "account", key: 4 },
 

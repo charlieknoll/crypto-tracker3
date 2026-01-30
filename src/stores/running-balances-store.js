@@ -15,13 +15,9 @@ import {
   floatToWei,
   floatToStrAbs,
 } from "src/utils/number-helpers";
-const sortByTimeStampThenTxId = (a, b) => {
-  return a.timestamp == b.timestamp
-    ? a.txId > b.txId
-      ? 1
-      : -1
-    : a.timestamp - b.timestamp;
-};
+import { sortByTimeStampThenTxIdThenSort } from "src/utils/array-helpers";
+import { id } from "ethers";
+
 function getMappedData() {
   let mappedData = [];
 
@@ -98,12 +94,13 @@ function getMappedData() {
     ["C", "I", "B", "U"].includes(tx.txType)
   )) {
     if (tx?.fromAccountName.toLowerCase() == "genesis") continue;
-    //if (tx.fromAccount.type == "Gift") continue;
+    // if (tx.fromAccountName.toLowerCase() == "spam") continue;
 
     try {
       if (tx.toAccount?.type?.toLowerCase().includes("owned")) {
         mappedData.push({
           txId: "Ch-I-" + tx.id,
+          id: tx.id,
           blockNumber: tx.blockNumber,
           timestamp: tx.timestamp,
           account: tx.toAccount.name,
@@ -128,6 +125,7 @@ function getMappedData() {
         }
         mappedData.push({
           txId: "Ch-O-" + tx.id,
+          id: tx.id,
           blockNumber: tx.blockNumber,
           timestamp: tx.timestamp,
           account: tx.fromAccount.name,
@@ -156,6 +154,7 @@ function getMappedData() {
       if (tx.toAccount?.type?.toLowerCase().includes("owned")) {
         mappedData.push({
           txId: "To-I-" + tx.id,
+          id: tx.id,
           timestamp: tx.timestamp,
           blockNumber: tx.blockNumber,
 
@@ -174,6 +173,7 @@ function getMappedData() {
       if (tx.fromAccount?.type?.toLowerCase().includes("owned")) {
         mappedData.push({
           txId: "Ch-O-" + tx.id,
+          id: tx.id,
           timestamp: tx.timestamp,
           blockNumber: tx.blockNumber,
           account: tx.fromAccount.name,
@@ -208,6 +208,7 @@ function getMappedData() {
       price: tx.price,
       type: tx.action,
       action: tx.action,
+      sort: tx.sort,
     });
   }
   //TODO convert to exchangeRewardFees to handle new Kraken rewards
@@ -233,7 +234,7 @@ function getRunningBalances() {
   //TODO testing
 
   let mappedData = getMappedData();
-  mappedData = mappedData.sort(sortByTimeStampThenTxId);
+  mappedData = mappedData.sort(sortByTimeStampThenTxIdThenSort);
   //Sort by timestamp
   //TODO set running balances
   const accountAssets = [];

@@ -66,7 +66,9 @@ const showBuys = (evt, row, index) => {
 const showUnreconciled = () => {
   console.log("Unreconciled Accounts:");
   console.log(costBasisStore.costBasisData.unreconciledAccounts.map(a =>
-    `Account: ${a.account}, Asset: ${a.asset}, Date/Time: ${new Date(a.timestamp * 1000).toISOString()}`).join("\n"));
+    `Account: ${a.account}, Asset: ${a.asset}, Date/Time: ${new Date(a.timestamp * 1000).toISOString()}, timestamp:${a.timestamp}`).join("\n"));
+  console.log("No Inventory Transactions:");
+  console.log(costBasisStore.costBasisData.noInventoryTxs)
 }
 const filtered = computed(() => {
   //let txs = capitalGainsStore.capitalGains.realizedLots;

@@ -25,15 +25,25 @@ import {
 } from "src/utils/number-helpers";
 import { usePricesStore } from "./prices-store";
 import { importCbpTrades } from "src/services/coinbase-provider";
+import { sortByTimeStampThenIdThenSort } from "src/utils/array-helpers";
 
 const keyFunc = (r) =>
   hasValue(r.exchangeId) ? r.exchangeId : getId(r, keyFields);
 
 export const useExchangeTradesStore = defineStore("exchange-trades", {
   state: () => ({
-    records: useLocalStorage("exchange-trades", []),
-    fees: useLocalStorage("exchange-fees", []),
-    importedTrades: useLocalStorage("imported-trades", []),
+    records: useLocalStorage("exchange-trades", [], {
+      shallow: true,
+      deep: false,
+    }),
+    fees: useLocalStorage("exchange-fees", [], {
+      shallow: true,
+      deep: false,
+    }),
+    importedTrades: useLocalStorage("imported-trades", [], {
+      shallow: true,
+      deep: false,
+    }),
     initValue: getInitValue(fields, useAppStore()),
   }),
   getters: {
@@ -45,7 +55,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
         //a nonUSD fee tx will always be a sell
         //first get USDfee
         let usdFee = 0.0;
-        tx.sourceId = tx.id;
+        //tx.sourceId = tx.id;
         if (tx.feeCurrency != "USD") {
           const feeUSDPrice = prices.getPrice(
             tx.feeCurrency,
@@ -55,7 +65,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           usdFee = multiplyCurrency([tx.fee, feeUSDPrice]);
           const feeTx = Object.assign({}, tx);
           feeTx.action = "SELL";
-          feeTx.id = "F-" + tx.id;
+          feeTx.displayId = "F-" + tx.id.substring(0, 12);
           feeTx.price = feeUSDPrice;
           feeTx.asset = tx.feeCurrency;
           feeTx.amount = tx.fee;
@@ -64,7 +74,7 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           feeTx.currency = tx.feeCurrency;
           feeTx.net = multiplyCurrency([feeTx.amount, feeTx.price]);
           feeTx.gross = feeTx.net;
-          feeTx.sort = tx.action == "BUY" ? 1 : -1;
+          feeTx.sort = -1;
           // if (feeTx.amount != 0.0)
           mappedData.push(feeTx);
         } else {
@@ -86,19 +96,23 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
 
           const currencyPrice = tx.price;
           const currencyAmount = tx.gross;
-          const id = tx.id;
-          tx.sort = tx.action == "BUY" ? 2 : 0;
+          tx.sort = 0;
+          //tx.sort = tx.action == "BUY" ? 2 : 0;
           tx.price = currencyPrice * currencyUSDPrice;
           tx.fee = tx.action == "SELL" ? usdFee : 0.0;
           tx.gross = multiplyCurrency([tx.amount, tx.price]);
           tx.net = tx.gross - tx.fee; //fee only non-zero for sell
-          tx.id = id + (tx.action == "SELL" ? "S" : "B");
+          tx.displayId =
+            (tx.action == "SELL" ? "S" : "B") + "-" + tx.id.substring(0, 12);
           tx.amount = floatToStrAbs(tx.amount);
           const currencyTx = Object.assign({}, tx);
           currencyTx.action = tx.action == "SELL" ? "BUY" : "SELL";
           //currencyTx.id = id;
-          currencyTx.id = id + (currencyTx.action == "SELL" ? "S" : "B");
-          currencyTx.sort = -1;
+          currencyTx.displayId =
+            (currencyTx.action == "SELL" ? "S" : "B") +
+            "-" +
+            tx.id.substring(0, 12);
+          currencyTx.sort = -2;
           currencyTx.price = currencyUSDPrice;
           currencyTx.asset = tx.currency;
           currencyTx.amount = currencyAmount;
@@ -111,6 +125,9 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           mappedData.push(tx);
           mappedData.push(currencyTx);
         } else {
+          tx.displayId =
+            (tx.action == "SELL" ? "S" : "B") + "-" + tx.id.substring(0, 12);
+          tx.sort = -2;
           tx.amount = floatToStrAbs(tx.amount);
           tx.fee = usdFee;
           tx.gross = multiplyCurrency([tx.amount, tx.price]);
@@ -119,16 +136,21 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           mappedData.push(tx);
         }
       }
-      return mappedData.sort((a, b) => {
-        if (a.timestamp != b.timestamp) return a.timestamp - b.timestamp;
-        if (a.sourceId != b.sourceId) return a.sourceId < b.sourceId ? 1 : -1;
-        return a.sort - b.sort;
-      });
+      return mappedData;
+    },
+    sortedSplit(state) {
+      return this.split.sort(sortByTimeStampThenIdThenSort);
+    },
+
+    trades(state) {
+      return JSON.parse(JSON.stringify(state.records)).sort(
+        sortByTimeStampThenIdThenSort
+      );
     },
   },
   actions: {
     set(upserted, recs) {
-      const existing = recs ?? this.records;
+      let existing = recs ?? this.records;
       //TODO convert to vuelidate pattern and use addressfields
 
       let errorMessage = validate(upserted, requiredFields);
@@ -151,9 +173,18 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
       upserted.id = keyFunc(upserted);
       upserted.timestamp = getTimestamp(upserted.date + "T" + upserted.time);
       if (!record) {
-        existing.push(Object.assign({}, upserted));
+        this.records = [...existing, upserted];
+        //existing.push(Object.assign({}, upserted));
       } else {
-        Object.assign(record, upserted);
+        //Object.assign(record, upserted);
+        this.records = existing.map((r) => {
+          if (upserted.id === r.id) {
+            // Create a brand new object for this item
+            return Object.assign(r, upserted);
+          }
+          // Return the original object for all others
+          return r;
+        });
       }
       //if not modifying a copied array
       if (!recs) {

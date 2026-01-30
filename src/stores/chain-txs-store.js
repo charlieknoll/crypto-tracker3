@@ -17,9 +17,18 @@ export const useChainTxsStore = defineStore("chain-txs", {
       shallow: true,
       deep: false,
     }),
-    rawInternalTxs: useLocalStorage("txs-internal", []),
-    rawTokenTxs: useLocalStorage("txs-token", []),
-    rawMinedBlocks: useLocalStorage("txs-mined", []),
+    rawInternalTxs: useLocalStorage("txs-internal", [], {
+      shallow: true,
+      deep: false,
+    }),
+    rawTokenTxs: useLocalStorage("txs-token", [], {
+      shallow: true,
+      deep: false,
+    }),
+    rawMinedBlocks: useLocalStorage("txs-mined", [], {
+      shallow: true,
+      deep: false,
+    }),
   }),
   getters: {
     accountTxs: (state) => {

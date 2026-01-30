@@ -107,7 +107,9 @@ const getAccountTxs = function (rawAccountTxs, rawInternalTxs) {
 
     result = result.concat(
       rawInternalTxs.map((r) => {
-        return mapRawAccountTx(r, addresses.records, methods, prices, "I");
+        const tx = mapRawAccountTx(r, addresses.records, methods, prices, "I");
+        tx.sort = -1; //Internal txs should appear before account txs with same timestamp
+        return tx;
       })
     );
   } catch (err) {
