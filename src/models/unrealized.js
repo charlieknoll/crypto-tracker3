@@ -1,5 +1,5 @@
 import { currency, perCent } from "src/utils/number-helpers";
-import { date } from "quasar";
+import { date, format } from "quasar";
 import { formatEther } from "ethers";
 import { timestampToDateStr } from "src/utils/date-helper";
 
@@ -42,6 +42,13 @@ const columns = [
     align: "left",
   },
   {
+    name: "id",
+    label: "Id",
+    field: "id",
+    align: "left",
+    format: (val, row) => val.substring(0, 10),
+  },
+  {
     name: "remainingAmount",
     label: "Amount",
     field: "remainingAmount",
@@ -58,7 +65,7 @@ const columns = [
   {
     name: "costBasis",
     label: "Cost",
-    field: "costBasis",
+    field: "remainingCostBasis",
     align: "right",
     format: (val, row) => currency(val),
   },

@@ -7,15 +7,12 @@
       </q-card-section>
       <q-card-section>
         <div class="row q-col-gutter-md">
-          <div class="col-12 col-md-4">
-            <q-card flat bordered>
-              <q-card-section>
-                <div class="text-caption text-grey">Total Value</div>
-                <div class="text-h5">{{ currency(totalAssetValue) }}</div>
-              </q-card-section>
-            </q-card>
+          <div class="col-12 col-md-8">
+
+            <div class="text-caption text-grey">Total Value</div>
+            <div class="text-h5">{{ currency(totalAssetValue) }}</div>
           </div>
-          <div class="col-12 col-md-4">
+          <!-- <div class="col-12 col-md-4">
             <q-card flat bordered>
               <q-card-section>
                 <div class="text-caption text-grey">Gain/Loss</div>
@@ -29,7 +26,7 @@
                 <q-btn flat label="GET COST BASIS" color="primary" @click="getCostBasis" />
               </q-card-section>
             </q-card>
-          </div>
+          </div> -->
         </div>
       </q-card-section>
       <q-separator />
@@ -40,7 +37,8 @@
           :columns="assetColumns"
           row-key="name"
           :pagination="{ rowsPerPage: 5 }"
-          flat />
+          flat
+          dense />
       </q-card-section>
     </q-card>
 

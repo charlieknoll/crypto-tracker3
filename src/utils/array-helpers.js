@@ -36,6 +36,8 @@ const sortByTimeStampThenTxIdThenSort = (a, b) =>
   a.timestamp - b.timestamp ||
   (a.txId ?? "").localeCompare(b.txId ?? "") ||
   (a.sort ?? 0) - (b.sort ?? 0);
+const sortByTimeStampThenSort = (a, b) =>
+  a.timestamp - b.timestamp || (a.sort ?? 0) - (b.sort ?? 0);
 
 export {
   onlyUnique,
@@ -44,4 +46,5 @@ export {
   convertToCsvNoHeadher,
   sortByTimeStampThenIdThenSort,
   sortByTimeStampThenTxIdThenSort,
+  sortByTimeStampThenSort,
 };

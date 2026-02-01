@@ -4,15 +4,19 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- sort by timestamp/txId/sort
-- add a checkUnique function
-- Remove spam from running balances
+- add grouping on Capital Gains and Unrealized
+- Verify balance redo (just do it at the end)
+- Add messages about unallocatable sells to warning
+- fix account filter on Offchain transfers
+- check that a manual ETH price isn't automatically added when clicking chain transaction
+
 - popup an exception message for all computeds errors especially Cap Gains, Unrealized and Running Blances
 - Move not enough inventory warning to message (catch errors on accessing costbasisstore)
 - Add support for TF: tx's in capital gains or balances won't match (CDAI testing)
-- Gift Export/import
-- fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
 - Add wallet functionaltiy
+- fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
+- Gift Export/import
+- remove coinbase functions?
 
 - Floating point gotchas:
   -- -tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
@@ -25,6 +29,7 @@ Track crypto balances, gains and losses
 
 - Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (withdraw BTC?), Binance)
 - Test unlocking frozen using offline-tx-signer, copy json files to USB
+- Handle TD Ameritrade? Webull? IB?
 
 - Properly handle ENS Registrar burn fees on charlie.eth and meetings.eth to 0x0000dead
 - The call to "unseal" bid from ENS burns ETH, it should be treated as Expense

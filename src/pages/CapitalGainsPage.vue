@@ -8,11 +8,12 @@
     <transactions-table
       title="Capital Gains"
       :rows="filtered"
-      :columns="columns"
+      :columns="currentColumns"
       @rowClick="showBuys"
       rowKey="rowIndex">
       <template v-slot:top-right>
         <div class="row">
+          <q-toggle label="Sells Only" v-model="sellsOnly" class="q-pr-sm"></q-toggle>
           <q-toggle label="Zero Prices" v-model="zeroPrices" class="q-pr-sm"></q-toggle>
           <account-filter :options="appStore.accounts"></account-filter>
           <asset-filter></asset-filter>
@@ -41,28 +42,32 @@ import { computed, ref } from "vue";
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AccountFilter from "src/components/AccountFilter.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
-import { columns } from "src/models/capital-gains";
+import { assetTotalColumns, columns } from "src/models/capital-gains";
 import { filterByAccounts, filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
-import { useCapitalGainsStore } from "src/stores/capital-gains-store";
-import { getCapitalGains } from "src/stores/capital-gains-store";
 import { onlyUnique } from "src/utils/array-helpers";
 import { timestampToDateStr } from "src/utils/date-helper";
 import { useCostBasisStore } from "src/stores/cost-basis-store";
 import { useQuasar } from "quasar";
 import { showWarning } from "src/use/useShowWarning";
+import { getLotTrace } from "src/utils/tx-history-helpers";
 
 const appStore = useAppStore();
 const costBasisStore = useCostBasisStore();
 const zeroPrices = ref(false);
+const sellsOnly = ref(true);
 const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Detailed");
 const $q = useQuasar();
 const showBuys = (evt, row, index) => {
-  // let txs = capitalGainsStore.capitalGains.splitTxs
-  // txs = txs.filter((t) => t.sellId == row.id)
-  // console.log(txs)
+  let txs = getLotTrace(row, costBasisStore.costBasisData.heldLots);
+  console.log("Buy/Sell Trace for rowIndex:", row.rowIndex);
+  console.log(txs)
 }
+const currentColumns = computed(() => {
+  if (gainsGrouping.value == "Detailed") return columns;
+  return assetTotalColumns;
+});
 const showUnreconciled = () => {
   console.log("Unreconciled Accounts:");
   console.log(costBasisStore.costBasisData.unreconciledAccounts.map(a =>
@@ -91,6 +96,9 @@ const filtered = computed(() => {
   if (zeroPrices.value) {
     txs = txs.filter((t) => t.price == 0.0 || t.buyPrice == 0.0);
   }
+  if (sellsOnly.value) {
+    txs = txs.filter((t) => t.taxTxType === "SELL");
+  }
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByAccounts(txs, appStore.selectedAccounts);
   if (appStore.taxYear != "All") {
@@ -98,7 +106,7 @@ const filtered = computed(() => {
   }
 
   if (gainsGrouping.value == "Detailed") return txs;
-  return txs;
+
   const totals = [];
   let ctr = 0;
   for (const tx of txs) {
@@ -106,11 +114,10 @@ const filtered = computed(() => {
     if (!total) {
       ctr++;
       total = {
-        id: "" + ctr,
+        rowIndex: "" + ctr,
         asset: tx.asset,
-        amount: 0.0,
-        fee: 0.0,
-        gross: 0.0,
+        amount: BigInt(0),
+        costBasis: 0.0,
         proceeds: 0.0,
         shortTermGain: 0.0,
         longTermGain: 0.0,
@@ -120,37 +127,37 @@ const filtered = computed(() => {
       totals.push(total);
     }
     total.amount += tx.amount;
-    total.fee += tx.fee;
-    total.gross += tx.gross;
     total.proceeds += tx.proceeds;
-    total.shortTermGain += tx.shortTermGain;
-    total.longTermGain += tx.longTermGain;
-    total.shortLots += tx.shortLots;
-    total.longLots += tx.longLots;
+    total.costBasis += tx.costBasis;
+    total.shortTermGain += tx.daysHeld > 365 ? 0.0 : tx.gainLoss;
+    total.longTermGain += tx.daysHeld > 365 ? tx.gainLoss : 0.0;
+    total.shortLots += tx.daysHeld > 365 ? 0 : 1;
+    total.longLots += tx.daysHeld > 365 ? 1 : 0;
   }
+
   if (gainsGrouping.value == "Totals") {
 
     const total = {
-      id: "" + ctr++,
-      fee: 0.0,
-      gross: 0.0,
+      rowIndex: "" + ctr++,
+      costBasis: 0.0,
       proceeds: 0.0,
       shortTermGain: 0.0,
       longTermGain: 0.0,
 
+
     };
     for (const t of totals) {
-      total.fee += t.fee;
-      total.gross += t.gross;
+
       total.proceeds += t.proceeds;
+      total.costBasis += t.costBasis;
       total.shortTermGain += t.shortTermGain;
       total.longTermGain += t.longTermGain;
 
     }
-    totals.length = 0;
-    totals.push(total);
+
+    return [total];
   }
-  return totals;
+  return totals
 
 });
 </script>

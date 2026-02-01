@@ -61,7 +61,7 @@ const columns = [
     label: "Amount",
     field: "amount",
     align: "right",
-    format: (val, row) => formatEther(val),
+    format: (val, row) => (val ? formatEther(val) : ""),
   },
   {
     name: "costBasis",
@@ -94,4 +94,49 @@ const columns = [
   },
 ];
 
-export { columns };
+const assetTotalColumns = [
+  {
+    name: "asset",
+    label: "Asset",
+    field: "asset",
+    align: "left",
+  },
+  {
+    name: "amount",
+    label: "Amount",
+    field: "amount",
+    align: "right",
+    format: (val, row) => (val ? formatEther(val) : ""),
+  },
+  {
+    name: "costBasis",
+    label: "Cost Basis",
+    field: "costBasis",
+    align: "right",
+    format: currency,
+  },
+  {
+    name: "proceeds",
+    label: "Proceeds",
+    field: "proceeds",
+    align: "right",
+    format: currency,
+  },
+
+  {
+    name: "shortTermGain",
+    label: "Short Term Gain",
+    field: "shortTermGain",
+    align: "right",
+    format: currency,
+  },
+  {
+    name: "longTermGain",
+    label: "Long Term Gain",
+    field: "longTermGain",
+    align: "right",
+    format: currency,
+  },
+];
+
+export { columns, assetTotalColumns };
