@@ -8,6 +8,7 @@
       <template v-slot:top-right>
 
         <div class="row">
+          <account-filter :options="appStore.accounts"></account-filter>
           <asset-filter></asset-filter>
           <q-btn-dropdown stretch flat :label="gainsGrouping">
             <q-list>
@@ -34,7 +35,8 @@ import { computed, ref, shallowRef } from "vue";
 import { columns, assetTotalColumns } from "src/models/unrealized"
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
-import { filterByAssets, filterByYear, filterUpToYear } from "src/utils/filter-helpers";
+import AccountFilter from "src/components/AccountFilter.vue";
+import { filterByAssets, filterByYear, filterUpToYear, filterByAccounts } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
 
 import { usePricesStore } from "src/stores/prices-store";
@@ -47,7 +49,7 @@ const priceStore = usePricesStore();
 //array of object.(price,date,symbol)
 const prices = shallowRef([]);
 const costBasisStore = useCostBasisStore();
-const groups = ["Detailed", "Asset Totals", "Totals"];
+const groups = ["Detailed", "Asset Totals"];
 const gainsGrouping = ref("Detailed");
 const getCurrentPrices = async function () {
 
@@ -71,6 +73,7 @@ const filtered = computed(() => {
   //let txs = getCapitalGains(false).sellTxs;
   if (!txs) return [];
   txs = filterByAssets(txs, appStore.selectedAssets);
+  txs = filterByAccounts(txs, appStore.selectedAccounts);
 
   // txs.map((t) => {
   //   if (!prices.value.find((p) => p.asset == t.asset)) {
@@ -97,50 +100,35 @@ const filtered = computed(() => {
   }
   if (gainsGrouping.value == "Detailed") return txs;
 
-  return txs;
   let totals = [];
   for (const tx of txs) {
     let total = totals.find((t) => t.asset == tx.asset);
     if (!total) {
       total = {
         asset: tx.asset,
-        unrealizedAmount: 0.0,
+        unrealizedAmount: BigInt(0),
         costBasis: 0.0,
+        price: tx.currentPrice,
+        currentValue: 0.0,
+        shortGain: 0.0,
+        longGain: 0.0,
+        gain: 0.0,
+        percentGain: 0.0,
       };
       totals.push(total);
     }
-    total.unrealizedAmount += tx.unrealizedAmount;
-    //TODO use cost basis and fees
+    total.unrealizedAmount = total.unrealizedAmount + tx.remainingAmount;
     total.costBasis += tx.costBasis;
+    total.shortGain += tx.daysHeld <= 365 ? tx.gainLoss : 0.0;
+    total.longGain += tx.daysHeld > 365 ? tx.gainLoss : 0.0;
+    total.gain += tx.gainLoss;
+    total.currentValue += tx.currentValue;
+    total.percentGain = (total.costBasis != 0.0) ? (total.gain / total.costBasis) * 100.0 : 0.0;
+
   }
-  //TOOD map totals price/amount to gross
-  totals.map((t) => {
-    t.price = priceStore.getMostRecentPrice(t.asset).price;
-    t.currentValue = t.unrealizedAmount * t.price;
-    t.gain = t.currentValue - t.costBasis;
-    t.percentGain = (t.costBasis != 0.0) ? (t.gain / t.costBasis) * 100.0 : 0.0;
-  })
-  if (gainsGrouping.value == "Asset Totals") return totals;
-
-  let _totals = [];
+  return totals
 
 
-  // for (const t of totals) {
-  //   let total = _totals.find((tx) => t.asset == tx.asset && t.taxCode == tx.taxCode);
-  //   if (!total) {
-  //     total = {
-  //       taxCode: t.taxCode,
-  //       amount: 0.0,
-  //       gross: 0.0,
-  //     };
-  //     _totals.push(total);
-  //   }
-  //   total.amount += t.amount;
-  //   total.gross += t.gross;
-  // }
-  // totals = _totals;
-
-  return totals;
 });
 
 </script>

@@ -4,11 +4,14 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- add grouping on Capital Gains and Unrealized
+- why does unrealized account show Poloniex?
+- why does running balances not match unrealized for ETH?
+- running balances filtered by loss hides ETH on "Total" grouping
 - Verify balance redo (just do it at the end)
 - Add messages about unallocatable sells to warning
 - fix account filter on Offchain transfers
 - check that a manual ETH price isn't automatically added when clicking chain transaction
+- change Loss to a type of account
 
 - popup an exception message for all computeds errors especially Cap Gains, Unrealized and Running Blances
 - Move not enough inventory warning to message (catch errors on accessing costbasisstore)

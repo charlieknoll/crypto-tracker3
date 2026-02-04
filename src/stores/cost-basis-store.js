@@ -4,6 +4,7 @@ import {
   currencyRounded,
   multiplyCurrency,
   floatToWei,
+  floatToStrAbs,
 } from "src/utils/number-helpers";
 import { daysDifference } from "src/utils/date-helper";
 import { useOpeningPositionsStore } from "./opening-positions-store";
@@ -170,7 +171,12 @@ function validateSellTx(tx, source) {
     handleError(tx, source, "Sell tx missing id");
   }
 }
-function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
+function getSellTxs(
+  chainTransactions,
+  exchangeTrades,
+  offchainTransfers,
+  exchangeFees
+) {
   let sellTxs = [];
 
   let txs = chainTransactions.filter(
@@ -337,6 +343,28 @@ function getSellTxs(chainTransactions, exchangeTrades, offchainTransfers) {
     _offChainSellTxs.push(stx);
   }
   sellTxs = sellTxs.concat(_offChainSellTxs);
+
+  const _exchangeFeeTxs = [];
+  for (const tx of exchangeFees) {
+    const stx = {};
+    stx.id = tx.id;
+    //No need to handle wallet here, account is always a wallt for an exchange
+    stx.account = tx.account;
+    stx.asset = tx.asset;
+    stx.timestamp = Math.floor(tx.timestamp);
+    //fee is sold after transfer and his applied to the receiver's cost basis
+    stx.sort = 0;
+    stx.amount = floatToWei(tx.amount);
+    stx.fee = 0.0;
+    checkPrice(tx.price, tx.asset, tx.timestamp, "USD");
+
+    // tx.price = prices.getPrice(tx.asset, tx.date, tx.timestamp);
+    stx.price = tx.price ?? 0.0;
+    stx.type = "EXCHANGE-FEE-" + tx.type;
+    validateSellTx(stx, tx);
+    _exchangeFeeTxs.push(stx);
+  }
+  sellTxs = sellTxs.concat(_exchangeFeeTxs);
 
   sellTxs = sellTxs.map((tx) => {
     tx.proceeds = currencyRounded(
@@ -565,6 +593,64 @@ function findPortfolioLot(tx, undisposedLots) {
       lot.remainingAmount > BigInt("0")
   );
 }
+function verifyBalances(undisposedLots, runningBalances) {
+  const accountAssets = [];
+  runningBalances.forEach((rb) => {
+    let accountAsset = accountAssets.find(
+      (aa) => aa.account == rb.account && aa.asset == rb.asset
+    );
+    if (!accountAsset) {
+      accountAssets.push({
+        account: rb.account,
+        asset: rb.asset,
+        balance: rb.biRunningAccountBalance,
+      });
+    } else {
+      accountAsset.balance = rb.biRunningAccountBalance;
+    }
+  });
+
+  let unreconciledAccounts = [];
+  accountAssets.forEach((aa) => {
+    const calculatedBalance = undisposedLots.reduce((sum, lot) => {
+      if (lot.account == aa.account && lot.asset == aa.asset) {
+        return BigInt(sum) + BigInt(lot.remainingAmount);
+      }
+      return BigInt(sum);
+    }, BigInt("0"));
+
+    if (calculatedBalance != aa.balance) {
+      unreconciledAccounts.push({
+        account: aa.account,
+        asset: aa.asset,
+        rbBalance: aa.balance,
+        calculatedBalance: calculatedBalance,
+      });
+    }
+  });
+  return unreconciledAccounts;
+}
+
+function verifyAssetBalance(tx, runningBalances, undisposedLots, soldLots) {
+  if (tx.sort <= -1) return true;
+  const calculatedBalance = undisposedLots.reduce((sum, lot) => {
+    if (lot.asset == tx.asset) {
+      return BigInt(sum) + BigInt(lot.remainingAmount);
+    }
+    return BigInt(sum);
+  }, BigInt("0"));
+  const runningBalance = runningBalances.reduce((sum, rb) => {
+    if (rb.asset == tx.asset && rb.timestamp <= tx.timestamp) {
+      return BigInt(sum) + BigInt(rb.biAmount);
+    }
+    return BigInt(sum);
+  }, BigInt("0"));
+  const diff = formatEther(calculatedBalance - runningBalance);
+  if (calculatedBalance != runningBalance) {
+    return false;
+  }
+  return true;
+}
 function verifyBalance(
   tx,
   runningBalances,
@@ -617,9 +703,9 @@ function verifyBalance(
   // if (!unreconciledAccounts.filter) {
   //   debugger;
   // }
-  unreconciledAccounts = unreconciledAccounts.filter(
-    (ua) => !(ua.account == tx.account && ua.asset == tx.asset)
-  );
+  // unreconciledAccounts = unreconciledAccounts.filter(
+  //   (ua) => !(ua.account == tx.account && ua.asset == tx.asset)
+  // );
   return unreconciledAccounts;
 }
 
@@ -654,7 +740,8 @@ function getCostBasis() {
   let sellTxs = getSellTxs(
     chainTransactions,
     exchangeTrades,
-    offchainTransfers
+    offchainTransfers,
+    exchangeFees
   );
   console.timeEnd("Sells");
   console.time("Buys");
@@ -684,8 +771,17 @@ function getCostBasis() {
   let runningBalances = runningBalancesStore.runningBalances.mappedData.sort(
     sortByTimeStampThenIdThenSort
   );
-
-  mappedData.forEach((tx) => {
+  let timestamp = 0;
+  let prevTx = null;
+  mappedData.some((tx) => {
+    if (tx.timestamp != timestamp && prevTx) {
+      if (
+        !verifyAssetBalance(prevTx, runningBalances, undisposedLots, soldLots)
+      )
+        return true;
+    }
+    timestamp = tx.timestamp;
+    prevTx = Object.assign({}, tx);
     // console.log(
     //   `Undisposed: ${undisposedLots.length}, Sold: ${soldLots.length},BuyCt: ${buyCt}, SellCt: ${sellCt}, TransferCt: ${transferCt}, CostBasisCt: ${costBasisCt}`
     // );
@@ -693,7 +789,6 @@ function getCostBasis() {
     if (tx.taxTxType.substring(0, 3) === "BUY") {
       buyCt;
       undisposedLots.push(tx);
-      return;
     }
     if (tx.taxTxType === "SELL") {
       sellCt++;
@@ -770,13 +865,13 @@ function getCostBasis() {
       }
       if (remainingAmount > BigInt("0")) {
         noInventoryTxs.push(tx);
+
         // throw new Error(
         //   `Cannot find enough inventory for ${tx.account}:${
         //     tx.asset
         //   }, amount remaining: ${formatEther(remainingAmount)}`
         // );
       }
-      return;
     }
     if (tx.taxTxType === "COST-BASIS") {
       costBasisCt++;
@@ -800,7 +895,6 @@ function getCostBasis() {
         lot.costBasis += currencyRounded(costBasisPortion);
         lot.remainingCostBasis += currencyRounded(costBasisPortion);
       }
-      return;
     }
     if (tx.taxTxType === "TRANSFER") {
       //first "mini-SELL" from fromAccount
@@ -894,18 +988,37 @@ function getCostBasis() {
           );
         } else lot = null;
       }
-      if (remainingAmount > BigInt("0")) {
-        // debugger;
-        // throw new Error(
-        //   `Cannot find enough transfer inventory for ${tx.fromAccount}:${
-        //     tx.asset
-        //   }, amount remaining: ${formatEther(remainingAmount)}`
-        // );
-      }
-      return;
     }
+    // if (remainingAmount > BigInt("0")) {
+    //   debugger;
+    //   // throw new Error(
+    //   //   `Cannot find enough transfer inventory for ${tx.fromAccount}:${
+    //   //     tx.asset
+    //   //   }, amount remaining: ${formatEther(remainingAmount)}`
+    //   // );
+    // }
+    // unreconciledAccounts = verifyBalance(
+    //   tx,
+    //   runningBalances,
+    //   undisposedLots,
+    //   soldLots,
+    //   unreconciledAccounts
+    // );
+
+    return false;
+    // if (unreconciledAccounts.length > 0) {
+    //   debugger;
+    // }
   });
   soldLots = soldLots.filter((lot) => lot.type != "GIFT-OUT");
+  //unreconciledAccounts = verifyBalances(undisposedLots, runningBalances);
+  const ethDiff = unreconciledAccounts.reduce((sum, ua) => {
+    if (ua.asset == "ETH") {
+      return sum + ua.calculatedBalance - ua.rbBalance;
+    }
+    return sum;
+  }, BigInt("0"));
+
   return {
     heldLots: undisposedLots,
     soldLots,

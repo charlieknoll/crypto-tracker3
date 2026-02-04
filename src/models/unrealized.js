@@ -49,6 +49,13 @@ const columns = [
     format: (val, row) => val.substring(0, 10),
   },
   {
+    name: "amount",
+    label: "OriginalAmount",
+    field: "amount",
+    align: "right",
+    format: (val, row) => `${formatEther(val)}`,
+  },
+  {
     name: "remainingAmount",
     label: "Amount",
     field: "remainingAmount",
@@ -102,7 +109,8 @@ const assetTotalColumns = [
     name: "unrealizedAmount",
     label: "Amount",
     field: "unrealizedAmount",
-    align: "left",
+    align: "right",
+    format: (val, row) => `${formatEther(val)}`,
   },
   {
     name: "price",
@@ -126,9 +134,16 @@ const assetTotalColumns = [
     format: (val, row) => currency(val),
   },
   {
-    name: "gain",
-    label: "Unrealized Gain",
-    field: "gain",
+    name: "shortGain",
+    label: "Short Term Gain",
+    field: "shortGain",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "longGain",
+    label: "Long Term Gain",
+    field: "longGain",
     align: "right",
     format: (val, row) => currency(val),
   },

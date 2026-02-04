@@ -74,7 +74,11 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
           feeTx.currency = tx.feeCurrency;
           feeTx.net = multiplyCurrency([feeTx.amount, feeTx.price]);
           feeTx.gross = feeTx.net;
-          feeTx.sort = -1;
+          if (tx.feeCurrency != tx.asset) {
+            feeTx.sort = -1;
+          } else {
+            feeTx.sort = tx.action == "BUY" ? 1 : -1;
+          }
           // if (feeTx.amount != 0.0)
           mappedData.push(feeTx);
         } else {
