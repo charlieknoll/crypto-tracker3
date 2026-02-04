@@ -4,10 +4,14 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- why does unrealized account show Poloniex?
-- why does running balances not match unrealized for ETH?
+-unnamed on chain transactions shows named redords (currently only 2 missing method names)
+
+- add amount to Dashboard
+- don't request new prices on dashboard unless at least a minute has transpired
+- verfiy that income was declared on assets taking capital loss in 2025, verify capital gains for big tax years
+- why does unrealized account show Poloniex? Document: Cost basis can exist in an from an account that has no current value.
 - running balances filtered by loss hides ETH on "Total" grouping
-- Verify balance redo (just do it at the end)
+- Verify balance redo (just do it at the end) and add a message
 - Add messages about unallocatable sells to warning
 - fix account filter on Offchain transfers
 - check that a manual ETH price isn't automatically added when clicking chain transaction
@@ -68,6 +72,7 @@ Track crypto balances, gains and losses
 
 ## DONE
 
+- add checkbox to "Skip Zero Balance owned Accounts" to Chain Tx import
 - finish unrealized fields, filter up to displayed year
 - implement getCurrentPrices
 - distribute cost-basis for a zero amount sell that has a fee (add as a cost basis tx)

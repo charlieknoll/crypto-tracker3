@@ -27,6 +27,7 @@ import { onlyUnique } from "src/utils/array-helpers";
 import { parseCommaFloat } from "src/utils/number-helpers";
 import { useRunningBalancesStore } from "./running-balances-store";
 import { getCurrentPrice } from "src/services/kraken-provider";
+import { nextTick } from "vue";
 
 const lock = new Semaphore(1);
 const keyFunc = (r) => getId(r, keyFields);
@@ -314,6 +315,9 @@ export const usePricesStore = defineStore("prices", {
         { asset: "OMG" },
         { asset: "CRV" },
       ];
+      nextTick(() => {
+        console.log("Fetching current prices for assets:", assets);
+      });
       await lock.acquire();
       const app = useAppStore();
       app.importing = true;

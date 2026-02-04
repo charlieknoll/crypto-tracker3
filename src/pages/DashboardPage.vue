@@ -82,7 +82,7 @@
   </q-page>
 </template>
 <script setup>
-import { onMounted, ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 // import QCalendar from '@quasar/quasar-ui-qcalendar'
 import { useCostBasisStore } from 'src/stores/cost-basis-store';
 import { format, useQuasar } from 'quasar';
@@ -160,20 +160,27 @@ const assetColumns = [
 onMounted(async () => {
   // Placeholder data for major assets held
   const pricesStore = usePricesStore();
-  const assetPrices = await pricesStore.getCurrentPrices();
-  const runningBalancesStore = useRunningBalancesStore();
-  const assetBalances = runningBalancesStore.runningBalances.assets;
+  pricesStore.getCurrentPrices().then(prices => {
+    nextTick(() => {
+      console.log("Fetched current prices for dashboard:", prices);
+    });
+    const runningBalancesStore = useRunningBalancesStore();
+    const assetBalances = runningBalancesStore.runningBalances.assets;
 
-  let totalValue = 0.0;
-  assetBalances.map((asset) => {
-    const priceData = assetPrices.find(p => p.asset === asset.symbol);
-    if (!priceData) return;
-    priceData.currentValue = parseFloat(formatEther(asset.biAmount)) * priceData.price;
-    totalValue += priceData.currentValue;
+    let totalValue = 0.0;
+    assetBalances.map((asset) => {
+      const priceData = prices.find(p => p.asset === asset.symbol);
+      if (!priceData) return;
+      priceData.currentValue = parseFloat(formatEther(asset.biAmount)) * priceData.price;
+      totalValue += priceData.currentValue;
+
+    });
+    assets.value = prices.sort((a, b) => b.currentValue - a.currentValue); //.slice(0, 5);
+    totalAssetValue.value = totalValue;
+
 
   });
-  assets.value = assetPrices.sort((a, b) => b.currentValue - a.currentValue); //.slice(0, 5);
-  totalAssetValue.value = totalValue;
+
 
 
 
@@ -186,7 +193,7 @@ onMounted(async () => {
   //TODO add refresh interval
 
 
-  console.log("Assets with current prices:", assets.value);
+  // console.log("Assets with current prices:", assets.value);
 })
 const events = ref([
   { title: 'iamtraci.eth Expires', date: '2030-03-06' },
