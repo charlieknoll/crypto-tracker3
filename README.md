@@ -4,11 +4,8 @@ Track crypto balances, gains and losses
 
 ## TODO
 
--unnamed on chain transactions shows named redords (currently only 2 missing method names)
-
-- add amount to Dashboard
-- don't request new prices on dashboard unless at least a minute has transpired
 - verfiy that income was declared on assets taking capital loss in 2025, verify capital gains for big tax years
+- show current account on unrealized, add unique id to each lot so that it can be back traced through capital gains
 - why does unrealized account show Poloniex? Document: Cost basis can exist in an from an account that has no current value.
 - running balances filtered by loss hides ETH on "Total" grouping
 - Verify balance redo (just do it at the end) and add a message

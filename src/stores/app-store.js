@@ -11,6 +11,7 @@ import { useChainTxsStore } from "./chain-txs-store";
 export const useAppStore = defineStore("app", {
   state: () => ({
     importing: false,
+    lastPricesUpdate: useLocalStorage("lastPricesUpdate", ""),
     importingMessage: ref(""),
     taxYear: useLocalStorage("taxYear", new Date().getFullYear().toString()),
     defaultCurrency: useLocalStorage("defaultCurrency", "USD"),

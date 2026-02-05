@@ -10,7 +10,8 @@
           <div class="col-12 col-md-8">
 
             <div class="text-caption text-grey">Total Value</div>
-            <div class="text-h5">{{ currency(totalAssetValue) }}</div>
+            <div class="text-h5">{{ currency(pricesStore.totalValue) }}</div>
+            <q-btn flat label="Refresh Prices" color="primary" @click="refreshPrices" />
           </div>
           <!-- <div class="col-12 col-md-4">
             <q-card flat bordered>
@@ -32,13 +33,8 @@
       <q-separator />
       <q-card-section>
         <div class="text-h6 q-mb-sm">Major Assets Held</div>
-        <q-table
-          :rows="assets"
-          :columns="assetColumns"
-          row-key="name"
-          :pagination="{ rowsPerPage: 5 }"
-          flat
-          dense />
+        <q-table :rows="pricesStore.assetPrices" :columns="assetColumns" row-key="name" :pagination="{ rowsPerPage: 5 }"
+          flat dense />
       </q-card-section>
     </q-card>
 
@@ -90,7 +86,7 @@ import { formatEther } from 'ethers';
 import { currency } from 'src/utils/number-helpers';
 import { usePricesStore } from 'src/stores/prices-store';
 import { useRunningBalancesStore } from 'src/stores/running-balances-store';
-
+import { useAppStore } from 'src/stores/app-store';
 const $q = useQuasar();
 const today = ref(new Date().toISOString().split('T')[0]);
 const getCostBasis = () => {
@@ -148,53 +144,48 @@ const getCostBasis = () => {
   }
 };
 
-const assets = ref([]);
-const totalAssetValue = ref(0.0);
+const pricesStore = usePricesStore();
 
 const assetColumns = [
   { name: 'asset', label: 'Asset', field: 'asset', align: 'left' },
-  { name: 'currentValue', label: 'Current Value', field: 'currentValue', align: 'right', format: currency },
+  { name: 'amount', label: 'Amount', field: 'amount', align: 'right' },
   { name: 'price', label: 'Price', field: 'price', align: 'right', format: currency },
+  { name: 'currentValue', label: 'Current Value', field: 'currentValue', align: 'right', format: currency },
 
 ];
+const refreshPrices = async function () {
+
+
+
+  pricesStore.getCurrentPrices()
+}
 onMounted(async () => {
   // Placeholder data for major assets held
-  const pricesStore = usePricesStore();
-  pricesStore.getCurrentPrices().then(prices => {
-    nextTick(() => {
-      console.log("Fetched current prices for dashboard:", prices);
-    });
-    const runningBalancesStore = useRunningBalancesStore();
-    const assetBalances = runningBalancesStore.runningBalances.assets;
+  const app = useAppStore();
 
-    let totalValue = 0.0;
-    assetBalances.map((asset) => {
-      const priceData = prices.find(p => p.asset === asset.symbol);
-      if (!priceData) return;
-      priceData.currentValue = parseFloat(formatEther(asset.biAmount)) * priceData.price;
-      totalValue += priceData.currentValue;
-
-    });
-    assets.value = prices.sort((a, b) => b.currentValue - a.currentValue); //.slice(0, 5);
-    totalAssetValue.value = totalValue;
-
-
-  });
+  while (1) {
+    //make sure at least 1 minute has passed since last price update before refreshing prices to avoid hitting rate limits
+    const now = new Date();
+    const lastPriceUpdate = app.lastPricesUpdate ? new Date(app.lastPricesUpdate) : null;
+    if (!lastPriceUpdate || (now - lastPriceUpdate) > 60000) {
+      await refreshPrices();
+      app.lastPricesUpdate = now.toISOString();
+    }
+    await new Promise(resolve => setTimeout(resolve, 30000)); // Check every 30 seconds
+  }
+});
 
 
 
 
-  // TODO save current prices to store as type "Current", save previous day's price as type "Previous", this will allow gain/loss percentage
-  //TODO: add tracked tokens
-  //TODO add icons?
-  //TODO add link to running balances
-  // TODO add refresh button to get latest prices
-  // TODO add refresh button to get chain txs
-  //TODO add refresh interval
+// TODO save current prices to store as type "Current", save previous day's price as type "Previous", this will allow gain/loss percentage
+//TODO: add tracked tokens
+//TODO add icons?
+//TODO add link to running balances
+// TODO add refresh button to get latest prices
+// TODO add refresh button to get chain txs
+//TODO add refresh interval
 
-
-  // console.log("Assets with current prices:", assets.value);
-})
 const events = ref([
   { title: 'iamtraci.eth Expires', date: '2030-03-06' },
   { title: 'charlieknoll.eth Expires', date: '2030-05-03' },

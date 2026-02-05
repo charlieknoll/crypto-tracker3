@@ -28,6 +28,7 @@ import { parseCommaFloat } from "src/utils/number-helpers";
 import { useRunningBalancesStore } from "./running-balances-store";
 import { getCurrentPrice } from "src/services/kraken-provider";
 import { nextTick } from "vue";
+import { formatEther } from "ethers";
 
 const lock = new Semaphore(1);
 const keyFunc = (r) => getId(r, keyFields);
@@ -95,6 +96,8 @@ const pricesFromHashes = function (hashes, tokenTxs) {
 export const usePricesStore = defineStore("prices", {
   state: () => ({
     records: useLocalStorage("prices", []),
+    assetPrices: useLocalStorage("assetPrices", []),
+    totalValue: useLocalStorage("totalValue", 0.0),
     initValue: getInitValue(fields, useAppStore()),
   }),
 
@@ -309,12 +312,16 @@ export const usePricesStore = defineStore("prices", {
     },
 
     async getCurrentPrices() {
-      const assets = [
-        { asset: "BTC" },
-        { asset: "ETH" },
-        { asset: "OMG" },
-        { asset: "CRV" },
-      ];
+      const runningBalancesStore = useRunningBalancesStore();
+      const assets = runningBalancesStore.runningBalances.assets.filter(
+        (a) => a.amount > 0.0
+      );
+      // const assets = [
+      //   { asset: "BTC" },
+      //   { asset: "ETH" },
+      //   { asset: "OMG" },
+      //   { asset: "CRV" },
+      // ];
       nextTick(() => {
         console.log("Fetching current prices for assets:", assets);
       });
@@ -322,8 +329,12 @@ export const usePricesStore = defineStore("prices", {
       const app = useAppStore();
       app.importing = true;
       for (let i = 0; i < assets.length; i++) {
-        const asset = assets[i].asset;
+        const asset = assets[i].symbol;
         assets[i].price = await getCurrentPrice(asset);
+        if (assets[i].price == 0.0) {
+          console.log("No price found for asset:", asset);
+          continue;
+        }
         if (!this.records) this.records = [];
         const priceRecord = this.records?.find((r) => {
           return r.asset == asset && r.source == "Current";
@@ -353,8 +364,26 @@ export const usePricesStore = defineStore("prices", {
       }
       app.importing = false;
       lock.release();
-      return assets;
+      this.assetPrices = assets
+        .map((a) => {
+          return {
+            asset: a.symbol,
+            price: a.price,
+            amount: formatEther(a.biAmount),
+            currentValue:
+              (a.price ?? 0.0) * parseFloat(formatEther(a.biAmount)),
+          };
+        })
+        .sort((a, b) => b.currentValue - a.currentValue);
+      const tv = this.assetPrices.reduce(
+        (sum, ap) => sum + (ap.currentValue ?? 0.0),
+        0
+      );
+      this.totalValue = tv;
+      app.lastPricesUpdate = new Date().toISOString();
+      return { totalValue: tv, assetPrices: this.assetPrices };
     },
+
     async getETHPrices() {
       await lock.acquire();
       const app = useAppStore();

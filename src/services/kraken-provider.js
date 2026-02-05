@@ -64,6 +64,12 @@ const getCurrentPrice = async function (asset) {
     LTC: "XLTCZUSD",
     XRP: "XXRPZUSD",
   };
+  if (asset === "USDC" || asset === "USDT") {
+    return 1.0;
+  }
+  if (!asset) {
+    return 0.0;
+  }
   let pair = pairMaps[asset];
   if (!pair) {
     pair = asset + "USD";

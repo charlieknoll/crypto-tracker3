@@ -364,6 +364,7 @@ export const useRunningBalancesStore = defineStore("runningBalances", {
       const runningBalances = getRunningBalances();
       return runningBalances;
     },
+
     mappedData: () => {
       try {
         return getMappedData();

@@ -14,24 +14,14 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-    <transactions-table
-      title="Chain Transactions"
-      :rows="filtered"
-      :columns="columns"
-      @rowClick="edit"
+    <transactions-table title="Chain Transactions" :rows="filtered" :columns="columns" @rowClick="edit"
       @row-contextmenu="onRowRightClick">
       <template v-slot:top-right>
         <div class="row">
           <q-toggle label="Unnamed" v-model="unnamed" class="q-pr-sm"></q-toggle>
           <q-toggle label="Only Tokens" v-model="onlyTokens" class="q-pr-sm"></q-toggle>
-          <q-input
-            v-alpha-numeric
-            clearable
-            style="width: 300px; display: inline-block; min-height: 61px"
-            input-style="min-height: 61px;"
-            label="Filter by tx or address hash"
-            class="q-mr-md"
-            v-model="hashFilter"
+          <q-input v-alpha-numeric clearable style="width: 300px; display: inline-block; min-height: 61px"
+            input-style="min-height: 61px;" label="Filter by tx or address hash" class="q-mr-md" v-model="hashFilter"
             filled></q-input>
           <div>
             <account-filter :options="accounts"></account-filter>
@@ -39,12 +29,8 @@
           <div>
             <asset-filter></asset-filter>
           </div>
-          <base-select style="width: 220px"
-            multiple
-            popup-content-class="dropdown"
-            v-model="app.selectedChains"
-            :options="chainStore.chains"
-            label="Chain" />
+          <base-select style="width: 220px" multiple popup-content-class="dropdown" v-model="app.selectedChains"
+            :options="chainStore.chains" label="Chain" />
           <div>
             <q-btn class="q-ml-sm" color="primary" label="Import" @click="importChainTxs" />
             <q-btn class="q-ml-sm" color="primary" label="Import ETH Prices" @click="importPrices" />
@@ -267,7 +253,7 @@ const filtered = computed(() => {
     txs = txs.filter(
       (tx) =>
         tx.toAccountName.substring(0, 2) == '0x' ||
-        tx.fromAccountName.substring(0, 2) == "0x" || (tx.taxCode ?? "") == "");
+        tx.fromAccountName.substring(0, 2) == "0x" || (tx.taxCode ?? "") == "" && tx.methodName != '0x' && !tx.methodName);
   }
   if (onlyTokens.value) {
     // let tokenTxs = txs.filter(
