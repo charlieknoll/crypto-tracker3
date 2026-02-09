@@ -314,7 +314,7 @@ export const usePricesStore = defineStore("prices", {
     async getCurrentPrices() {
       const runningBalancesStore = useRunningBalancesStore();
       const assets = runningBalancesStore.runningBalances.assets.filter(
-        (a) => a.amount > 0.0
+        (a) => a.amount > 0.1
       );
       // const assets = [
       //   { asset: "BTC" },

@@ -57,14 +57,18 @@ function mapToURLValues(object) {
     })
   );
 }
-const getCurrentPrice = async function (asset) {
+const getCurrentPrice = async function (
+  asset,
+  usdPairs = ["USDC", "USDT", "crvUSD", "DAI", "BUSD", "TUSD", "USDG"]
+) {
   const pairMaps = {
     ETH: "XETHZUSD",
     BTC: "XXBTZUSD",
     LTC: "XLTCZUSD",
     XRP: "XXRPZUSD",
   };
-  if (asset === "USDC" || asset === "USDT") {
+
+  if (usdPairs.includes(asset)) {
     return 1.0;
   }
   if (!asset) {
