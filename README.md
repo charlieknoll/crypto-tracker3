@@ -4,6 +4,9 @@ Track crypto balances, gains and losses
 
 ## TODO
 
+- check that a manual ETH price isn't automatically added when clicking chain transaction
+- Add account filter on unrealized, only show accounts with balance above enterable
+
 - verfiy that income was declared on assets taking capital loss in 2025, verify capital gains for big tax years
 - show current account on unrealized, add unique id to each lot so that it can be back traced through capital gains
 - why does unrealized account show Poloniex? Document: Cost basis can exist in an from an account that has no current value.
@@ -11,7 +14,6 @@ Track crypto balances, gains and losses
 - Verify balance redo (just do it at the end) and add a message
 - Add messages about unallocatable sells to warning
 - fix account filter on Offchain transfers
-- check that a manual ETH price isn't automatically added when clicking chain transaction
 - change Loss to a type of account
 
 - popup an exception message for all computeds errors especially Cap Gains, Unrealized and Running Blances
@@ -41,7 +43,6 @@ Track crypto balances, gains and losses
 - https://etherscan.io/tx/0x5b526e077d2fbdfac6dd0f080d5d05a1b46ccb5d9056d5067a9ce84e5772a37a
 
 - Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add
-- Add account filter on unrealized, only show accounts with balance above enterable
 
 - set capital gains as gift with non zero ether transfers from spam accounts
 - tax export
