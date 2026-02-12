@@ -99,7 +99,9 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
             );
 
           const currencyPrice = tx.price;
-          const currencyAmount = tx.gross;
+
+          const currencyAmount =
+            tx.gross ?? multiplyCurrency([tx.amount, tx.price]);
           tx.sort = 0;
           //tx.sort = tx.action == "BUY" ? 2 : 0;
           tx.price = currencyPrice * currencyUSDPrice;

@@ -240,7 +240,7 @@ function getRunningBalances() {
   const accountAssets = [];
   let assets = [];
   for (const tx of mappedData) {
-    tx.biAmount = tx.value ?? floatToWei(tx.amount) ?? BigInt("0.0");
+    tx.biAmount = tx.value ?? floatToWei(tx.amount) ?? BigInt("0");
     tx.amount = parseFloat(tx.amount);
     let asset = assets.find((a) => a.symbol == tx.asset);
     if (!asset) {

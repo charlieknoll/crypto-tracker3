@@ -161,6 +161,7 @@ const refreshPrices = async function () {
 }
 onMounted(async () => {
   // Placeholder data for major assets held
+  return;
   const app = useAppStore();
 
   while (1) {

@@ -4,7 +4,10 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- check that a manual ETH price isn't automatically added when clicking chain transaction
+- move fees associated with transfers to costbasisadj, this is why excluding transfers pre cutoff gives a slightly higher cost basis
+
+- Don't allow wallet name equal an existing account name on addresses
+
 - Add account filter on unrealized, only show accounts with balance above enterable
 
 - verfiy that income was declared on assets taking capital loss in 2025, verify capital gains for big tax years

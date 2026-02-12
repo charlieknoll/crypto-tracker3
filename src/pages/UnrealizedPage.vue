@@ -4,6 +4,7 @@
       title="Unrealized Gains"
       :rows="filtered"
       :columns="gainsGrouping == 'Detailed' ? columns : assetTotalColumns"
+      @rowClick="showSource"
       rowKey="xx">
       <template v-slot:top-right>
 
@@ -43,6 +44,7 @@ import { usePricesStore } from "src/stores/prices-store";
 import { useCostBasisStore } from "src/stores/cost-basis-store";
 import { timestampToDateStr } from "src/utils/date-helper";
 import { formatEther } from "ethers"
+import { getLotTrace } from "src/utils/tx-history-helpers";
 
 const appStore = useAppStore();
 const priceStore = usePricesStore();
@@ -52,6 +54,13 @@ const costBasisStore = useCostBasisStore();
 const groups = ["Detailed", "Asset Totals"];
 const gainsGrouping = ref("Detailed");
 const getCurrentPrices = async function () {
+
+}
+const showSource = async (evt, row, index) => {
+  if (!evt.altKey) return
+  const sources = getLotTrace(row, costBasisStore.costBasisData.heldLots);
+  console.log(sources);
+
 
 }
 const filtered = computed(() => {

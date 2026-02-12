@@ -99,6 +99,7 @@ const onlyTokens = ref(false)
 const editing = ref(false);
 const error = ref("")
 const record = reactive({})
+let initPrice = 0.0;
 
 function onRowRightClick(evt, row) {
   evt.preventDefault()  // stop browser context menu
@@ -138,6 +139,7 @@ const edit = (evt, row, index) => {
   }
 
   error.value = ''
+  initPrice = row.price
   Object.assign(record, {
     toAddress: toAddress.address,
     toType: toAddress.type,
@@ -205,12 +207,15 @@ const save = function () {
 
   const methods = useMethodStore()
   methods.set({ id: record.method, name: record.methodName })
-  const prices = usePricesStore()
-  prices.set({
-    asset: record.asset,
-    timestamp: record.timestamp,
-    price: record.price
-  })
+  if (record.price != 0.0 && record.price != initPrice) {
+    const prices = usePricesStore()
+    prices.set({
+      asset: record.asset,
+      timestamp: record.timestamp,
+      price: record.price
+    })
+  }
+
 
   editing.value = false
   //console
