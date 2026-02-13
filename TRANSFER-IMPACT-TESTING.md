@@ -92,24 +92,48 @@ On the Capital Gains page:
 
 ### Real Example from Your Data
 
-Based on the trace output, here's what happens with a simple transfer:
+Based on the corrected trace, here's what happens with a simple transfer:
 
 ```
-Initial: Buy 1.0 ETH @ $2000 in Account-A
-Transfer: Send 0.5 ETH to Account-B (fee: $10)
-Sell: 0.5 ETH from Account-B @ $2100
+Cutover timestamp: Jan 1, 2025 (WALLET_TIMESTAMP_CUTOFF = 1735689600)
 
-WITHOUT TRANSFERS:
-  Sell matches against Account-A lot (findPortfolioLot searches all accounts)
-  Cost basis: $1000 (half of $2000)
-  Proceeds: $1050
-  Gain: $50 ← WRONG! Missing the $10 fee
+SCENARIO A - BEFORE CUTOVER (portfolio-wide cost basis):
+  Initial: Buy 1.0 ETH @ $2000 in Account-A
+  Transfer: Send 0.5 ETH to Account-B (fee: $10)
+  Sell: 0.5 ETH from Account-B @ $2100
 
-WITH TRANSFERS:
-  Sell matches against Account-B lot (properly transferred)
-  Cost basis: $1010 (half of $2000 + transfer fee $10)
-  Proceeds: $1050
-  Gain: $40 ← CORRECT!
+  WITHOUT TRANSFERS:
+    Fee distributes portfolio-wide to all ETH (finds Account-A)
+    Account-A: 1.0 ETH @ $2010 cost basis
+    Sell matches Account-A lot via findPortfolioLot()
+    Cost basis: $1005 (half of $2010)
+    Gain: $1050 - $1005 = $45
+
+  WITH TRANSFERS:
+    Transfer splits Account-A lot, creates Account-B lot
+    Fee distributes to Account-B lot (0.5 ETH)
+    Account-B: 0.5 ETH @ $1010 cost basis
+    Sell matches Account-B lot
+    Cost basis: $1010
+    Gain: $1050 - $1010 = $40
+
+  Difference: $5 (from where fee is applied and lot splitting)
+
+SCENARIO B - AFTER CUTOVER (account-specific cost basis):
+  WITHOUT TRANSFERS:
+    Fee targets Account-B (toAccount from transfer fee tx)
+    Finds NO lots in Account-B ❌
+    Fee is LOST!
+    Sell matches Account-A with NO fee adjustment
+    Gain is OVERSTATED
+
+  WITH TRANSFERS:
+    Transfer creates lot in Account-B
+    Fee targets Account-B, finds the transferred lot ✓
+    Fee properly applied
+    Gain is CORRECT
+
+  After cutover, transfers are REQUIRED for correct cost basis!
 ```
 
 ### Debugging Specific Transfers

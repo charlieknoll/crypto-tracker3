@@ -30,7 +30,7 @@ function findPortfolioLot(tx, undisposedLots) {
       lot.remainingAmount > BigInt("0")
   );
 }
-export function processTxs(mappedData, runningBalances) {
+export function processTxs(mappedData, runningBalances, cutoverTimestamp) {
   let undisposedLots = [];
   let soldLots = [];
   let unreconciledAccounts = [];
@@ -144,13 +144,14 @@ export function processTxs(mappedData, runningBalances) {
     }
     if (tx.taxTxType === "COST-BASIS") {
       costBasisCt++;
-      //Distribute cost basis fee across all undisposed lots in the account for the asset
+      //Distribute cost basis fee:
+      //  - Portfolio-wide by asset BEFORE cutover (old wallet behavior)
+      //  - Account-specific by asset AFTER cutover (new wallet behavior)
       const relevantLots = undisposedLots.filter(
         (lot) =>
-          lot.account == tx.account &&
-          //TODO handle wallet
-          //lot.asset == tx.asset &&
-          lot.remainingAmount > BigInt("0")
+          lot.asset == tx.asset &&
+          lot.remainingAmount > BigInt("0") &&
+          (tx.timestamp <= cutoverTimestamp || lot.account == tx.account)
       );
       const totalAmount = relevantLots.reduce(
         (sum, lot) => sum + parseFloat(formatEther(lot.remainingAmount)),

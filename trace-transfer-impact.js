@@ -72,19 +72,21 @@ console.log("Step 2: Transfer is SKIPPED");
 console.log("  Lot remains: Account-A, 1.0 ETH, cost basis $2000");
 console.log("  Account-B has NO lots\n");
 
-console.log("Step 3: Transfer fee ($10) tries to distribute to Account-B lots");
-console.log("  ⚠️ NO lots found in Account-B");
-console.log("  Fee distribution FAILS - no cost basis added\n");
+console.log("Step 3: Transfer fee ($10) distributes to ALL ETH lots (portfolio-wide BEFORE cutover)");
+console.log("  Finds all ETH lots: Account-A has 1.0 ETH");
+console.log("  Fee distribution: Account-A lot gets $10");
+console.log("  Updated: Account-A, 1.0 ETH, cost basis $2000 + $10 = $2010\n");
 
 console.log("Step 4: Sell 0.5 ETH from Account-B");
 console.log("  ⚠️ findPortfolioLot() searches across ALL accounts");
 console.log("  Finds lot in Account-A (0.5 of 1.0 ETH)");
-console.log("  Cost basis portion: $2000 * (0.5/1.0) = $1000");
+console.log("  Cost basis portion: $2010 * (0.5/1.0) = $1005");
 console.log("  Proceeds: $1050");
-console.log("  Gain/Loss: $1050 - $1000 = $50 gain");
-console.log("  Remaining in Account-A: 0.5 ETH @ $1000 cost basis\n");
+console.log("  Gain/Loss: $1050 - $1005 = $45 gain");
+console.log("  Remaining in Account-A: 0.5 ETH @ $1005 cost basis\n");
 
-console.log("TOTAL CAPITAL GAINS: $50.00\n");
+console.log("TOTAL CAPITAL GAINS: $45.00");
+console.log("(Fee WAS applied to Account-A, since it's portfolio-wide before cutover)\n");
 
 console.log("=== WITH TRANSFERS ===\n");
 
@@ -124,32 +126,33 @@ console.log("TOTAL CAPITAL GAINS: $40.00\n");
 
 console.log("=== KEY DIFFERENCES ===\n");
 
-console.log("1. Transfer Fee Impact:");
-console.log("   - WITHOUT transfers: Fee not applied (no lots in Account-B)");
-console.log(
-  "   - WITH transfers: Fee adds $10 to cost basis of transferred lot"
-);
-console.log("   - Difference: $10 lower gains WITH transfers\n");
+console.log("1. Transfer Fee Impact (BEFORE Cutover - Portfolio-wide):");
+console.log("   - WITHOUT transfers: Fee applied portfolio-wide to Account-A");
+console.log("   - WITH transfers: Fee adds to Account-B after transfer");
+console.log("   - Both apply the fee, but to different lots!\n");
 
-console.log("2. Lot Splitting:");
-console.log("   - WITHOUT transfers: Single 1.0 ETH lot remains whole");
-console.log("   - WITH transfers: Lot split into 0.5 ETH pieces");
-console.log("   - Impact: Rounding differences can accumulate\n");
+console.log("2. Transfer Fee Impact (AFTER Cutover - Account-specific):");
+console.log("   - WITHOUT transfers: Fee targets Account-B, finds NOTHING");
+console.log("   - WITH transfers: Fee targets Account-B, finds transferred lot");
+console.log("   - This is when transfers become REQUIRED!\n");
 
-console.log("3. FIFO Selection:");
-console.log("   - WITHOUT transfers: findPortfolioLot() finds across accounts");
-console.log("   - WITH transfers: Proper account-specific lot exists");
-console.log("   - Impact: Can change which lot is selected for sells\n");
+console.log("3. Lot Splitting:");
+console.log("   - WITHOUT transfers: Single 1.0 ETH lot in Account-A gets ALL the fee");
+console.log("   - WITH transfers: Lot split, only transferred 0.5 ETH gets the fee");
+console.log("   - Impact: Different proportional cost basis\n");
 
-console.log("4. SELL-TRANSFER in Results:");
-console.log("   - Created: 1 SELL-TRANSFER lot (costBasis=$1000, proceeds=$0)");
-console.log(
-  "   - If 'Sells Only' toggle is OFF, this appears in capital gains"
-);
-console.log("   - Adds cost basis with no proceeds (zero-sum for transfers)\n");
+console.log("4. SELL-TRANSFER lots:");
+console.log("   - Created with costBasis but $0 proceeds (informational only)");
+console.log("   - Hidden when 'Sells Only' is ON (default)");
+console.log("   - Shows proper audit trail of asset movement\n");
 
-console.log("CAPITAL GAINS DIFFERENCE: $50 - $40 = $10");
-console.log("This matches the transfer fee that was properly applied!\n");
+console.log("CAPITAL GAINS DIFFERENCE: $45 - $40 = $5");
+console.log("Difference comes from WHERE the fee is applied:\n");
+console.log("  - WITHOUT transfers: Fee adds to Account-A lot (portfolio-wide)");
+console.log("                      But sell uses Account-A lot, so fee IS included");
+console.log("  - WITH transfers:    Fee adds to Account-B lot (after transfer)");
+console.log("                      Sell uses Account-B lot with fee\n");
+console.log("The $5 difference is from lot splitting rounding and which lot gets the fee!\n");
 
 console.log("=== HOW TO VERIFY IN YOUR APP ===\n");
 console.log(

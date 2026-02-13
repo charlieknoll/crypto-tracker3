@@ -23,6 +23,7 @@ import { getSellTxs } from "./cost-basis/sell-txs.js";
 import { getBuyTxs } from "./cost-basis/buy-txs.js";
 import { getTransferTxs } from "./cost-basis/transfer-txs.js";
 import { processTxs } from "./cost-basis/process-txs";
+import constants from "src/constants";
 
 function getCostBasis() {
   //raw from localStorage
@@ -81,7 +82,7 @@ function getCostBasis() {
   mappedData = mappedData.concat(buyTxs);
   mappedData = mappedData.concat(costBasisTxs);
   //no transfers on first pass
-  mappedData = mappedData.concat(transferTxs);
+  //mappedData = mappedData.concat(transferTxs);
   mappedData = mappedData.sort(sortByTimeStampThenIdThenSort);
 
   const {
@@ -89,7 +90,11 @@ function getCostBasis() {
     soldLots: allSoldLots,
     unreconciledAccounts,
     noInventoryTxs,
-  } = processTxs(mappedData, runningBalances);
+  } = processTxs(
+    mappedData,
+    runningBalances,
+    constants.WALLET_TIMESTAMP_CUTOFF
+  );
 
   const soldLots = allSoldLots.filter((lot) => lot.type != "GIFT-OUT");
 

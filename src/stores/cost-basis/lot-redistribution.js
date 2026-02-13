@@ -92,3 +92,62 @@ export function redistributeLotsToAccounts(
 
   return virtualTransfers;
 }
+
+/**
+ * Redistributes held lots from address accounts to their wallet names
+ * @param {Array} undisposedLots - Current undisposed lots
+ * @param {Array} addresses - Address records with name and wallet properties
+ * @param {number} cutoffTimestamp - Timestamp for the virtual transfers
+ * @returns {Array} Virtual transfer transactions to process
+ */
+export function redistributeLotsToWallets(
+  undisposedLots,
+  addresses,
+  cutoffTimestamp
+) {
+  // Filter addresses that have wallet names assigned
+  const addressesToWalletMap = {};
+  addresses.forEach((addr) => {
+    if (addr.wallet && addr.name && addr.wallet !== addr.name) {
+      addressesToWalletMap[addr.name] = addr.wallet;
+    }
+  });
+
+  const virtualTransfers = [];
+  let transferId = 0;
+
+  // Group lots by account
+  const lotsByAccount = {};
+  undisposedLots.forEach((lot) => {
+    if (!lotsByAccount[lot.account]) {
+      lotsByAccount[lot.account] = [];
+    }
+    lotsByAccount[lot.account].push(lot);
+  });
+
+  // For each account that maps to a wallet, create virtual transfers
+  Object.keys(addressesToWalletMap).forEach((addressName) => {
+    const walletName = addressesToWalletMap[addressName];
+    const lots = lotsByAccount[addressName] || [];
+
+    lots.forEach((lot, index) => {
+      if (lot.remainingAmount > BigInt("0")) {
+        virtualTransfers.push({
+          txId: `VW-${addressName}-${walletName}-${lot.id}`,
+          timestamp: cutoffTimestamp,
+          fromAccount: addressName,
+          toAccount: walletName,
+          asset: lot.asset,
+          amount: lot.remainingAmount,
+          fee: 0.0,
+          type: "VIRTUAL-WALLET-TRANSFER",
+          taxTxType: "TRANSFER",
+          sort: 0,
+          id: `virtual-wallet-${cutoffTimestamp}-${transferId++}`,
+        });
+      }
+    });
+  });
+
+  return virtualTransfers;
+}
