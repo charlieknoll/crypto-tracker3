@@ -81,7 +81,7 @@ function getCostBasis() {
   mappedData = mappedData.concat(buyTxs);
   mappedData = mappedData.concat(costBasisTxs);
   //no transfers on first pass
-  //mappedData = mappedData.concat(transferTxs);
+  mappedData = mappedData.concat(transferTxs);
   mappedData = mappedData.sort(sortByTimeStampThenIdThenSort);
 
   const {
@@ -92,6 +92,30 @@ function getCostBasis() {
   } = processTxs(mappedData, runningBalances);
 
   const soldLots = allSoldLots.filter((lot) => lot.type != "GIFT-OUT");
+
+  // Log transfer impact summary
+  console.log("\n=== TRANSFER IMPACT SUMMARY ===");
+  const sellLots = soldLots.filter((lot) => lot.taxTxType === "SELL");
+  const transferSellLots = allSoldLots.filter(
+    (lot) => lot.taxTxType === "SELL-TRANSFER"
+  );
+  const totalGains = sellLots.reduce((sum, lot) => sum + lot.gainLoss, 0.0);
+  const totalTransferCostBasis = transferSellLots.reduce(
+    (sum, lot) => sum + lot.costBasis,
+    0.0
+  );
+  console.log(`Total SELL lots: ${sellLots.length}`);
+  console.log(`Total SELL-TRANSFER lots: ${transferSellLots.length}`);
+  console.log(`Total capital gains: $${totalGains.toFixed(2)}`);
+  console.log(
+    `Transfer cost basis (hidden when 'Sells Only' ON): $${totalTransferCostBasis.toFixed(
+      2
+    )}`
+  );
+  console.log(
+    `Transfer txs included: ${transferTxs.length} (line 82: mappedData = mappedData.concat(transferTxs))`
+  );
+  console.log("=== END SUMMARY ===\n");
   //unreconciledAccounts = verifyBalances(undisposedLots, runningBalances);
   // const ethDiff = unreconciledAccounts.reduce((sum, ua) => {
   //   if (ua.asset == "ETH") {
