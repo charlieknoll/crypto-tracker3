@@ -3,7 +3,7 @@
     <transactions-table
       title="Unrealized Gains"
       :rows="filtered"
-      :columns="gainsGrouping == 'Detailed' ? columns : assetTotalColumns"
+      :columns="gainsGroupingColumns"
       @rowClick="showSource"
       rowKey="xx">
       <template v-slot:top-right>
@@ -33,7 +33,7 @@
 </template>
 <script setup>
 import { computed, ref, shallowRef } from "vue";
-import { columns, assetTotalColumns } from "src/models/unrealized"
+import { columns, assetTotalColumns, accountTotalColumns } from "src/models/unrealized"
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
 import AccountFilter from "src/components/AccountFilter.vue";
@@ -51,11 +51,16 @@ const priceStore = usePricesStore();
 //array of object.(price,date,symbol)
 const prices = shallowRef([]);
 const costBasisStore = useCostBasisStore();
-const groups = ["Detailed", "Asset Totals"];
+const groups = ["Detailed", "Account Totals", "Asset Totals"];
 const gainsGrouping = ref("Detailed");
 const getCurrentPrices = async function () {
 
 }
+const gainsGroupingColumns = computed(() => {
+  if (gainsGrouping.value == "Detailed") return columns;
+  if (gainsGrouping.value == "Account Totals") return accountTotalColumns;
+  return assetTotalColumns;
+})
 const showSource = async (evt, row, index) => {
   if (!evt.altKey) return
   const sources = getLotTrace(row, costBasisStore.costBasisData.heldLots);
@@ -108,8 +113,44 @@ const filtered = computed(() => {
     tx.daysHeld = Math.floor((Date.now() - tx.timestamp * 1000) / (1000 * 60 * 60 * 24));
   }
   if (gainsGrouping.value == "Detailed") return txs;
-
   let totals = [];
+  if (gainsGrouping.value == "Account Totals") {
+    for (const tx of txs) {
+      let total = totals.find((t) => t.asset == tx.asset && t.account == tx.account);
+      if (!total) {
+        total = {
+          asset: tx.asset,
+          account: tx.account,
+          unrealizedAmount: BigInt(0),
+          costBasis: 0.0,
+          price: tx.currentPrice,
+          currentValue: 0.0,
+          shortGain: 0.0,
+          longGain: 0.0,
+          gain: 0.0,
+          percentGain: 0.0,
+        };
+        totals.push(total);
+      }
+      total.unrealizedAmount = total.unrealizedAmount + tx.remainingAmount;
+      total.costBasis += tx.costBasis;
+      total.shortGain += tx.daysHeld <= 365 ? tx.gainLoss : 0.0;
+      total.longGain += tx.daysHeld > 365 ? tx.gainLoss : 0.0;
+      total.gain += tx.gainLoss;
+      total.currentValue += tx.currentValue;
+      total.percentGain = (total.costBasis != 0.0) ? (total.gain / total.costBasis) * 100.0 : 0.0;
+
+    }
+    return totals.sort((a, b) => {
+      if (a.account < b.account) return -1;
+      if (a.account > b.account) return 1;
+      if (a.asset < b.asset) return -1;
+      if (a.asset > b.asset) return 1;
+      return 0;
+    });
+
+  }
+
   for (const tx of txs) {
     let total = totals.find((t) => t.asset == tx.asset);
     if (!total) {

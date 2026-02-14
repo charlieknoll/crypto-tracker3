@@ -155,4 +155,68 @@ const assetTotalColumns = [
     format: (val, row) => perCent(val),
   },
 ];
-export { columns, assetTotalColumns };
+
+const accountTotalColumns = [
+  {
+    name: "account",
+    label: "Account",
+    field: "account",
+    align: "left",
+  },
+  {
+    name: "asset",
+    label: "Asset",
+    field: "asset",
+    align: "left",
+  },
+  {
+    name: "unrealizedAmount",
+    label: "Amount",
+    field: "unrealizedAmount",
+    align: "right",
+    format: (val, row) => `${formatEther(val)}`,
+  },
+  {
+    name: "price",
+    label: "Current Price",
+    field: "price",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "costBasis",
+    label: "Cost",
+    field: "costBasis",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "currentValue",
+    label: "Current Value",
+    field: "currentValue",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "shortGain",
+    label: "Short Term Gain",
+    field: "shortGain",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "longGain",
+    label: "Long Term Gain",
+    field: "longGain",
+    align: "right",
+    format: (val, row) => currency(val),
+  },
+  {
+    name: "percentGain",
+    label: "% Gain",
+    field: "percentGain",
+    align: "right",
+    format: (val, row) => perCent(val),
+  },
+];
+export { columns, assetTotalColumns, accountTotalColumns };

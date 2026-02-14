@@ -1,32 +1,33 @@
-import { formatEther } from "ethers/utils";
+import { formatEther } from "ethers";
 
 export function redistributeLotsToAccounts(
   undisposedLots,
   runningBalances,
-  cutoffDate = "2025-01-01"
+  cutoffTimestamp
 ) {
-  const cutoffTimestamp = new Date(cutoffDate).getTime() / 1000;
-
-  const targetBalances = {};
+  let targetBalances = {};
+  const cutoffDate = new Date(cutoffTimestamp * 1000)
+    .toISOString()
+    .split("T")[0];
   runningBalances.forEach((rb) => {
     if (rb.timestamp <= cutoffTimestamp) {
       const key = `${rb.account}:${rb.asset}`;
+      const firstSeen = targetBalances[key]?.timestamp || rb.timestamp;
       targetBalances[key] = {
         account: rb.account,
         asset: rb.asset,
         balance: rb.biRunningAccountBalance,
         timestamp: rb.timestamp,
+        firstSeen: firstSeen,
       };
     }
   });
-
-  const finalBalances = {};
-  Object.values(targetBalances).forEach((tb) => {
-    const key = `${tb.account}:${tb.asset}`;
-    if (!finalBalances[key] || finalBalances[key].timestamp < tb.timestamp) {
-      finalBalances[key] = tb;
-    }
-  });
+  // Sort target balances by first seen timestamp to ensure deterministic processing order
+  targetBalances = Object.fromEntries(
+    Object.entries(targetBalances).sort(
+      (a, b) => a[1].firstSeen - b[1].firstSeen
+    )
+  );
 
   const lotsByAsset = {};
   undisposedLots.forEach((lot) => {
@@ -42,7 +43,7 @@ export function redistributeLotsToAccounts(
     const lots = lotsByAsset[asset];
     let lotIndex = 0;
 
-    const accountsNeedingAsset = Object.values(finalBalances)
+    const accountsNeedingAsset = Object.values(targetBalances)
       .filter((fb) => fb.asset === asset && fb.balance > BigInt("0"))
       .sort((a, b) => a.account.localeCompare(b.account));
 

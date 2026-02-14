@@ -119,6 +119,7 @@ const filtered = computed(() => {
       return tx.accountEndingYears.findIndex((ey) => ey == taxYear) > -1;
     });
 
+
   }
   if (balanceGrouping.value == "Asset") {
 
@@ -154,6 +155,14 @@ const filtered = computed(() => {
         tx.currentValue = parseFloat(formatEther(tx.biRunningAccountBalance)) * tx.currentPrice;
       }
     }
+    txs = txs.sort((a, b) => {
+      if (a.account < b.account) return -1;
+      if (a.account > b.account) return 1;
+      if (a.asset < b.asset) return -1;
+      if (a.asset > b.asset) return 1;
+      return 0;
+    });
+
   }
   return txs;
 });

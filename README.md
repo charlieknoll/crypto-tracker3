@@ -4,11 +4,10 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- move fees associated with transfers to costbasisadj, this is why excluding transfers pre cutoff gives a slightly higher cost basis
-
 - Don't allow wallet name equal an existing account name on addresses
-
+- Add inventory verification after wallet cutoff to ensure that runningBalance == heldLotTotal
 - Add account filter on unrealized, only show accounts with balance above enterable
+- Add gift txs to a separate array and handle wallet/account issue
 
 - verfiy that income was declared on assets taking capital loss in 2025, verify capital gains for big tax years
 - show current account on unrealized, add unique id to each lot so that it can be back traced through capital gains

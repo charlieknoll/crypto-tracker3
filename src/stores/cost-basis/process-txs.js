@@ -30,9 +30,13 @@ function findPortfolioLot(tx, undisposedLots) {
       lot.remainingAmount > BigInt("0")
   );
 }
-export function processTxs(mappedData, runningBalances, cutoverTimestamp) {
-  let undisposedLots = [];
-  let soldLots = [];
+export function processTxs(
+  mappedData,
+  runningBalances,
+  cutoverTimestamp,
+  undisposedLots = [],
+  soldLots = []
+) {
   let unreconciledAccounts = [];
   const noInventoryTxs = [];
   let sellCt = 0;

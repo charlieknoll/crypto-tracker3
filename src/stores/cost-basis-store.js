@@ -24,6 +24,7 @@ import { getBuyTxs } from "./cost-basis/buy-txs.js";
 import { getTransferTxs } from "./cost-basis/transfer-txs.js";
 import { processTxs } from "./cost-basis/process-txs";
 import constants from "src/constants";
+import { redistributeLotsToAccounts } from "./cost-basis/lot-redistribution.js";
 
 function getCostBasis() {
   //raw from localStorage
@@ -78,30 +79,76 @@ function getCostBasis() {
     sortByTimeStampThenIdThenSort
   );
   let mappedData = [];
-  mappedData = mappedData.concat(sellTxs);
-  mappedData = mappedData.concat(buyTxs);
-  mappedData = mappedData.concat(costBasisTxs);
+  // mappedData = mappedData.concat(sellTxs);
+  // mappedData = mappedData.concat(buyTxs);
+  // mappedData = mappedData.concat(costBasisTxs);
+  //TODO only txs < cutover timestamp should be included in first pass of processTxs, then remaining txs with wallet cutover accounts in second pass
+
+  mappedData = mappedData.concat(
+    sellTxs.filter((tx) => tx.timestamp < constants.WALLET_TIMESTAMP_CUTOFF)
+  );
+  mappedData = mappedData.concat(
+    buyTxs.filter((tx) => tx.timestamp < constants.WALLET_TIMESTAMP_CUTOFF)
+  );
+  mappedData = mappedData.concat(
+    costBasisTxs.filter(
+      (tx) => tx.timestamp < constants.WALLET_TIMESTAMP_CUTOFF
+    )
+  );
+
   //no transfers on first pass
-  //mappedData = mappedData.concat(transferTxs);
   mappedData = mappedData.sort(sortByTimeStampThenIdThenSort);
 
-  const {
+  let { undisposedLots, soldLots, unreconciledAccounts, noInventoryTxs } =
+    processTxs(mappedData, runningBalances, constants.WALLET_TIMESTAMP_CUTOFF);
+
+  const lotAccountTransfers = redistributeLotsToAccounts(
     undisposedLots,
-    soldLots: allSoldLots,
-    unreconciledAccounts,
-    noInventoryTxs,
-  } = processTxs(
-    mappedData,
     runningBalances,
     constants.WALLET_TIMESTAMP_CUTOFF
   );
+  // // const walletTransfers = redistributeLotsToWallets(
+  // //   undisposedLots,
+  // //   runningBalances,
+  // //   constants.WALLET_TIMESTAMP_CUTOFF
+  // // );
+  mappedData = lotAccountTransfers;
+  // //mappedData = mappedData.concat(walletTransfers);
 
-  const soldLots = allSoldLots.filter((lot) => lot.type != "GIFT-OUT");
+  mappedData = mappedData.concat(
+    sellTxs.filter((tx) => tx.timestamp >= constants.WALLET_TIMESTAMP_CUTOFF)
+  );
+  mappedData = mappedData.concat(
+    buyTxs.filter((tx) => tx.timestamp >= constants.WALLET_TIMESTAMP_CUTOFF)
+  );
+  mappedData = mappedData.concat(
+    costBasisTxs.filter(
+      (tx) => tx.timestamp >= constants.WALLET_TIMESTAMP_CUTOFF
+    )
+  );
+  mappedData = mappedData.concat(
+    transferTxs.filter(
+      (tx) => tx.timestamp >= constants.WALLET_TIMESTAMP_CUTOFF
+    )
+  );
+
+  mappedData = mappedData.sort(sortByTimeStampThenIdThenSort);
+
+  ({ undisposedLots, soldLots, unreconciledAccounts, noInventoryTxs } =
+    processTxs(
+      mappedData,
+      runningBalances,
+      constants.WALLET_TIMESTAMP_CUTOFF,
+      undisposedLots,
+      soldLots
+    ));
+  const giftLots = soldLots.filter((lot) => lot.taxTxType === "GIFT-OUT");
+  soldLots = soldLots.filter((lot) => lot.type != "GIFT-OUT");
 
   // Log transfer impact summary
   console.log("\n=== TRANSFER IMPACT SUMMARY ===");
   const sellLots = soldLots.filter((lot) => lot.taxTxType === "SELL");
-  const transferSellLots = allSoldLots.filter(
+  const transferSellLots = soldLots.filter(
     (lot) => lot.taxTxType === "SELL-TRANSFER"
   );
   const totalGains = sellLots.reduce((sum, lot) => sum + lot.gainLoss, 0.0);
@@ -134,6 +181,7 @@ function getCostBasis() {
     soldLots,
     unreconciledAccounts,
     noInventoryTxs,
+    giftLots,
   };
 }
 
