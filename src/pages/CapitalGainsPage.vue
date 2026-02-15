@@ -1,10 +1,10 @@
 <template>
   <q-page>
-    <q-banner @click="showUnreconciled" class="bg-negative text-white"
+    <!-- <q-banner @click="showUnreconciled" class="bg-negative text-white"
       :class="costBasisStore.costBasisData?.unreconciledAccounts?.length == 0 ? 'hidden' : ''">
       {{ costBasisStore?.costBasisData?.unreconciledAccounts?.length }} unreconciled accounts found. Please review your
       transactions to ensure all buys and sells are accounted for. (Click for console log)
-    </q-banner>
+    </q-banner> -->
     <transactions-table
       title="Capital Gains"
       :rows="filtered"

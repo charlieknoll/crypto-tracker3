@@ -46,13 +46,13 @@ export function processTxs(
   let timestamp = 0;
   let prevTx = null;
 
-  mappedData.some((tx) => {
-    if (tx.timestamp != timestamp && prevTx) {
-      if (
-        !verifyAssetBalance(prevTx, runningBalances, undisposedLots, soldLots)
-      )
-        return true;
-    }
+  mappedData.some((tx, index, array) => {
+    // if (tx.timestamp != timestamp && prevTx) {
+    //   if (
+    //     !verifyAssetBalance(prevTx, runningBalances, undisposedLots, soldLots)
+    //   )
+    //     return true;
+    // }
     timestamp = tx.timestamp;
     prevTx = Object.assign({}, tx);
     // console.log(
@@ -67,7 +67,10 @@ export function processTxs(
       sellCt++;
       let remainingAmount = tx.amount;
       let remainingProceeds = tx.proceeds;
-      let lot = findPortfolioLot(tx, undisposedLots);
+      let lot =
+        tx.timestamp >= cutoverTimestamp
+          ? findAccountLot(tx, undisposedLots)
+          : findPortfolioLot(tx, undisposedLots);
       while (remainingAmount > 0 && lot) {
         let lotAmount = lot.remainingAmount;
         if (lotAmount > remainingAmount) {
@@ -242,7 +245,6 @@ export function processTxs(
         };
 
         undisposedLots.push(newLot);
-        undisposedLots = undisposedLots.sort(sortByTimeStampThenSort);
 
         if (lot.remainingAmount < BigInt("0")) {
           debugger;
@@ -263,15 +265,17 @@ export function processTxs(
           );
         } else lot = null;
       }
+      if (remainingAmount > BigInt("0")) {
+        debugger;
+        // throw new Error(
+        //   `Cannot find enough transfer inventory for ${tx.fromAccount}:${
+        //     tx.asset
+        //   }, amount remaining: ${formatEther(remainingAmount)}`
+        // );
+      }
+      undisposedLots = undisposedLots.sort(sortByTimeStampThenSort);
     }
-    // if (remainingAmount > BigInt("0")) {
-    //   debugger;
-    //   // throw new Error(
-    //   //   `Cannot find enough transfer inventory for ${tx.fromAccount}:${
-    //   //     tx.asset
-    //   //   }, amount remaining: ${formatEther(remainingAmount)}`
-    //   // );
-    // }
+
     // unreconciledAccounts = verifyBalance(
     //   tx,
     //   runningBalances,

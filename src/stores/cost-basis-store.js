@@ -25,7 +25,10 @@ import { getTransferTxs } from "./cost-basis/transfer-txs.js";
 import { processTxs } from "./cost-basis/process-txs";
 import constants from "src/constants";
 import { redistributeLotsToAccounts } from "./cost-basis/lot-redistribution.js";
-
+import {
+  verifyAssetBalance,
+  verifyBalances,
+} from "./cost-basis/verification.js";
 function getCostBasis() {
   //raw from localStorage
   console.time("getStores-openingPositions");
@@ -101,8 +104,14 @@ function getCostBasis() {
 
   let { undisposedLots, soldLots, unreconciledAccounts, noInventoryTxs } =
     processTxs(mappedData, runningBalances, constants.WALLET_TIMESTAMP_CUTOFF);
-
-  const lotAccountTransfers = redistributeLotsToAccounts(
+  //mappedData = [];
+  const delta = verifyAssetBalance(
+    constants.WALLET_TIMESTAMP_CUTOFF,
+    "ETH",
+    runningBalances,
+    undisposedLots
+  );
+  const newLots = redistributeLotsToAccounts(
     undisposedLots,
     runningBalances,
     constants.WALLET_TIMESTAMP_CUTOFF
@@ -112,7 +121,20 @@ function getCostBasis() {
   // //   runningBalances,
   // //   constants.WALLET_TIMESTAMP_CUTOFF
   // // );
-  mappedData = lotAccountTransfers;
+  undisposedLots = undisposedLots.filter(
+    (lot) => lot.remainingAmount > BigInt("0")
+  );
+  undisposedLots = undisposedLots.concat(newLots).sort(sortByTimeStampThenSort);
+  unreconciledAccounts = verifyBalances(
+    undisposedLots,
+    runningBalances,
+    constants.WALLET_TIMESTAMP_CUTOFF + 1
+  );
+  debugger;
+
+  // mappedData = mappedData.concat(lotAccountTransfers);
+  // mappedData = mappedData.concat(walletTransfers);
+  mappedData = [];
   // //mappedData = mappedData.concat(walletTransfers);
 
   mappedData = mappedData.concat(

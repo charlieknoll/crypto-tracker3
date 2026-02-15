@@ -1,34 +1,50 @@
 import { formatEther } from "ethers";
+import { currencyRounded } from "src/utils/number-helpers";
 
 export function redistributeLotsToAccounts(
-  undisposedLots,
+  undisposedLotsParam,
   runningBalances,
   cutoffTimestamp
 ) {
-  let targetBalances = {};
+  let accountBalances = {};
+  let undisposedLots = undisposedLotsParam.filter(
+    (lot) => lot.remainingAmount > BigInt("0")
+  );
+
   const cutoffDate = new Date(cutoffTimestamp * 1000)
     .toISOString()
     .split("T")[0];
   runningBalances.forEach((rb) => {
     if (rb.timestamp <= cutoffTimestamp) {
       const key = `${rb.account}:${rb.asset}`;
-      const firstSeen = targetBalances[key]?.timestamp || rb.timestamp;
-      targetBalances[key] = {
+      const firstSeen = accountBalances[key]?.firstSeen || rb.timestamp;
+      const newBalance = accountBalances[key]
+        ? accountBalances[key].balance + rb.biAmount
+        : rb.biAmount;
+      accountBalances[key] = {
         account: rb.account,
         asset: rb.asset,
-        balance: rb.biRunningAccountBalance,
+        balance: newBalance,
         timestamp: rb.timestamp,
         firstSeen: firstSeen,
       };
     }
   });
-  // Sort target balances by first seen timestamp to ensure deterministic processing order
-  targetBalances = Object.fromEntries(
-    Object.entries(targetBalances).sort(
+  // Sort account balances by first seen timestamp to ensure deterministic processing order
+  accountBalances = Object.fromEntries(
+    Object.entries(accountBalances).sort(
       (a, b) => a[1].firstSeen - b[1].firstSeen
     )
   );
-
+  Object.values(accountBalances).forEach((ab) => {
+    const calculatedBalance = undisposedLots.reduce((sum, lot) => {
+      if (lot.account == ab.account && lot.asset == ab.asset) {
+        return BigInt(sum) + BigInt(lot.remainingAmount);
+      }
+      return BigInt(sum);
+    }, BigInt("0"));
+    ab.lotBalance = calculatedBalance;
+  });
   const lotsByAsset = {};
   undisposedLots.forEach((lot) => {
     if (!lotsByAsset[lot.asset]) {
@@ -37,61 +53,94 @@ export function redistributeLotsToAccounts(
     lotsByAsset[lot.asset].push(lot);
   });
 
-  const virtualTransfers = [];
+  const newLots = [];
 
   Object.keys(lotsByAsset).forEach((asset) => {
     const lots = lotsByAsset[asset];
-    let lotIndex = 0;
+    const accountsNeedingAsset = Object.values(accountBalances).filter(
+      (ab) => ab.asset === asset && ab.balance > ab.lotBalance
+    );
+    const accountsWithExcessLots = Object.values(accountBalances).filter(
+      (ab) => ab.asset === asset && ab.balance < ab.lotBalance
+    );
 
-    const accountsNeedingAsset = Object.values(targetBalances)
-      .filter((fb) => fb.asset === asset && fb.balance > BigInt("0"))
-      .sort((a, b) => a.account.localeCompare(b.account));
+    accountsNeedingAsset.forEach((accountNeedingLots) => {
+      let remainingNeeded =
+        accountNeedingLots.balance - accountNeedingLots.lotBalance;
 
-    accountsNeedingAsset.forEach((targetAccount) => {
-      let remainingNeeded = targetAccount.balance;
-
-      while (remainingNeeded > BigInt("0") && lotIndex < lots.length) {
-        const lot = lots[lotIndex];
-        const transferAmount =
+      // Only iterate through lots from accounts that have excess
+      for (const lot of lots) {
+        if (remainingNeeded <= BigInt("0")) {
+          break;
+        }
+        if (lot.remainingAmount <= BigInt("0")) {
+          continue;
+        }
+        // Only take lots from accounts with excess lots
+        const lotSourceAccount = accountsWithExcessLots.find(
+          (ab) =>
+            ab.account === lot.account &&
+            ab.asset === lot.asset &&
+            ab.balance < ab.lotBalance
+        );
+        if (!lotSourceAccount) {
+          continue;
+        }
+        const remainingExcess =
+          lotSourceAccount.lotBalance - lotSourceAccount.balance;
+        let transferAmount =
           lot.remainingAmount <= remainingNeeded
             ? lot.remainingAmount
             : remainingNeeded;
-
-        if (lot.account !== targetAccount.account) {
-          virtualTransfers.push({
-            txId: `VT-${cutoffDate}-${lot.id}-${targetAccount.account}`,
-            timestamp: cutoffTimestamp,
-            fromAccount: lot.account,
-            toAccount: targetAccount.account,
-            asset: asset,
-            amount: transferAmount,
-            fee: 0.0,
-            type: "VIRTUAL-TRANSFER",
-            taxTxType: "TRANSFER",
-            sort: 0,
-            id: `virtual-${Date.now()}-${lotIndex}-${targetAccount.account}`,
-          });
-          lot.account = targetAccount.account;
+        transferAmount =
+          transferAmount <= remainingExcess ? transferAmount : remainingExcess;
+        lotSourceAccount.lotBalance =
+          lotSourceAccount.lotBalance - transferAmount;
+        let costBasisPortion =
+          (lot.costBasis / parseFloat(formatEther(lot.amount))) *
+          parseFloat(formatEther(transferAmount));
+        if (currencyRounded(lot.costBasis - costBasisPortion) < 0.0) {
+          //Handle rare case where costBasis are negative due to rounding
+          costBasisPortion = lot.costBasis;
         }
+        costBasisPortion = currencyRounded(costBasisPortion);
+        newLots.push({
+          buyTxId: lot.id,
+          buyTxType: lot.type,
+          buyPrice: lot.price,
+          price: lot.price,
+          transferTimestamp: cutoffTimestamp,
+          timestamp: lot.timestamp, // Use original lot timestamp for accurate cost basis
+          account: accountNeedingLots.account,
+          asset: asset,
+          amount: transferAmount,
+          remainingAmount: transferAmount,
+          costBasis: costBasisPortion,
+          remainingCostBasis: costBasisPortion,
+          taxTxType: "BUY-TRANSFER",
+          sort: 0,
+          id: `virtual-transfer-${lot.id}-${accountNeedingLots.account}`,
+          type: "VIRTUAL-TRANSFER",
+        });
 
-        remainingNeeded -= transferAmount;
-        if (lot.remainingAmount <= remainingNeeded) {
-          lotIndex++;
-        } else {
-          break;
-        }
+        lot.remainingAmount = lot.remainingAmount - transferAmount;
+        lot.remainingCostBasis = currencyRounded(
+          lot.remainingCostBasis - costBasisPortion
+        );
+
+        remainingNeeded = remainingNeeded - transferAmount;
       }
 
       if (remainingNeeded > BigInt("0")) {
         console.warn(
-          `Insufficient lots to fulfill ${targetAccount.account}:${asset}. ` +
+          `Insufficient lots to fulfill ${accountNeedingLots.account}:${asset}. ` +
             `Needed: ${formatEther(remainingNeeded)}`
         );
       }
     });
   });
 
-  return virtualTransfers;
+  return newLots;
 }
 
 /**

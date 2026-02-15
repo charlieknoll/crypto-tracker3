@@ -59,47 +59,49 @@ export function verifyBalance(
 }
 
 export function verifyAssetBalance(
-  tx,
+  timestamp,
+  asset,
   runningBalances,
-  undisposedLots,
-  soldLots
+  undisposedLots
 ) {
-  if (tx.sort <= -1) return true;
   const calculatedBalance = undisposedLots.reduce((sum, lot) => {
-    if (lot.asset == tx.asset) {
+    if (lot.asset == asset) {
       return BigInt(sum) + BigInt(lot.remainingAmount);
     }
     return BigInt(sum);
   }, BigInt("0"));
   const runningBalance = runningBalances.reduce((sum, rb) => {
-    if (rb.asset == tx.asset && rb.timestamp <= tx.timestamp) {
+    if (rb.asset == asset && rb.timestamp <= timestamp) {
       return BigInt(sum) + BigInt(rb.biAmount);
     }
     return BigInt(sum);
   }, BigInt("0"));
   const diff = formatEther(calculatedBalance - runningBalance);
-  if (calculatedBalance != runningBalance) {
-    return false;
-  }
-  return true;
+  return calculatedBalance - runningBalance;
 }
 
-export function verifyBalances(undisposedLots, runningBalances) {
+export function verifyBalances(
+  undisposedLots,
+  runningBalances,
+  cutoffTimestamp
+) {
   const accountAssets = [];
-  runningBalances.forEach((rb) => {
-    let accountAsset = accountAssets.find(
-      (aa) => aa.account == rb.account && aa.asset == rb.asset
-    );
-    if (!accountAsset) {
-      accountAssets.push({
-        account: rb.account,
-        asset: rb.asset,
-        balance: rb.biRunningAccountBalance,
-      });
-    } else {
-      accountAsset.balance = rb.biRunningAccountBalance;
-    }
-  });
+  runningBalances
+    .filter((rb) => rb.timestamp <= cutoffTimestamp)
+    .forEach((rb) => {
+      let accountAsset = accountAssets.find(
+        (aa) => aa.account == rb.account && aa.asset == rb.asset
+      );
+      if (!accountAsset) {
+        accountAssets.push({
+          account: rb.account,
+          asset: rb.asset,
+          balance: rb.biAmount,
+        });
+      } else {
+        accountAsset.balance = accountAsset.balance + rb.biAmount;
+      }
+    });
 
   let unreconciledAccounts = [];
   accountAssets.forEach((aa) => {

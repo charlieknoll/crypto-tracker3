@@ -110,9 +110,9 @@ const filtered = computed(() => {
   //   const address = addressStore.records.find((a) => a.name == tx.account);
   //   return (!address || address?.type == "Owned")
   // });
-  if (taxYear == "All" || balanceGrouping.value != "Detailed") {
-    taxYear = appStore.taxYears[appStore.taxYears.length - 2];
-  }
+  // if (taxYear == "All" || balanceGrouping.value != "Detailed") {
+  //   taxYear = appStore.taxYears[appStore.taxYears.length - 2];
+  // }
 
   if (balanceGrouping.value == "Account") {
     txs = txs.filter((tx) => {
