@@ -14,3 +14,8 @@
 ###### Capital Gains
 
 - Non Sells (Transfers) will show the acquistion date of the from accounts inventory, it will not dispose of the first available undisposed lot. Therefor if SELLS and TRANSFERS are displayed, it will appear as the Date Acquired is not in order.
+
+###### Unrealized Gains
+
+- If year is selected than it will filter all unrealized Gains held at the end of that year
+- Pre wallet cutoff it is possible for the holding account of the unrealized not be holding a running balance because of Portfolio wide cost basis accounting as of 1/1/2025

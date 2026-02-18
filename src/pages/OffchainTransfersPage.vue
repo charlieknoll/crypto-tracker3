@@ -25,7 +25,7 @@
         <q-toggle label="Split" v-model="split" class="q-pr-sm"></q-toggle>
         <div class="row">
           <div>
-            <account-filter></account-filter>
+            <account-filter :options="accounts"></account-filter>
             <asset-filter></asset-filter>
           </div>
           <div>
@@ -44,7 +44,7 @@ import AccountFilter from "src/components/AccountFilter.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
 import { fields, splitFields } from "src/models/offchain-transfers";
 import { useColumns } from "src/use/useColumns";
-
+import { onlyUnique } from "src/utils/array-helpers";
 import { useQuasar } from "quasar";
 
 import { useAppStore } from "src/stores/app-store";
@@ -70,7 +70,15 @@ const filtered = computed(() => {
   const appStore = useAppStore();
   let txs = split.value ? store.split : store.records;
   txs = filterByAssets(txs, appStore.selectedAssets);
-  txs = filterByAccounts(txs, appStore.selectedAccounts, true);
+
+  if (appStore.selectedAccounts.length > 0) {
+    txs = txs.filter((tx) => {
+      return (
+        appStore.selectedAccounts.findIndex((a) => a == tx.toAccount) > -1 ||
+        appStore.selectedAccounts.findIndex((a) => a == tx.fromAccount) > -1
+      );
+    });
+  }
   txs = filterByYear(txs, appStore.taxYear)
   return txs;
 });
@@ -78,4 +86,13 @@ const filtered = computed(() => {
 watchEffect(() => {
   columns.value = (split.value) ? useColumns(splitFields) : useColumns(fields)
 })
+
+const accounts = computed(() => {
+  //const runningBalancesStore = useRunningBalancesStore();
+  let txs = store.records;
+  if (!txs) return
+  const allAccounts = txs.map((tx) => tx.fromAccount).concat(txs.map((tx) => tx.toAccount));
+  const result = allAccounts.filter(onlyUnique).sort((a, b) => a.toUpperCase() > b.toUpperCase() ? 1 : -1);
+  return result
+});
 </script>

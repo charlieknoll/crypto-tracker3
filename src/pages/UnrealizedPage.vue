@@ -102,9 +102,6 @@ const filtered = computed(() => {
   // })
 
 
-  if (appStore.taxYear != "All") {
-    txs = filterUpToYear(txs, appStore.taxYear);
-  }
   for (const tx of txs) {
     const currentPrice = priceStore.getMostRecentPrice(tx.asset);
     tx.currentPrice = currentPrice.price;

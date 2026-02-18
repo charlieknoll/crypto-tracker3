@@ -4,6 +4,7 @@ import { useOffchainTransfersStore } from "./offchain-transfers-store";
 import { useChainTxsStore } from "./chain-txs-store";
 import { useExchangeTradesStore } from "./exchange-trades-store";
 import { useRunningBalancesStore } from "./running-balances-store";
+import { useAppStore } from "./app-store";
 import {
   sortByTimeStampThenIdThenSort,
   sortByTimeStampThenSort,
@@ -77,16 +78,24 @@ function filterAndConcatTxs(txArrays, cutoff, comparator) {
 }
 
 function getCostBasis(transactions) {
-  const { sellTxs, buyTxs, costBasisTxs, transferTxs } = transactions;
+  // Deep clone to prevent mutation of cached getter values
+  const { sellTxs, buyTxs, costBasisTxs, transferTxs } =
+    structuredClone(transactions);
+  const appStore = useAppStore();
+  const taxYear =
+    (appStore.taxYear == "All"
+      ? Number(appStore.taxYears[appStore.taxYears.length - 2]) + 1
+      : Number(appStore.taxYear) + 1) + "-01-01"; // Approximate cutoff for tax year
+  const taxYearCutoff = new Date(taxYear).getTime() / 1000;
   const runningBalancesStore = useRunningBalancesStore();
-  let runningBalances = runningBalancesStore.runningBalances.mappedData.sort(
-    sortByTimeStampThenIdThenSort
-  );
+  let runningBalances = [
+    ...runningBalancesStore.runningBalances.mappedData,
+  ].sort(sortByTimeStampThenIdThenSort);
   //no transfers on first pass
   let mappedData = filterAndConcatTxs(
     [sellTxs, buyTxs, costBasisTxs],
     constants.WALLET_TIMESTAMP_CUTOFF,
-    (ts, cutoff) => ts < cutoff
+    (ts, cutoff) => ts < cutoff && ts < taxYearCutoff
   );
 
   let { undisposedLots, soldLots, unreconciledAccounts, noInventoryTxs } =
@@ -98,11 +107,14 @@ function getCostBasis(transactions) {
     runningBalances,
     undisposedLots
   );
-  const newLots = redistributeLotsToAccounts(
-    undisposedLots,
-    runningBalances,
-    constants.WALLET_TIMESTAMP_CUTOFF
-  );
+  let newLots = [];
+  if (taxYearCutoff > constants.WALLET_TIMESTAMP_CUTOFF) {
+    newLots = redistributeLotsToAccounts(
+      undisposedLots,
+      runningBalances,
+      constants.WALLET_TIMESTAMP_CUTOFF
+    );
+  }
   undisposedLots = undisposedLots.filter(
     (lot) => lot.remainingAmount > BigInt("0")
   );
@@ -116,7 +128,7 @@ function getCostBasis(transactions) {
   mappedData = filterAndConcatTxs(
     [sellTxs, buyTxs, costBasisTxs, transferTxs],
     constants.WALLET_TIMESTAMP_CUTOFF,
-    (ts, cutoff) => ts >= cutoff
+    (ts, cutoff) => ts >= cutoff && ts < taxYearCutoff
   );
 
   ({ undisposedLots, soldLots, unreconciledAccounts, noInventoryTxs } =

@@ -53,6 +53,18 @@ export const useAddressStore = defineStore("address", {
 
       if (dup) return "Duplicate address/chain record";
 
+      //if walletName is set then check that it does not exist as an address already
+      if (upserted.wallet) {
+        let dupWallet = this.records.find((r) => {
+          return (
+            r.name.toLowerCase() == upserted.wallet.toLowerCase() &&
+            r.name.toLowerCase() != upserted.name.toLowerCase()
+          );
+        });
+        if (dupWallet)
+          return "Wallet name cannot be the same as an existing address record";
+      }
+
       upserted.id = keyFunc(upserted);
       if (!record) {
         this.records.push(Object.assign({}, upserted));

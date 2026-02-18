@@ -110,24 +110,45 @@ const filtered = computed(() => {
   //   const address = addressStore.records.find((a) => a.name == tx.account);
   //   return (!address || address?.type == "Owned")
   // });
-  // if (taxYear == "All" || balanceGrouping.value != "Detailed") {
-  //   taxYear = appStore.taxYears[appStore.taxYears.length - 2];
-  // }
-
+  if (taxYear == "All" || balanceGrouping.value != "Detailed") {
+    taxYear = appStore.taxYears[appStore.taxYears.length - 2];
+  }
+  const cutoffTimestamp = new Date(`01/01/${taxYear + 1}`).getTime() / 1000;
+  txs = txs.filter((tx) => tx.timestamp <= cutoffTimestamp)
   if (balanceGrouping.value == "Account") {
-    txs = txs.filter((tx) => {
-      return tx.accountEndingYears.findIndex((ey) => ey == taxYear) > -1;
+    let accountAssets = [];
+    txs.forEach((tx) => {
+      let accountAsset = accountAssets.find(
+        (aa) => aa.account == tx.account && aa.asset == tx.asset
+      );
+      if (!accountAsset) {
+        accountAssets.push({
+          account: tx.account,
+          asset: tx.asset,
+          tx: tx,
+        });
+      } else {
+        accountAsset.tx = tx;
+      }
     });
-
-
+    txs = accountAssets.map((aa) => aa.tx);
   }
   if (balanceGrouping.value == "Asset") {
-
-    txs = txs.filter((tx) => {
-      return tx.assetEndingYears.findIndex((ey) => ey == taxYear) > -1;
+    let assets = [];
+    txs.forEach((tx) => {
+      let asset = assets.find(
+        (aa) => aa.asset == tx.asset
+      );
+      if (!asset) {
+        assets.push({
+          asset: tx.asset,
+          tx: tx,
+        });
+      } else {
+        asset.tx = tx;
+      }
     });
-
-
+    txs = assets.map((aa) => aa.tx);
   }
   if (owned.value) {
     txs = txs.filter((tx) => {

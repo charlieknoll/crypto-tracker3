@@ -143,7 +143,9 @@ const summaryColumns = [
     format: (val, row) => currency(val),
   },
 ];
-const totalColumns = summaryColumns.concat([runningBalanceColumn]);
+const totalColumns = summaryColumns
+  .concat([runningBalanceColumn])
+  .filter((col) => col.name != "account");
 const accountTotalColumns = summaryColumns.concat([
   runningAccountBalanceColumn,
 ]);

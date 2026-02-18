@@ -281,71 +281,69 @@ function getRunningBalances() {
 
     accountAsset.amount += tx.amount;
     accountAsset.biAmount = tx.biAmount + accountAsset.biAmount;
-    tx.accountEndingYears = [];
-    tx.assetEndingYears = [];
     tx.runningAccountBalance = accountAsset.amount;
     tx.biRunningAccountBalance = accountAsset.biAmount;
     tx.year = parseInt(tx.date.substring(0, 4));
   }
-  const app = useAppStore();
-  const addresses = useAddressStore().records;
-  for (const aa of accountAssets) {
-    let endingTx = null;
-    for (const taxYear of app.taxYears) {
-      const _taxYear = taxYear.toString();
-      if (_taxYear == "All") {
-        //set status to not-matched if biRunningAccountBalance does not equal address current balance
-        const address = addresses.find(
-          (a) => a.name == aa.account && a.chain == aa.symbol
-        );
-        if (!address) continue;
-        //const addrBalance = parseEther(address.balance ?? "0.0");
-        if (
-          aa.biAmount != BigInt(address.balance ?? "0") &&
-          address.type == "Owned"
-        ) {
-          aa.endingTxs[aa.lastYear].status = "red";
-          const calculatedBalance = formatEther(aa.biAmount);
-          const addressBalance = formatEther(BigInt(address.balance ?? "0"));
-          const delta = formatEther(
-            aa.biAmount - BigInt(address.balance ?? "0")
-          );
-          aa.endingTxs[
-            aa.lastYear
-          ].delta = `Calculated balance ${calculatedBalance} does not match address balance ${addressBalance}. Delta: ${delta}`;
-        } else {
-          if (address.balance) aa.endingTxs[aa.lastYear].status = "green";
-        }
-        continue;
-      }
-      aa.lastYear = taxYear;
-      if (aa.endingTxs[_taxYear]) {
-        aa.endingTxs[_taxYear].accountEndingYears.push(taxYear);
-        endingTx = aa.endingTxs[_taxYear];
-        continue;
-      }
-      if (endingTx == null) continue;
-      const prevYear = (taxYear - 1).toString();
-      aa.endingTxs[_taxYear] = aa.endingTxs[prevYear];
-      aa.endingTxs[_taxYear].accountEndingYears.push(taxYear);
-    }
-  }
-  for (const aa of assets) {
-    let endingTx = null;
-    for (const taxYear of app.taxYears) {
-      const _taxYear = taxYear.toString();
-      if (_taxYear == "All") continue;
-      if (aa.endingTxs[_taxYear]) {
-        aa.endingTxs[_taxYear].assetEndingYears.push(taxYear);
-        endingTx = aa.endingTxs[_taxYear];
-        continue;
-      }
-      if (endingTx == null) continue;
-      const prevYear = (taxYear - 1).toString();
-      aa.endingTxs[_taxYear] = aa.endingTxs[prevYear];
-      aa.endingTxs[_taxYear].assetEndingYears.push(taxYear);
-    }
-  }
+  // const app = useAppStore();
+  // const addresses = useAddressStore().records;
+  // for (const aa of accountAssets) {
+  //   let endingTx = null;
+  //   for (const taxYear of app.taxYears) {
+  //     const _taxYear = taxYear.toString();
+  //     if (_taxYear == "All") {
+  //       //set status to not-matched if biRunningAccountBalance does not equal address current balance
+  //       const address = addresses.find(
+  //         (a) => a.name == aa.account && a.chain == aa.symbol
+  //       );
+  //       if (!address) continue;
+  //       //const addrBalance = parseEther(address.balance ?? "0.0");
+  //       if (
+  //         aa.biAmount != BigInt(address.balance ?? "0") &&
+  //         address.type == "Owned"
+  //       ) {
+  //         aa.endingTxs[aa.lastYear].status = "red";
+  //         const calculatedBalance = formatEther(aa.biAmount);
+  //         const addressBalance = formatEther(BigInt(address.balance ?? "0"));
+  //         const delta = formatEther(
+  //           aa.biAmount - BigInt(address.balance ?? "0")
+  //         );
+  //         aa.endingTxs[
+  //           aa.lastYear
+  //         ].delta = `Calculated balance ${calculatedBalance} does not match address balance ${addressBalance}. Delta: ${delta}`;
+  //       } else {
+  //         if (address.balance) aa.endingTxs[aa.lastYear].status = "green";
+  //       }
+  //       continue;
+  //     }
+  //     aa.lastYear = taxYear;
+  //     if (aa.endingTxs[_taxYear]) {
+  //       aa.endingTxs[_taxYear].accountEndingYears.push(taxYear);
+  //       endingTx = aa.endingTxs[_taxYear];
+  //       continue;
+  //     }
+  //     if (endingTx == null) continue;
+  //     const prevYear = (taxYear - 1).toString();
+  //     aa.endingTxs[_taxYear] = aa.endingTxs[prevYear];
+  //     aa.endingTxs[_taxYear].accountEndingYears.push(taxYear);
+  //   }
+  // }
+  // for (const aa of assets) {
+  //   let endingTx = null;
+  //   for (const taxYear of app.taxYears) {
+  //     const _taxYear = taxYear.toString();
+  //     if (_taxYear == "All") continue;
+  //     if (aa.endingTxs[_taxYear]) {
+  //       aa.endingTxs[_taxYear].assetEndingYears.push(taxYear);
+  //       endingTx = aa.endingTxs[_taxYear];
+  //       continue;
+  //     }
+  //     if (endingTx == null) continue;
+  //     const prevYear = (taxYear - 1).toString();
+  //     aa.endingTxs[_taxYear] = aa.endingTxs[prevYear];
+  //     aa.endingTxs[_taxYear].assetEndingYears.push(taxYear);
+  //   }
+  // }
 
   //build unique list of assets,accounts
   // const accountNames = [...new Set(accountAssets.map((aa) => aa.account))];

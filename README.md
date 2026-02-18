@@ -4,75 +4,64 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- How do I do unrealized up to a year end? Capital Gains should work fine because it is based on sell date
-- Don't allow wallet name equal an existing account name on addresses
-- Add inventory verification after wallet cutoff to ensure that runningBalance == heldLotTotal, do this with wallet support
-- Add account filter on unrealized, only show accounts with balance above enterable, why isn't "Loss" shown? (Non owned)
-- Add gift txs to a separate array and handle wallet/account issue
-
-- verfiy that income was declared on assets taking capital loss in 2025, verify capital gains for big tax years
-- show current account on unrealized, add unique id to each lot so that it can be back traced through capital gains
-- why does unrealized account show Poloniex? Document: Cost basis can exist in an from an account that has no current value.
-- running balances filtered by loss hides ETH on "Total" grouping
-- Verify balance redo (just do it at the end) and add a message
-- Add messages about unallocatable sells to warning
-- fix account filter on Offchain transfers
-- change Loss to a type of account
-
-- popup an exception message for all computeds errors especially Cap Gains, Unrealized and Running Blances
-- Move not enough inventory warning to message (catch errors on accessing costbasisstore)
-- Add support for TF: tx's in capital gains or balances won't match (CDAI testing)
-- Add wallet functionaltiy
-- fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
-- Gift Export/import
-- remove coinbase functions?
-
-- Floating point gotchas:
-  -- -tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
-  -- Math.abs(tx.value) should be floatToStrAbs(tx.value) Math.abs creates floating point
-
-- Change a GIFT tx from openingPositon as a normal "TRANSFER"
-- treat a "GIFT-IN" as a TRANSFER from an openingPosition named the same as the fromAcccount.name
-- keep a list of the buy lot transfer history including prorated costbasis assigned
-- only set wallet name after 1/1/2025 and then set account using tx.fromWallet ?? tx.fromName
-
-- Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (withdraw BTC?), Binance)
-- Test unlocking frozen using offline-tx-signer, copy json files to USB
-- Handle TD Ameritrade? Webull? IB?
+- Handle Unrecoverable on OffchainTransfers, ChainTransactions (taxCode="UNRECOVERABLE"), Running Balances, Capital Gains and Unrealized (not a sale, just remove from inventory, no capital loss)
 
 - Properly handle ENS Registrar burn fees on charlie.eth and meetings.eth to 0x0000dead
 - The call to "unseal" bid from ENS burns ETH, it should be treated as Expense
 - The original send to ENS Regsitrar should be considered a TRANSFER if the interal tx = the Chain value to a "Contract Owned", if not equal the ETH not in "Contract Owned" should be considered EXPENSE (set 0x000dead to "Expense")
 - https://etherscan.io/tx/0x5b526e077d2fbdfac6dd0f080d5d05a1b46ccb5d9056d5067a9ce84e5772a37a
 
-- Unrealized: fix time, add wallet and holdingAccount/address, group on Wallet and account, remove Type and From, add
+- show current account on unrealized, add unique id to each lot so that it can be back traced through capital gains
+- Verify balance redo (just do it at the end) and add a message
+- Add messages about unallocatable sells to warning
+- popup an exception message for all computeds errors especially Cap Gains, Unrealized and Running Blances
+- Move not enough inventory warning to message (catch errors on accessing costbasisstore)
 
-- set capital gains as gift with non zero ether transfers from spam accounts
-- tax export
+- Add support for TF: tx's in capital gains or balances won't match (CDAI testing)
 
-- gift export/import (check getRunningBalances for split "->", maybe in Traci's data?)
+- fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
+- add Kraken integration or at least manually enter for 2025
+- reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
 
+- Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (withdraw BTC?), Binance)
+- figure out how to show unclaimed rewards: https://debank.com/profile/0xd6d16b110ea9173d7ceb6cfe8ca4060749a75f5c
+
+- Add wallet functionaltiy
+- only set wallet name after 1/1/2025 and then set account using tx.fromWallet ?? tx.fromName
 - WALLET capital gains starting in 2025
 - export and import into opening positions, how will address balances be handled?
 
-- Updating date on a price doesn't work, it just takes the timestamp from the original record and overwrites it, probably should have timestamp+asset+source be the key, or at least check timestamp !=date
-- add Kraken integration or at least manually enter for 2025
-- Get prices from Kraken ?
-- Prices service is requesting prices that return 401
-- don't request non tracked token prices
+- Add gift txs to a separate array and handle wallet/account issue
+- Change a GIFT tx from openingPositon as a normal "TRANSFER"
+- treat a "GIFT-IN" as a TRANSFER from an openingPosition named the same as the fromAcccount.name
+- Gift Export/import
+- gift export/import (check getRunningBalances for split "->", maybe in Traci's data?)
 
-- reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
+- tax export
+
+# Nice to have
+
+- Optimize performance and LocalStorage data sizes
 - Add BNB support
 - Check ENS expiration dates (charlieknoll, bikeparts) use addresses tab manage, add expiration check programatically
-- add total net worth on dashboard reconciled with zapper
-
-- Change Gnosis Wallet to "Contract Owned" ?
-
+- Test unlocking frozen using offline-tx-signer, copy json files to USB
+- Migrate to indexedDb or SQLLit or SQLLite encrypted to handle LocalStorage 5MB limit
+- remove coinbase functions?
+- Handle TD Ameritrade? Webull? IB?
 - add offline wallet and generate signed tx (including contract calls)
 - use icon genie to generate nicer icon for project
 
+# Notes
+
+- Floating point gotchas:
+  -- -tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
+  -- Math.abs(tx.value) should be floatToStrAbs(tx.value) Math.abs creates floating point
+
 ## DONE
 
+- Add inventory verification after wallet cutoff to ensure that runningBalance == heldLotTotal, do this with wallet support
+- verfiy that income was declared on assets taking capital loss in 2025, verify capital gains for big tax years
+- Don't allow wallet name equal an existing account name on addresses
 - add checkbox to "Skip Zero Balance owned Accounts" to Chain Tx import
 - finish unrealized fields, filter up to displayed year
 - implement getCurrentPrices
