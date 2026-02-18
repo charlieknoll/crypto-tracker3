@@ -6,8 +6,8 @@ Track crypto balances, gains and losses
 
 - How do I do unrealized up to a year end? Capital Gains should work fine because it is based on sell date
 - Don't allow wallet name equal an existing account name on addresses
-- Add inventory verification after wallet cutoff to ensure that runningBalance == heldLotTotal
-- Add account filter on unrealized, only show accounts with balance above enterable
+- Add inventory verification after wallet cutoff to ensure that runningBalance == heldLotTotal, do this with wallet support
+- Add account filter on unrealized, only show accounts with balance above enterable, why isn't "Loss" shown? (Non owned)
 - Add gift txs to a separate array and handle wallet/account issue
 
 - verfiy that income was declared on assets taking capital loss in 2025, verify capital gains for big tax years

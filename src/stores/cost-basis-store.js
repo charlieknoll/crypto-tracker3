@@ -1,17 +1,8 @@
-import { parseEther } from "ethers";
 import { defineStore } from "pinia";
-import {
-  currencyRounded,
-  multiplyCurrency,
-  floatToWei,
-  floatToStrAbs,
-} from "src/utils/number-helpers";
 import { useOpeningPositionsStore } from "./opening-positions-store";
 import { useOffchainTransfersStore } from "./offchain-transfers-store";
 import { useChainTxsStore } from "./chain-txs-store";
 import { useExchangeTradesStore } from "./exchange-trades-store";
-import { formatEther } from "ethers";
-import { timestamp } from "@vueuse/core";
 import { useRunningBalancesStore } from "./running-balances-store";
 import {
   sortByTimeStampThenIdThenSort,
@@ -29,28 +20,27 @@ import {
   verifyAssetBalance,
   verifyBalances,
 } from "./cost-basis/verification.js";
-function getCostBasis() {
-  //raw from localStorage
+
+function getTransactions() {
   console.time("getStores-openingPositions");
   const openingPositions = useOpeningPositionsStore().records;
   console.timeEnd("getStores-openingPositions");
-  console.time("getStores-offchainTransfers");
 
+  console.time("getStores-offchainTransfers");
   const offchainTransfers = useOffchainTransfersStore().split;
   console.timeEnd("getStores-offchainTransfers");
-  console.time("getStores-chainTransactions");
 
+  console.time("getStores-chainTransactions");
   const chainTransactions = useChainTxsStore().accountTxs;
   console.timeEnd("getStores-chainTransactions");
-  console.time("getStores-exchangeTrades");
 
+  console.time("getStores-exchangeTrades");
   const exchangeTrades = useExchangeTradesStore().split;
   //TODO this probably will include rewards for Kraken
   const exchangeFees = useExchangeTradesStore().fees;
   console.timeEnd("getStores-exchangeTrades");
 
   console.time("Sells");
-
   let sellTxs = getSellTxs(
     chainTransactions,
     exchangeTrades,
@@ -60,47 +50,44 @@ function getCostBasis() {
   console.timeEnd("Sells");
   console.time("Buys");
   let buyTxs = getBuyTxs(chainTransactions, exchangeTrades, openingPositions);
+  console.timeEnd("Buys");
 
+  console.time("CostBasisTxs");
   let costBasisTxs = getCostBasisTxs(
     chainTransactions,
     offchainTransfers,
     exchangeFees
   );
-  console.timeEnd("Buys");
-  console.time("Transfers");
+  console.timeEnd("CostBasisTxs");
 
+  console.time("Transfers");
   let transferTxs = getTransferTxs(chainTransactions, offchainTransfers);
   console.timeEnd("Transfers");
+  return {
+    sellTxs,
+    buyTxs,
+    costBasisTxs,
+    transferTxs,
+  };
+}
+function filterAndConcatTxs(txArrays, cutoff, comparator) {
+  return txArrays
+    .flatMap((txs) => txs.filter((tx) => comparator(tx.timestamp, cutoff)))
+    .sort(sortByTimeStampThenIdThenSort);
+}
 
-  //Merge all txs and sort by timestamp
-  //TODO first processTxs up to cutover timestamp
-  // Then do virtual transfers
-  // then move undispoed lots to wallet cutover account
-  // then process remaining txs with wallet cutover accounts
+function getCostBasis(transactions) {
+  const { sellTxs, buyTxs, costBasisTxs, transferTxs } = transactions;
   const runningBalancesStore = useRunningBalancesStore();
   let runningBalances = runningBalancesStore.runningBalances.mappedData.sort(
     sortByTimeStampThenIdThenSort
   );
-  let mappedData = [];
-  // mappedData = mappedData.concat(sellTxs);
-  // mappedData = mappedData.concat(buyTxs);
-  // mappedData = mappedData.concat(costBasisTxs);
-  //TODO only txs < cutover timestamp should be included in first pass of processTxs, then remaining txs with wallet cutover accounts in second pass
-
-  mappedData = mappedData.concat(
-    sellTxs.filter((tx) => tx.timestamp < constants.WALLET_TIMESTAMP_CUTOFF)
-  );
-  mappedData = mappedData.concat(
-    buyTxs.filter((tx) => tx.timestamp < constants.WALLET_TIMESTAMP_CUTOFF)
-  );
-  mappedData = mappedData.concat(
-    costBasisTxs.filter(
-      (tx) => tx.timestamp < constants.WALLET_TIMESTAMP_CUTOFF
-    )
-  );
-
   //no transfers on first pass
-  mappedData = mappedData.sort(sortByTimeStampThenIdThenSort);
+  let mappedData = filterAndConcatTxs(
+    [sellTxs, buyTxs, costBasisTxs],
+    constants.WALLET_TIMESTAMP_CUTOFF,
+    (ts, cutoff) => ts < cutoff
+  );
 
   let { undisposedLots, soldLots, unreconciledAccounts, noInventoryTxs } =
     processTxs(mappedData, runningBalances, constants.WALLET_TIMESTAMP_CUTOFF);
@@ -116,11 +103,6 @@ function getCostBasis() {
     runningBalances,
     constants.WALLET_TIMESTAMP_CUTOFF
   );
-  // // const walletTransfers = redistributeLotsToWallets(
-  // //   undisposedLots,
-  // //   runningBalances,
-  // //   constants.WALLET_TIMESTAMP_CUTOFF
-  // // );
   undisposedLots = undisposedLots.filter(
     (lot) => lot.remainingAmount > BigInt("0")
   );
@@ -130,31 +112,12 @@ function getCostBasis() {
     runningBalances,
     constants.WALLET_TIMESTAMP_CUTOFF + 1
   );
-  debugger;
 
-  // mappedData = mappedData.concat(lotAccountTransfers);
-  // mappedData = mappedData.concat(walletTransfers);
-  mappedData = [];
-  // //mappedData = mappedData.concat(walletTransfers);
-
-  mappedData = mappedData.concat(
-    sellTxs.filter((tx) => tx.timestamp >= constants.WALLET_TIMESTAMP_CUTOFF)
+  mappedData = filterAndConcatTxs(
+    [sellTxs, buyTxs, costBasisTxs, transferTxs],
+    constants.WALLET_TIMESTAMP_CUTOFF,
+    (ts, cutoff) => ts >= cutoff
   );
-  mappedData = mappedData.concat(
-    buyTxs.filter((tx) => tx.timestamp >= constants.WALLET_TIMESTAMP_CUTOFF)
-  );
-  mappedData = mappedData.concat(
-    costBasisTxs.filter(
-      (tx) => tx.timestamp >= constants.WALLET_TIMESTAMP_CUTOFF
-    )
-  );
-  mappedData = mappedData.concat(
-    transferTxs.filter(
-      (tx) => tx.timestamp >= constants.WALLET_TIMESTAMP_CUTOFF
-    )
-  );
-
-  mappedData = mappedData.sort(sortByTimeStampThenIdThenSort);
 
   ({ undisposedLots, soldLots, unreconciledAccounts, noInventoryTxs } =
     processTxs(
@@ -166,38 +129,6 @@ function getCostBasis() {
     ));
   const giftLots = soldLots.filter((lot) => lot.taxTxType === "GIFT-OUT");
   soldLots = soldLots.filter((lot) => lot.type != "GIFT-OUT");
-
-  // Log transfer impact summary
-  console.log("\n=== TRANSFER IMPACT SUMMARY ===");
-  const sellLots = soldLots.filter((lot) => lot.taxTxType === "SELL");
-  const transferSellLots = soldLots.filter(
-    (lot) => lot.taxTxType === "SELL-TRANSFER"
-  );
-  const totalGains = sellLots.reduce((sum, lot) => sum + lot.gainLoss, 0.0);
-  const totalTransferCostBasis = transferSellLots.reduce(
-    (sum, lot) => sum + lot.costBasis,
-    0.0
-  );
-  console.log(`Total SELL lots: ${sellLots.length}`);
-  console.log(`Total SELL-TRANSFER lots: ${transferSellLots.length}`);
-  console.log(`Total capital gains: $${totalGains.toFixed(2)}`);
-  console.log(
-    `Transfer cost basis (hidden when 'Sells Only' ON): $${totalTransferCostBasis.toFixed(
-      2
-    )}`
-  );
-  console.log(
-    `Transfer txs included: ${transferTxs.length} (line 82: mappedData = mappedData.concat(transferTxs))`
-  );
-  console.log("=== END SUMMARY ===\n");
-  //unreconciledAccounts = verifyBalances(undisposedLots, runningBalances);
-  // const ethDiff = unreconciledAccounts.reduce((sum, ua) => {
-  //   if (ua.asset == "ETH") {
-  //     return sum + ua.calculatedBalance - ua.rbBalance;
-  //   }
-  //   return sum;
-  // }, BigInt("0"));
-
   return {
     heldLots: undisposedLots,
     soldLots,
@@ -209,9 +140,13 @@ function getCostBasis() {
 
 export const useCostBasisStore = defineStore("costBasis", {
   getters: {
+    transactions() {
+      return getTransactions();
+    },
+
     costBasisData() {
       try {
-        return getCostBasis();
+        return getCostBasis(this.transactions);
       } catch (err) {
         console.error(err);
         throw err;
