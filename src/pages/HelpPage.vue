@@ -11,8 +11,7 @@
         label="Pop Out"
         size="sm"
         color="primary"
-        @click="openPopout"
-      />
+        @click="openPopout" />
     </div>
 
     <q-card flat bordered class="markdown-card q-mb-md">
@@ -55,9 +54,16 @@ function openPopout() {
       border-bottom: 1px solid #e0e0e0;
       color: #1976d2;
     }
+    h2, h3, h4, h5, h6 {
+      font-size: 0.95rem;
+      border-bottom: none;
+      padding-bottom: 0;
+      margin: 0.75rem 0 0.3rem;
+    }
     ul { padding-left: 1.5rem; }
     li { margin-bottom: 0.4rem; }
     li::marker { color: #1976d2; }
+    p { margin: 0.5rem 0; line-height: 1.6; }
     code {
       background: #f5f5f5;
       padding: 0.15em 0.4em;
@@ -99,6 +105,17 @@ function openPopout() {
   letter-spacing: 0.02em;
 }
 
+.markdown-body :deep(h2),
+.markdown-body :deep(h3),
+.markdown-body :deep(h4),
+.markdown-body :deep(h5),
+.markdown-body :deep(h6) {
+  font-size: 0.95rem !important;
+  border-bottom: none;
+  padding-bottom: 0 !important;
+  margin: 0.75rem 0 0.3rem 0 !important;
+}
+
 .markdown-body :deep(h1:first-child),
 .markdown-body :deep(h2:first-child),
 .markdown-body :deep(h3:first-child),
@@ -129,5 +146,11 @@ function openPopout() {
   padding: 0.15em 0.4em;
   border-radius: 4px;
   font-size: 0.9em;
+}
+
+.markdown-body :deep(p) {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.87) !important;
 }
 </style>

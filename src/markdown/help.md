@@ -11,6 +11,14 @@
 - Leave wallet name blank for geth created accounts
 - Set wallet name for HD accounts (eg MetaMask)
 
+# Running Balances
+
+## Filtering
+
+**"Detailed"** grouping: Year filter shows only balances for that year and "Owned and Non Zero" and "Negative" balance filters are applied. This will help reconciling accounts on a tx by tx basis.
+
+**"Account" or "Asset"** grouping: Year filter shows balances up to the selected year and "Owned and Non Zero" and "Negative" balance filters are not applied.
+
 # Capital Gains
 
 - Non Sells (Transfers) will show the acquistion date of the from accounts inventory, it will not dispose of the first available undisposed lot. Therefor if SELLS and TRANSFERS are displayed, it will appear as the Date Acquired is not in order.

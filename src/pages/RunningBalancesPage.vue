@@ -110,11 +110,13 @@ const filtered = computed(() => {
   //   const address = addressStore.records.find((a) => a.name == tx.account);
   //   return (!address || address?.type == "Owned")
   // });
-  if (taxYear == "All" || balanceGrouping.value != "Detailed") {
+  if (taxYear == "All" && balanceGrouping.value != "Detailed") {
     taxYear = appStore.taxYears[appStore.taxYears.length - 2];
   }
   const cutoffTimestamp = new Date(`01/01/${taxYear + 1}`).getTime() / 1000;
-  txs = txs.filter((tx) => tx.timestamp <= cutoffTimestamp)
+  const cutoffDate = (parseInt(taxYear) + 1) + "-01-01";
+  //txs = txs.filter((tx) => tx.timestamp <= cutoffTimestamp)
+  txs = txs.filter((tx) => tx.date < cutoffDate)
   if (balanceGrouping.value == "Account") {
     let accountAssets = [];
     txs.forEach((tx) => {
@@ -132,6 +134,13 @@ const filtered = computed(() => {
       }
     });
     txs = accountAssets.map((aa) => aa.tx);
+    txs = txs.sort((a, b) => {
+      if (a.account < b.account) return -1;
+      if (a.account > b.account) return 1;
+      if (a.asset < b.asset) return -1;
+      if (a.asset > b.asset) return 1;
+      return 0;
+    });
   }
   if (balanceGrouping.value == "Asset") {
     let assets = [];
@@ -149,20 +158,27 @@ const filtered = computed(() => {
       }
     });
     txs = assets.map((aa) => aa.tx);
-  }
-  if (owned.value) {
-    txs = txs.filter((tx) => {
-      return (tx.biRunningAccountBalance && tx.biRunningAccountBalance != BigInt("0"));
-    });
-  }
-  if (negative.value) {
-    txs = txs.filter((tx) => {
-      return (tx.biRunningAccountBalance && tx.biRunningAccountBalance < BigInt("0"));
+    txs = txs.sort((a, b) => {
+
+      if (a.asset < b.asset) return -1;
+      if (a.asset > b.asset) return 1;
+      return 0;
     });
   }
 
+
   if (balanceGrouping.value == "Detailed") {
     txs = filterByYear(txs, appStore.taxYear);
+    if (owned.value) {
+      txs = txs.filter((tx) => {
+        return (tx.biRunningAccountBalance && tx.biRunningAccountBalance != BigInt("0"));
+      });
+    }
+    if (negative.value) {
+      txs = txs.filter((tx) => {
+        return (tx.biRunningAccountBalance && tx.biRunningAccountBalance < BigInt("0"));
+      });
+    }
   } else {
     //get price and current value
     const priceStore = usePricesStore();
@@ -176,13 +192,7 @@ const filtered = computed(() => {
         tx.currentValue = parseFloat(formatEther(tx.biRunningAccountBalance)) * tx.currentPrice;
       }
     }
-    txs = txs.sort((a, b) => {
-      if (a.account < b.account) return -1;
-      if (a.account > b.account) return 1;
-      if (a.asset < b.asset) return -1;
-      if (a.asset > b.asset) return 1;
-      return 0;
-    });
+
 
   }
   return txs;
