@@ -39,7 +39,7 @@ Track crypto balances, gains and losses
 
 - tax export
 
-# Nice to have
+## Nice to have
 
 - Optimize performance and LocalStorage data sizes
 - Add BNB support
@@ -51,7 +51,7 @@ Track crypto balances, gains and losses
 - add offline wallet and generate signed tx (including contract calls)
 - use icon genie to generate nicer icon for project
 
-# Notes
+## Notes
 
 - Floating point gotchas:
   -- -tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
