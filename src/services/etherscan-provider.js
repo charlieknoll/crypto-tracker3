@@ -322,6 +322,9 @@ export const getProviderTransactions = async function (provider) {
       );
       //setLastBlockSync
       ca.lastBlockSync = currentBlock;
+      let rec = Object.assign({}, ca);
+      rec.lastBlockSync = currentBlock;
+      addresses.set(rec);
     } catch (err) {
       console.log("error getting txs: ", err);
     }
