@@ -93,25 +93,28 @@ export function processTxs(
           //Handle rare case where proceeds are negative due to rounding
           proceedsPortion = remainingProceeds;
         }
-        const soldLot = {
-          account: tx.account,
-          asset: tx.asset,
-          buyTxId: lot.id,
-          buyTxType: lot.type,
-          buyTimestamp: lot.timestamp,
-          buyPrice: lot.price,
-          id: tx.id,
-          type: tx.type,
-          price: tx.price,
-          timestamp: tx.timestamp,
-          daysHeld: daysDifference(tx.timestamp, lot.timestamp),
-          amount: lotAmount,
-          costBasis: currencyRounded(costBasisPortion),
-          proceeds: currencyRounded(proceedsPortion),
-          gainLoss: currencyRounded(proceedsPortion - costBasisPortion),
-          taxTxType: "SELL",
-        };
-        soldLots.push(soldLot);
+
+        if (!tx.type.includes("UNRECOVERABLE")) {
+          const soldLot = {
+            account: tx.account,
+            asset: tx.asset,
+            buyTxId: lot.id,
+            buyTxType: lot.type,
+            buyTimestamp: lot.timestamp,
+            buyPrice: lot.price,
+            id: tx.id,
+            type: tx.type,
+            price: tx.price,
+            timestamp: tx.timestamp,
+            daysHeld: daysDifference(tx.timestamp, lot.timestamp),
+            amount: lotAmount,
+            costBasis: currencyRounded(costBasisPortion),
+            proceeds: currencyRounded(proceedsPortion),
+            gainLoss: currencyRounded(proceedsPortion - costBasisPortion),
+            taxTxType: "SELL",
+          };
+          soldLots.push(soldLot);
+        }
 
         lot.remainingAmount -= lotAmount;
         lot.remainingCostBasis =

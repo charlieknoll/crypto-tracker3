@@ -191,10 +191,14 @@ export function getSellTxs(
   sellTxs = sellTxs.concat(_offChainFeeTxs);
 
   let offChainSellTxs = offchainTransfers.filter(
-    (tx) => tx.type != "FEE" && tx.type != "TRANSFER" && tx.amount > 0.0
+    (tx) =>
+      tx.type != "FEE" &&
+      tx.toAccount.toLowerCase() == "unrecoverable" &&
+      tx.amount > 0.0
   );
 
   const _offChainSellTxs = [];
+
   for (const tx of offChainSellTxs) {
     const stx = {};
     stx.id = tx.id;
@@ -210,7 +214,7 @@ export function getSellTxs(
 
     // tx.price = prices.getPrice(tx.asset, tx.date, tx.timestamp);
     stx.price = tx.price ?? 0.0;
-    stx.type = "OFFCHAIN-" + tx.type;
+    stx.type = "OFFCHAIN-UNRECOVERABLE";
     validateSellTx(stx, tx);
     _offChainSellTxs.push(stx);
   }

@@ -4,7 +4,7 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- Handle Unrecoverable on OffchainTransfers, ChainTransactions (taxCode="UNRECOVERABLE"), Running Balances, Capital Gains and Unrealized (not a sale, just remove from inventory, no capital loss)
+- Running Balance Asset Balance is not calculating correctly with filtered accounts (bid). this is because regardless of ending year selected, the balance shown is the last balance for the account filtered on.
 
 - Properly handle ENS Registrar burn fees on charlie.eth and meetings.eth to 0x0000dead
 - The call to "unseal" bid from ENS burns ETH, it should be treated as Expense
@@ -23,7 +23,7 @@ Track crypto balances, gains and losses
 - add Kraken integration or at least manually enter for 2025
 - reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
 
-- Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (withdraw BTC?), Binance)
+- Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (Shutdown in 3/2023), Binance)
 - figure out how to show unclaimed rewards: https://debank.com/profile/0xd6d16b110ea9173d7ceb6cfe8ca4060749a75f5c
 
 - Add wallet functionaltiy
@@ -59,6 +59,7 @@ Track crypto balances, gains and losses
 
 ## DONE
 
+- Handle Unrecoverable on OffchainTransfers, ChainTransactions (taxCode="UNRECOVERABLE"), Running Balances, Capital Gains and Unrealized (not a sale, just remove from inventory, no capital loss)
 - Add inventory verification after wallet cutoff to ensure that runningBalance == heldLotTotal, do this with wallet support
 - verfiy that income was declared on assets taking capital loss in 2025, verify capital gains for big tax years
 - Don't allow wallet name equal an existing account name on addresses

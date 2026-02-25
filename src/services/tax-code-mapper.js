@@ -19,6 +19,7 @@ const getTaxCode = function (fromType, toType, toName, tokenTxCt, isError, tx) {
 
   if (fromType == "Spam") return "GIFT-IN";
   if (fromType == "Gift") return "TRANSFER";
+  if (toName?.toLowerCase() == "unrecoverable") return "UNRECOVERABLE";
   if (toType == "Gift") return "GIFT-OUT";
   if (toType.includes("Donation")) return "GIFT-OUT";
   if (toType == "Spending") return "SPENDING";

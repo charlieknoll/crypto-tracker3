@@ -63,7 +63,10 @@ function getMappedData() {
         price,
       });
     } else {
-      if (tx.type == "TRANSFER") {
+      if (
+        tx.type == "TRANSFER" &&
+        tx.toAccount?.toLowerCase() != "unrecoverable"
+      ) {
         mappedData.push({
           txId: "Tr-2-" + tx.id,
           timestamp: tx.timestamp,
