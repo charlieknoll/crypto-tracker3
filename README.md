@@ -4,21 +4,6 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- Running Balance Asset Balance is not calculating correctly with filtered accounts (bid). this is because regardless of ending year selected, the balance shown is the last balance for the account filtered on.
-
-- Properly handle ENS Registrar burn fees on charlie.eth and meetings.eth to 0x0000dead
-- The call to "unseal" bid from ENS burns ETH, it should be treated as Expense
-- The original send to ENS Regsitrar should be considered a TRANSFER if the interal tx = the Chain value to a "Contract Owned", if not equal the ETH not in "Contract Owned" should be considered EXPENSE (set 0x000dead to "Expense")
-- https://etherscan.io/tx/0x5b526e077d2fbdfac6dd0f080d5d05a1b46ccb5d9056d5067a9ce84e5772a37a
-
-- show current account on unrealized, add unique id to each lot so that it can be back traced through capital gains
-- Verify balance redo (just do it at the end) and add a message
-- Add messages about unallocatable sells to warning
-- popup an exception message for all computeds errors especially Cap Gains, Unrealized and Running Blances
-- Move not enough inventory warning to message (catch errors on accessing costbasisstore)
-
-- Add support for TF: tx's in capital gains or balances won't match (CDAI testing)
-
 - fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
 - add Kraken integration or at least manually enter for 2025
 - reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
@@ -53,11 +38,28 @@ Track crypto balances, gains and losses
 
 ## Notes
 
+- FIFO can really mess up capital gains and account reconciliation. Consider Account A buys 100 ETH, Account B buys 100 ETH, then Account B sells 100 ETH. This will dispose of Account A's ETH for capital gains purposes. This can also happen within a wallet after the wallet cutover date
 - Floating point gotchas:
   -- -tx.value should be "-" + floatToStr(tx.value) (-tx.value creates floating point errors)
   -- Math.abs(tx.value) should be floatToStrAbs(tx.value) Math.abs creates floating point
+- Running Balance Asset Balance is not calculating correctly with filtered accounts (bid). this is because regardless of ending year selected, the balance shown is the last balance for the account filtered on.
+- charlie.eth bid and meetings.eth burn to 0x000dead handled with Offchain transfer to "Unrecoverable", the problem is that internal txs are being merged by hash but the same hash exists for allinternal txs. They should be merged by traceId+hash and internal txs to owned accounts should be filtered out to eliminate dup internal txs from owned accounts
 
 ## DONE
+
+- Add support for TF: tx's in capital gains or balances won't match (CDAI testing)
+- show current account on unrealized, add unique id to each lot so that it can be back traced through capital gains
+- Verify balance redo (just do it at the end) and add a message
+- Add messages about unallocatable sells to warning
+- popup an exception message for all computeds errors especially Cap Gains, Unrealized and Running Blances
+- Move not enough inventory warning to message (catch errors on accessing costbasisstore)
+
+- Properly handle ENS Registrar burn fees on charlie.eth and meetings.eth to 0x0000dead
+- The call to "unseal" bid from ENS burns ETH, it should be treated as Expense
+- The original send to ENS Regsitrar should be considered a TRANSFER if the interal tx = the Chain value to a "Contract Owned", if not equal the ETH not in "Contract Owned" should be considered EXPENSE (set 0x000dead to "Expense")
+- https://etherscan.io/tx/0x5b526e077d2fbdfac6dd0f080d5d05a1b46ccb5d9056d5067a9ce84e5772a37a
+- RESOLUTION: Handle this with Offchain transfer to "Unrecoverable", the problem is that internal txs are being merged by hash but the same hash exists for all
+  internal txs. They should be merged by traceId+hash and internal txs to owned accounts should be filtered out to eliminate dup internal txs from owned accounts
 
 - Handle Unrecoverable on OffchainTransfers, ChainTransactions (taxCode="UNRECOVERABLE"), Running Balances, Capital Gains and Unrealized (not a sale, just remove from inventory, no capital loss)
 - Add inventory verification after wallet cutoff to ensure that runningBalance == heldLotTotal, do this with wallet support

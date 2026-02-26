@@ -37,7 +37,6 @@ export function processTxs(
   undisposedLots = [],
   soldLots = []
 ) {
-  let unreconciledAccounts = [];
   const noInventoryTxs = [];
   let sellCt = 0;
   let buyCt = 0;
@@ -144,12 +143,6 @@ export function processTxs(
       }
       if (remainingAmount > BigInt("0")) {
         noInventoryTxs.push(tx);
-
-        // throw new Error(
-        //   `Cannot find enough inventory for ${tx.account}:${
-        //     tx.asset
-        //   }, amount remaining: ${formatEther(remainingAmount)}`
-        // );
       }
     }
     if (tx.taxTxType === "COST-BASIS") {
@@ -278,19 +271,7 @@ export function processTxs(
       }
       undisposedLots = undisposedLots.sort(sortByTimeStampThenSort);
     }
-
-    // unreconciledAccounts = verifyBalance(
-    //   tx,
-    //   runningBalances,
-    //   undisposedLots,
-    //   soldLots,
-    //   unreconciledAccounts
-    // );
-
     return false;
-    // if (unreconciledAccounts.length > 0) {
-    //   debugger;
-    // }
   });
-  return { soldLots, undisposedLots, noInventoryTxs, unreconciledAccounts };
+  return { soldLots, undisposedLots, noInventoryTxs };
 }

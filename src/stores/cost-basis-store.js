@@ -98,8 +98,11 @@ function getCostBasis(transactions) {
     (ts, cutoff) => ts < cutoff && ts < taxYearCutoff
   );
 
-  let { undisposedLots, soldLots, unreconciledAccounts, noInventoryTxs } =
-    processTxs(mappedData, runningBalances, constants.WALLET_TIMESTAMP_CUTOFF);
+  let { undisposedLots, soldLots, noInventoryTxs } = processTxs(
+    mappedData,
+    runningBalances,
+    constants.WALLET_TIMESTAMP_CUTOFF
+  );
   //mappedData = [];
   const delta = verifyAssetBalance(
     constants.WALLET_TIMESTAMP_CUTOFF,
@@ -119,26 +122,37 @@ function getCostBasis(transactions) {
     (lot) => lot.remainingAmount > BigInt("0")
   );
   undisposedLots = undisposedLots.concat(newLots).sort(sortByTimeStampThenSort);
-  unreconciledAccounts = verifyBalances(
-    undisposedLots,
-    runningBalances,
-    constants.WALLET_TIMESTAMP_CUTOFF + 1
-  );
-
+  let unreconciledAccounts = [];
+  //only verify balances at cutoff before assigning to wallets. FIFO won't work with balances because lots may be disposed from same acct
+  if (taxYearCutoff > constants.WALLET_TIMESTAMP_CUTOFF) {
+    unreconciledAccounts = verifyBalances(
+      undisposedLots,
+      runningBalances,
+      constants.WALLET_TIMESTAMP_CUTOFF + 1
+    );
+  }
   mappedData = filterAndConcatTxs(
     [sellTxs, buyTxs, costBasisTxs, transferTxs],
     constants.WALLET_TIMESTAMP_CUTOFF,
     (ts, cutoff) => ts >= cutoff && ts < taxYearCutoff
   );
+  let tmpNoInventoryTxs = [];
+  ({
+    undisposedLots,
+    soldLots,
+    noInventoryTxs: tmpNoInventoryTxs,
+  } = processTxs(
+    mappedData,
+    runningBalances,
+    constants.WALLET_TIMESTAMP_CUTOFF,
+    undisposedLots,
+    soldLots
+  ));
+  noInventoryTxs = noInventoryTxs.concat(tmpNoInventoryTxs);
 
-  ({ undisposedLots, soldLots, unreconciledAccounts, noInventoryTxs } =
-    processTxs(
-      mappedData,
-      runningBalances,
-      constants.WALLET_TIMESTAMP_CUTOFF,
-      undisposedLots,
-      soldLots
-    ));
+  // unreconciledAccounts = unreconciledAccounts.concat(
+  //   verifyBalances(undisposedLots, runningBalances, new Date().getTime() / 1000)
+  // );
   const giftLots = soldLots.filter((lot) => lot.taxTxType === "GIFT-OUT");
   soldLots = soldLots.filter((lot) => lot.type != "GIFT-OUT");
   return {

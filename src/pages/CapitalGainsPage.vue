@@ -1,10 +1,10 @@
 <template>
   <q-page>
-    <!-- <q-banner @click="showUnreconciled" class="bg-negative text-white"
-      :class="costBasisStore.costBasisData?.unreconciledAccounts?.length == 0 ? 'hidden' : ''">
-      {{ costBasisStore?.costBasisData?.unreconciledAccounts?.length }} unreconciled accounts found. Please review your
+    <q-banner @click="showUnreconciled" class="bg-negative text-white"
+      :class="showError ? '' : 'hidden'">
+      {{ errorMessage }} <br> Please review your
       transactions to ensure all buys and sells are accounted for. (Click for console log)
-    </q-banner> -->
+    </q-banner>
     <transactions-table
       title="Capital Gains"
       :rows="filtered"
@@ -58,6 +58,24 @@ const zeroPrices = ref(false);
 const sellsOnly = ref(true);
 const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Detailed");
+const showError = computed(() => {
+  if (!costBasisStore.costBasisData) return false;
+  return costBasisStore.costBasisData.unreconciledAccounts.length > 0 ||
+    costBasisStore.costBasisData.noInventoryTxs.length > 0;
+})
+const errorMessage = computed(() => {
+  if (!costBasisStore.costBasisData) return "";
+  const unreconciledCount = costBasisStore.costBasisData.unreconciledAccounts.length;
+  const noInventoryCount = costBasisStore.costBasisData.noInventoryTxs.length;
+  let message = "";
+  if (unreconciledCount > 0) {
+    message += `${unreconciledCount} unreconciled transactions. `;
+  }
+  if (noInventoryCount > 0) {
+    message += `${noInventoryCount} transactions with no inventory.`;
+  }
+  return message;
+});
 const $q = useQuasar();
 const showBuys = (evt, row, index) => {
   let txs = getLotTrace(row, costBasisStore.costBasisData.heldLots);
@@ -85,7 +103,6 @@ const filtered = computed(() => {
   }
 
   if (!txs) return [];
-
 
   txs = txs.map((t, index) => {
     t.date = timestampToDateStr(t.timestamp);

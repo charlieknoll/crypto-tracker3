@@ -118,6 +118,7 @@ export function verifyBalances(
         asset: aa.asset,
         rbBalance: aa.balance,
         calculatedBalance: calculatedBalance,
+        date: new Date(cutoffTimestamp * 1000).toString(),
       });
     }
   });

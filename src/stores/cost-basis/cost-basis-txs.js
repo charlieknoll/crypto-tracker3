@@ -37,14 +37,17 @@ export function getCostBasisTxs(
   //they should be added to cost basis of the token tx they are associated with
   //and costbasis should be distributed evenly across all tokens in the account at time
   //TODO move to cost basis calculation
-  let tokenFeeTxs = chainTransactions.filter((tx) => tx.txType == "F");
+  let tokenFeeTxs = chainTransactions.filter(
+    (tx) => tx.txType == "F" || tx.taxCode.substring(0, 3) == "TF:"
+  );
   tokenFeeTxs = tokenFeeTxs.map((tx) => {
     const tokenFeeTx = {};
     tokenFeeTx.account = tx.fromWalletName ?? tx.fromAccountName;
     tokenFeeTx.timestamp = tx.timestamp;
     //assign cost basis after initiating tx
     tokenFeeTx.sort = 1;
-    tokenFeeTx.asset = tx.asset;
+    tokenFeeTx.asset =
+      tx.taxCode.substring(0, 3) == "TF:" ? tx.taxCode.substring(3) : tx.asset;
     tokenFeeTx.fee = tx.fee;
     tokenFeeTx.id = tx.id;
     tokenFeeTx.type = "TOKEN-FEE";
