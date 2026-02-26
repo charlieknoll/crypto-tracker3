@@ -67,6 +67,7 @@ import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { usePricesStore } from "src/stores/prices-store";
 import { useMethodStore } from "src/stores/methods-store";
 import { useChainTxsStore } from "src/stores/chain-txs-store";
+import { useLedgersStore } from "src/stores/ledgers-store";
 
 
 const $q = useQuasar();
@@ -81,6 +82,7 @@ const offchainTransfers = useOffchainTransfersStore()
 const prices = usePricesStore()
 const methods = useMethodStore()
 const chainTxs = useChainTxsStore()
+const ledgers = useLedgersStore()
 
 //do this to enable intermediate validation and conversion
 const startYearView = ref(settings.startYear);
@@ -114,6 +116,7 @@ const clearAll = function () {
   addresses.$reset();
   openingPositions.$reset();
   exchangeTrades.$reset();
+  ledgers.$reset();
   offchainTransfers.$reset();
 
   //TODO for some reason prices.$reset doesn't work, it sets value to false, maybe because it has an async method?

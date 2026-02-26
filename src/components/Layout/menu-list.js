@@ -18,6 +18,12 @@ export default [
     to: "/exchange-trades",
   },
   {
+    icon: "mdi-book-open-page-variant",
+    label: "Ledgers",
+    separator: false,
+    to: "/ledgers",
+  },
+  {
     icon: "mdi-file-swap",
     label: "Offchain Transfers",
     separator: false,

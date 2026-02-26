@@ -4,6 +4,7 @@ import { useAppStore } from "src/stores/app-store";
 import { useChainStore } from "src/stores/chain-store";
 import { useChainTxsStore } from "src/stores/chain-txs-store";
 import { useExchangeTradesStore } from "src/stores/exchange-trades-store";
+import { useLedgersStore } from "src/stores/ledgers-store";
 import { useMethodStore } from "src/stores/methods-store";
 import { useOffchainTransfersStore } from "src/stores/offchain-transfers-store";
 import { useOpeningPositionsStore } from "src/stores/opening-positions-store";
@@ -81,6 +82,11 @@ function processAllDataFile(content) {
   const offchainTransfers = useOffchainTransfersStore();
   offchainTransfers.$patch(backup.offchainTransfers);
 
+  const ledgers = useLedgersStore();
+  if (backup.ledgers) {
+    ledgers.$patch(backup.ledgers);
+  }
+
   const prices = usePricesStore();
   prices.$patch(backup.prices);
 
@@ -103,6 +109,7 @@ function processAllDataFile(content) {
     chains.records.length +
     openingPositions.records.length +
     exchangeTrades.records.length +
+    ledgers.records.length +
     offchainTransfers.records.length +
     prices.records.length +
     methods.records.length +
@@ -118,6 +125,21 @@ export const processFile = async function (name, content) {
   if (name.substring(0, 5) == "trade") {
     const store = useExchangeTradesStore();
     //Look for offset
+    const offsets = [];
+    while (content.substring(0, 6) == "OFFSET") {
+      var offset = content.split("\n")[0];
+      content = content.substring(offset.length + 1);
+      var parts = offset.split(":");
+      offsets.push({
+        account: parts[1],
+        offset: parseInt(parts[2]),
+      });
+    }
+
+    return store.load(content, offsets);
+  }
+  if (name.substring(0, 6) == "ledger") {
+    const store = useLedgersStore();
     const offsets = [];
     while (content.substring(0, 6) == "OFFSET") {
       var offset = content.split("\n")[0];
@@ -147,7 +169,7 @@ export const processFile = async function (name, content) {
   if (name.substring(0, 8) == "all-data") {
     return processAllDataFile(content);
   }
-  return "invalid file name, needs to start with opening, trades, transfers, or all-data";
+  return "invalid file name, needs to start with opening, trades, ledgers, transfers, or all-data";
 };
 function showNotify(fileName) {
   const notif = Notify.create({

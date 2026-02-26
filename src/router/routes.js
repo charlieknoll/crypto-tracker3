@@ -44,6 +44,11 @@ const routes = [
         component: () => import("src/pages/ExchangeTradesPage.vue"),
       },
       {
+        name: "Ledgers",
+        path: "ledgers",
+        component: () => import("src/pages/LedgersPage.vue"),
+      },
+      {
         name: "Offchain Transfers",
         path: "offchain-transfers",
         component: () => import("src/pages/OffchainTransfersPage.vue"),
