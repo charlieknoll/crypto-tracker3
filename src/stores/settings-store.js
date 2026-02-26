@@ -30,6 +30,8 @@ export const useSettingsStore = defineStore("settings", {
     cbpApikey: useLocalStorage("cbpApikey", ""),
     cbpSecret: useLocalStorage("cbpSecret", ""),
     cbpPassphrase: useLocalStorage("cbpPassphrase", ""),
+    krakenApikey: useLocalStorage("krakenApikey", ""),
+    krakenPrivateKey: useLocalStorage("krakenPrivateKey", ""),
   }),
 
   getters: {
