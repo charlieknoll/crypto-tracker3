@@ -150,6 +150,11 @@ module.exports = configure(function (/* ctx */) {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/cbp-api/, ""),
         },
+        "/kraken-api": {
+          target: "https://api.kraken.com/",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/kraken-api/, ""),
+        },
         "/get-price": {
           target: "http://localhost:3000",
           changeOrigin: true,

@@ -28,6 +28,7 @@
           <asset-filter></asset-filter>
         </div>
         <div>
+          <q-btn class="q-ml-sm" color="secondary" label="Import Kraken" @click="importKraken" />
           <q-btn class="q-ml-sm" color="secondary" label="Add" @click="add" />
           <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
         </div>
@@ -57,6 +58,23 @@ const columns = ref(useColumns(fields));
 
 const repo = new Repo("Ledgers", store, $q);
 const { title, record, editing, error, add, edit, save, remove, clear } = repo;
+
+const importKraken = async () => {
+  try {
+    const result = await store.importKrakenLedgerEntries({});
+    $q.notify({
+      color: "green",
+      icon: "done",
+      message: `Imported ${result} Kraken ledger entries.`,
+    });
+  } catch (err) {
+    $q.notify({
+      color: "negative",
+      icon: "error",
+      message: err.message ?? "Failed to import Kraken ledger entries.",
+    });
+  }
+};
 
 const filtered = computed(() => {
   const appStore = useAppStore();

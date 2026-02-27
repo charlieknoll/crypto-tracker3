@@ -4,6 +4,12 @@ Track crypto balances, gains and losses
 
 ## TODO
 
+- only request last ledgers since most recent transaction
+- add coindesk api support to get historical ETH prices for ledgers
+- add staking to income
+- add ledgers to running-balances
+- add ledgers to cost-basis
+
 - fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
 - add Kraken integration or at least manually enter for 2025
 - reconcile Coinbase PRO USDC balance (did the fees not get deducted?)

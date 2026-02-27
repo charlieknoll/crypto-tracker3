@@ -3,6 +3,7 @@ import { parse } from "csv-parse/browser/esm/sync";
 import { useLocalStorage } from "@vueuse/core";
 import { useAppStore } from "./app-store";
 import { uid, date } from "quasar";
+import { floatToWei } from "src/utils/number-helpers";
 const { addToDate } = date;
 import {
   getId,
@@ -21,9 +22,39 @@ import {
 import { multiplyCurrency, floatToStrAbs } from "src/utils/number-helpers";
 import { usePricesStore } from "./prices-store";
 import { sortByTimeStampThenIdThenSort } from "src/utils/array-helpers";
+import { getLedgerEntries } from "src/services/kraken-provider";
 
 const keyFunc = (r) =>
   hasValue(r.ledgerId) ? r.ledgerId : getId(r, keyFields);
+
+const mapKrakenLedgerEntry = (entryId, entry, accountName) => {
+  const timestamp = Math.floor(parseFloat(entry.time ?? 0) * 1000);
+  const entryDate = new Date(timestamp);
+  let asset = (entry.asset ?? "USD").toUpperCase();
+  if (asset.includes(".F")) asset = asset.substring(0, asset.indexOf(".F"));
+  if (asset == "XXBT") asset = "BTC";
+  if (asset == "XETH") asset = "ETH";
+
+  const amount = entry.amount ?? "0.0";
+  const fee = entry.fee ?? "0.0";
+
+  return {
+    ledgerId: entryId,
+    date: date.formatDate(entryDate, "YYYY-MM-DD"),
+    time: date.formatDate(entryDate, "HH:mm:ss"),
+    account: accountName,
+    asset,
+    action: (entry.type ?? "ADJUSTMENT").toUpperCase(),
+    amount,
+    price: 0.0,
+    currency: "USD",
+    fee,
+    feeCurrency: asset,
+    memo: entry.subtype ?? entry.refid ?? "",
+    gross: amount,
+    net: amount - fee,
+  };
+};
 
 export const useLedgersStore = defineStore("ledgers", {
   state: () => ({
@@ -257,6 +288,66 @@ export const useLedgersStore = defineStore("ledgers", {
       this.sort();
 
       return mapped.length;
+    },
+    async importKrakenLedgerEntries(params = {}, accountName = "Kraken") {
+      const app = useAppStore();
+      app.importing = true;
+      app.importingMessage = "Importing Kraken ledger entries...";
+      try {
+        const pageSize = parseInt(params.pageSize ?? 50);
+        const queryParams = { ...params };
+        delete queryParams.pageSize;
+        queryParams.type = "staking";
+
+        const recs = JSON.parse(JSON.stringify(this.records));
+        let ofs = parseInt(queryParams.ofs ?? 0);
+        let imported = 0;
+
+        while (true) {
+          const result = await getLedgerEntries({
+            ...queryParams,
+            ofs,
+          });
+
+          const ledger = result?.ledger ?? {};
+          const entries = Object.entries(ledger);
+          if (entries.length === 0) break;
+
+          for (let i = 0; i < entries.length; i++) {
+            const [entryId, entry] = entries[i];
+            if (entry.type == "transfer") continue;
+            const op = mapKrakenLedgerEntry(entryId, entry, accountName);
+            op.id = keyFunc(op);
+            const errorMsg = this.set(op);
+            if (errorMsg != "") {
+              throw new Error(
+                errorMsg.replace("<br>", ", ") +
+                  " on Kraken ledger id " +
+                  entryId
+              );
+            }
+          }
+
+          imported += entries.length;
+          ofs += entries.length;
+
+          const totalCount = parseInt(result?.count ?? 0);
+          if (
+            (totalCount > 0 && ofs >= totalCount) ||
+            entries.length < pageSize
+          ) {
+            break;
+          }
+        }
+
+        //this.records = recs;
+        app.needsBackup = true;
+        this.sort();
+        return imported;
+      } finally {
+        app.importing = false;
+        app.importingMessage = "";
+      }
     },
   },
 });

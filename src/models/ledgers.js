@@ -6,6 +6,7 @@ import {
 } from "src/utils/model-helpers";
 import { currency } from "src/utils/number-helpers";
 import moment from "moment";
+import { formatEther } from "ethers";
 
 const fields = [
   {
@@ -40,7 +41,7 @@ const fields = [
   {
     name: "amount",
     align: "right",
-    format: (v) => parseFloat(v ?? 0.0).toFixed(4),
+
     key: 7,
   },
   { name: "memo", required: false, showColumn: false, key: 8 },
@@ -64,10 +65,7 @@ const fields = [
     name: "fee",
     align: "right",
     defaultValue: 0.0,
-    format: (val, row) =>
-      row.feeCurrency == "USD"
-        ? currency(val)
-        : `${parseFloat(val ?? 0.0).toFixed(4)}`,
+    format: (val, row) => (row.feeCurrency == "USD" ? currency(val) : val),
   },
   {
     name: "feeCurrency",
@@ -92,7 +90,7 @@ const splitFields = [
   {
     name: "amount",
     align: "right",
-    format: (v) => parseFloat(v ?? 0.0).toFixed(4),
+    format: (val, row) => `${formatEther(val ?? 0.0)}`,
     key: 7,
   },
   { name: "memo", required: false, showColumn: false, key: 8 },
