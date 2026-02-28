@@ -4,15 +4,13 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- only request last ledgers since most recent transaction
-- add coindesk api support to get historical ETH prices for ledgers
 - add staking to income
 - add ledgers to running-balances
 - add ledgers to cost-basis
 
-- fix exchangeFees by moving to Exchange Transactions and code as income(rewards)/fee
-- add Kraken integration or at least manually enter for 2025
-- reconcile Coinbase PRO USDC balance (did the fees not get deducted?)
+- there is something wrong with importing chain tx's after they've been imported, it throws off running balances (maybe just tokens?)
+
+- add exchange Trades support for Kraken
 
 - Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (Shutdown in 3/2023), Binance)
 - figure out how to show unclaimed rewards: https://debank.com/profile/0xd6d16b110ea9173d7ceb6cfe8ca4060749a75f5c

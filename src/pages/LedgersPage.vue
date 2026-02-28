@@ -25,10 +25,11 @@
         <q-toggle label="Split" v-model="split" class="q-pr-sm"></q-toggle>
         <div>
           <account-filter :options="accounts"></account-filter>
-          <asset-filter></asset-filter>
+          <asset-filter :options="assets"></asset-filter>
         </div>
         <div>
           <q-btn class="q-ml-sm" color="secondary" label="Import Kraken" @click="importKraken" />
+          <q-btn class="q-ml-sm" color="secondary" label="Get Missing Prices" @click="updateMissingPrices" />
           <q-btn class="q-ml-sm" color="secondary" label="Add" @click="add" />
           <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
         </div>
@@ -76,6 +77,23 @@ const importKraken = async () => {
   }
 };
 
+const updateMissingPrices = async () => {
+  try {
+    const updated = await store.updateZeroPricesFromCoinDesk();
+    $q.notify({
+      color: "green",
+      icon: "done",
+      message: `Updated ${updated} ledger prices from CoinDesk.`,
+    });
+  } catch (err) {
+    $q.notify({
+      color: "negative",
+      icon: "error",
+      message: err.message ?? "Failed to update missing prices.",
+    });
+  }
+};
+
 const filtered = computed(() => {
   const appStore = useAppStore();
   let txs = split.value ? store.sortedSplit : store.trades;
@@ -93,6 +111,12 @@ const accounts = computed(() => {
   let txs = split.value ? store.sortedSplit : store.trades;
   const allAccounts = txs.map((tx) => tx.account);
   return allAccounts.filter(onlyUnique);
+});
+const assets = computed(() => {
+  let txs = split.value ? store.sortedSplit : store.trades;
+  const allAssets = txs.map((tx) => tx.asset);
+  const unique = allAssets.filter(onlyUnique);
+  return unique;
 });
 
 watchEffect(() => {

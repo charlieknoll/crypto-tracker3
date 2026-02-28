@@ -2,7 +2,7 @@
   <div style="min-width: 250px; display: inline-block;">
     <base-select
       v-model="store.selectedAssets"
-      :options="assets"
+      :options="options.length > 0 ? options : assets"
       label="Assets" />
   </div>
 </template>
@@ -11,4 +11,11 @@ import { useAppStore } from 'src/stores/app-store';
 import BaseSelect from "src/components/Base/BaseSelect.vue";
 const store = useAppStore()
 const assets = store.assets
+
+const props = defineProps({
+  options: {
+    type: [Array],
+    default: () => [],
+  },
+});
 </script>

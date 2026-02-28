@@ -23,6 +23,7 @@ import { multiplyCurrency, floatToStrAbs } from "src/utils/number-helpers";
 import { usePricesStore } from "./prices-store";
 import { sortByTimeStampThenIdThenSort } from "src/utils/array-helpers";
 import { getLedgerEntries } from "src/services/kraken-provider";
+import { getPrice as getCoinDeskPrice } from "src/services/coindesk-provider";
 
 const keyFunc = (r) =>
   hasValue(r.ledgerId) ? r.ledgerId : getId(r, keyFields);
@@ -298,6 +299,13 @@ export const useLedgersStore = defineStore("ledgers", {
         const queryParams = { ...params };
         delete queryParams.pageSize;
         queryParams.type = "staking";
+        //get last unix timestamp of last ledger entry for this account to avoid importing duplicates
+        const lastLedgerEntry = this.records
+          .filter((r) => r.account == accountName)
+          .sort((a, b) => b.timestamp - a.timestamp)[0];
+        if (lastLedgerEntry) {
+          queryParams.start = lastLedgerEntry.timestamp - 60000;
+        }
 
         const recs = JSON.parse(JSON.stringify(this.records));
         let ofs = parseInt(queryParams.ofs ?? 0);
@@ -344,6 +352,43 @@ export const useLedgersStore = defineStore("ledgers", {
         app.needsBackup = true;
         this.sort();
         return imported;
+      } finally {
+        app.importing = false;
+        app.importingMessage = "";
+      }
+    },
+    async updateZeroPricesFromCoinDesk() {
+      const app = useAppStore();
+      app.importing = true;
+      app.importingMessage = "Updating ledger prices from CoinDesk...";
+      try {
+        let updated = 0;
+        //make copy of records to avoid modifying state directly while iterating
+        const recs = JSON.parse(JSON.stringify(this.records));
+        for (let i = 0; i < recs.length; i++) {
+          const record = recs[i];
+          if (parseFloat(record.price ?? 0.0) !== 0.0) continue;
+
+          if ((record.asset ?? "").toUpperCase() === "USD") {
+            record.price = 1.0;
+            updated++;
+            continue;
+          }
+
+          const pair = `${record.asset}-USD`;
+          const timestamp = record.timestamp;
+          const price = await getCoinDeskPrice(pair, timestamp);
+          if (price > 0.0) {
+            record.price = price;
+            updated++;
+          }
+        }
+        if (updated > 0) {
+          app.needsBackup = true;
+          this.records = recs;
+          this.sort();
+        }
+        return updated;
       } finally {
         app.importing = false;
         app.importingMessage = "";

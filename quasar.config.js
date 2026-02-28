@@ -155,6 +155,11 @@ module.exports = configure(function (/* ctx */) {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/kraken-api/, ""),
         },
+        "/coindesk-api": {
+          target: "https://data-api.coindesk.com/",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/coindesk-api/, ""),
+        },
         "/get-price": {
           target: "http://localhost:3000",
           changeOrigin: true,

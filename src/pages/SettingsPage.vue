@@ -46,6 +46,7 @@
         label="Track Spent Tokens" />
       <q-input filled v-model="settings.krakenApikey" label="Kraken API Key" />
       <q-input filled v-model="settings.krakenPrivateKey" label="Kraken Private Key" />
+      <q-input filled v-model="settings.coindeskApikey" label="CoinDesk API Key" />
       <q-input filled v-model="settings.cbpApikey" label="Coinbase API Key" />
       <q-input filled v-model="settings.cbpSecret" label="Coinbase Secret" />
       <q-input filled v-model="settings.cbpPassphrase" label="Coinbase Passphrase" />
