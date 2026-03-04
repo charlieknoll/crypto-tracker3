@@ -22,7 +22,6 @@
       :columns="columns"
       @rowClick="edit">
       <template v-slot:top-right>
-        <q-toggle label="Split" v-model="split" class="q-pr-sm"></q-toggle>
         <div>
           <account-filter :options="accounts"></account-filter>
           <asset-filter :options="assets"></asset-filter>
@@ -54,7 +53,7 @@ import { onlyUnique } from "src/utils/array-helpers";
 
 const $q = useQuasar();
 const store = useLedgersStore();
-const split = ref(false);
+
 const columns = ref(useColumns(fields));
 
 const repo = new Repo("Ledgers", store, $q);
@@ -96,7 +95,7 @@ const updateMissingPrices = async () => {
 
 const filtered = computed(() => {
   const appStore = useAppStore();
-  let txs = split.value ? store.sortedSplit : store.trades;
+  let txs = store.ledgers;
   txs = txs.map((t, index) => {
     t.rowKey = index + 1;
     return t;
@@ -108,18 +107,16 @@ const filtered = computed(() => {
 });
 
 const accounts = computed(() => {
-  let txs = split.value ? store.sortedSplit : store.trades;
+  let txs = store.ledgers;
   const allAccounts = txs.map((tx) => tx.account);
   return allAccounts.filter(onlyUnique);
 });
 const assets = computed(() => {
-  let txs = split.value ? store.sortedSplit : store.trades;
+  let txs = store.ledgers;
   const allAssets = txs.map((tx) => tx.asset);
   const unique = allAssets.filter(onlyUnique);
   return unique;
 });
 
-watchEffect(() => {
-  columns.value = split.value ? useColumns(splitFields) : useColumns(fields);
-});
+
 </script>

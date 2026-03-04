@@ -3,7 +3,7 @@
     <transactions-table
       title="Income"
       :rows="filtered"
-      :columns="columns"
+      :columns="gainsGrouping == 'Detailed' ? columns : totalColumns"
       rowKey="xx">
       <template v-slot:top-right>
         <div class="row">
@@ -28,16 +28,17 @@
 </template>
 <script setup>
 import { computed, ref } from "vue";
-import { columns } from "src/models/income"
+import { columns, totalColumns } from "src/models/income"
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
 import { filterByAssets, filterByYear } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
 import { useChainTxsStore } from "src/stores/chain-txs-store";
-
+import { useLedgersStore } from "src/stores/ledgers-store";
 
 const appStore = useAppStore();
 const chainTxsStore = useChainTxsStore();
+const ledgersStore = useLedgersStore();
 const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Asset Totals");
 const filtered = computed(() => {
@@ -46,6 +47,8 @@ const filtered = computed(() => {
   //let txs = getCapitalGains(false).sellTxs;
   if (!txs) return [];
   txs = txs.filter((tx) => tx.taxCode == "INCOME")
+  const ledgers = ledgersStore.ledgers;
+  txs = txs.concat(ledgers.filter((l) => l.action == "STAKING"));
   txs = filterByAssets(txs, appStore.selectedAssets);
 
   if (appStore.taxYear != "All") {
@@ -60,12 +63,12 @@ const filtered = computed(() => {
       total = {
         asset: tx.asset,
         amount: 0.0,
-        gross: 0.0,
+        net: 0.0,
       };
       totals.push(total);
     }
     total.amount += parseFloat(tx.amount);
-    total.gross += parseFloat(tx.gross);
+    total.net += tx.gross - tx.fee;
   }
   if (gainsGrouping.value == "Totals") {
     let _totals = [];
@@ -75,13 +78,11 @@ const filtered = computed(() => {
       if (!total) {
         total = {
           asset: `(${totals.length}) Assets`,
-          amount: 0.0,
-          gross: 0.0,
+          net: 0.0,
         };
         _totals.push(total);
       }
-      total.amount += t.amount;
-      total.gross += t.gross;
+      total.net += t.net;
     }
     totals = _totals;
   }

@@ -3,7 +3,6 @@ import { parse } from "csv-parse/browser/esm/sync";
 import { useLocalStorage } from "@vueuse/core";
 import { useAppStore } from "./app-store";
 import { uid, date } from "quasar";
-import { floatToWei } from "src/utils/number-helpers";
 const { addToDate } = date;
 import {
   getId,
@@ -20,6 +19,7 @@ import {
   upperCaseFields,
 } from "src/models/ledgers";
 import { multiplyCurrency, floatToStrAbs } from "src/utils/number-helpers";
+import { parseEther } from "ethers";
 import { usePricesStore } from "./prices-store";
 import { sortByTimeStampThenIdThenSort } from "src/utils/array-helpers";
 import { getLedgerEntries } from "src/services/kraken-provider";
@@ -159,10 +159,17 @@ export const useLedgersStore = defineStore("ledgers", {
     sortedSplit(state) {
       return this.split.sort(sortByTimeStampThenIdThenSort);
     },
-    trades(state) {
-      return JSON.parse(JSON.stringify(state.records)).sort(
-        sortByTimeStampThenIdThenSort
-      );
+    ledgers(state) {
+      let txs = JSON.parse(JSON.stringify(state.records));
+      txs = txs.map((tx) => {
+        tx.biAmount = parseEther(tx.amount) - parseEther(tx.fee);
+
+        tx.gross = multiplyCurrency([tx.amount, tx.price]);
+        tx.fee = multiplyCurrency([tx.fee, tx.price]);
+        return tx;
+      });
+
+      return txs.sort(sortByTimeStampThenIdThenSort);
     },
   },
   actions: {
