@@ -7,6 +7,7 @@
       rowKey="xx">
       <template v-slot:top-right>
         <div class="row">
+          <account-filter :options="accounts"></account-filter>
           <asset-filter></asset-filter>
           <q-btn-dropdown stretch flat :label="gainsGrouping">
             <q-list>
@@ -31,26 +32,31 @@ import { computed, ref } from "vue";
 import { columns, totalColumns } from "src/models/income"
 import TransactionsTable from "src/components/TransactionsTable.vue";
 import AssetFilter from "src/components/AssetFilter.vue";
-import { filterByAssets, filterByYear } from "src/utils/filter-helpers";
+import AccountFilter from "src/components/AccountFilter.vue";
+import { filterByAssets, filterByYear, filterByAccounts } from "src/utils/filter-helpers";
 import { useAppStore } from "src/stores/app-store";
 import { useChainTxsStore } from "src/stores/chain-txs-store";
 import { useLedgersStore } from "src/stores/ledgers-store";
+import { onlyUnique } from "src/utils/array-helpers";
+
 
 const appStore = useAppStore();
 const chainTxsStore = useChainTxsStore();
 const ledgersStore = useLedgersStore();
 const groups = ["Detailed", "Asset Totals", "Totals"];
 const gainsGrouping = ref("Asset Totals");
-const filtered = computed(() => {
+const allTxs = computed(() => {
   let txs = chainTxsStore.accountTxs
-
-  //let txs = getCapitalGains(false).sellTxs;
   if (!txs) return [];
   txs = txs.filter((tx) => tx.taxCode == "INCOME")
   const ledgers = ledgersStore.ledgers;
   txs = txs.concat(ledgers.filter((l) => l.action == "STAKING"));
+  return txs;
+});
+const filtered = computed(() => {
+  let txs = allTxs.value;
   txs = filterByAssets(txs, appStore.selectedAssets);
-
+  txs = filterByAccounts(txs, appStore.selectedAccounts);
   if (appStore.taxYear != "All") {
     txs = filterByYear(txs, appStore.taxYear);
   }
@@ -88,5 +94,9 @@ const filtered = computed(() => {
   }
   return totals;
 });
-
+const accounts = computed(() => {
+  let txs = allTxs.value;
+  const allAccounts = txs.map((tx) => tx.account ?? tx.toAccountName);
+  return allAccounts.filter(onlyUnique);
+});
 </script>

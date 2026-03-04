@@ -207,4 +207,11 @@ const getLedgerEntries = async function (params = {}) {
   return await privateRequest("/0/private/Ledgers", params);
 };
 
-export { getCurrentPrice, getLedgerEntries };
+const getTradeHistory = async function (params = {}) {
+  if (startTimeStamp == 0) {
+    startTimeStamp = Date.now();
+  }
+  return await privateRequest("/0/private/TradesHistory", params);
+};
+
+export { getCurrentPrice, getLedgerEntries, getTradeHistory };

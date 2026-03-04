@@ -29,6 +29,7 @@
         </div>
         <div>
           <q-btn class="q-ml-sm" color="secondary" label="Import" @click="importCbp" />
+          <q-btn class="q-ml-sm" color="secondary" label="Import Kraken" @click="importKraken" />
           <q-btn class="q-ml-sm" color="secondary" label="Add" @click="add" />
           <q-btn class="q-ml-sm" color="negative" label="Clear" @click="clear" />
         </div>
@@ -67,6 +68,24 @@ const { title, record, editing, error, add, edit, save, remove, clear } = repo
 const importCbp = () => {
   store.importCbp()
 }
+
+const importKraken = async () => {
+  try {
+    const result = await store.importKrakenTradeHistory({});
+    $q.notify({
+      color: "green",
+      icon: "done",
+      message: `Imported ${result} Kraken trades.`,
+    });
+  } catch (err) {
+    $q.notify({
+      color: "negative",
+      icon: "error",
+      message: err.message ?? "Failed to import Kraken trade history.",
+    });
+  }
+}
+
 const filtered = computed(() => {
   //return [{ id: 'test' }]
   const appStore = useAppStore();

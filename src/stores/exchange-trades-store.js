@@ -25,10 +25,122 @@ import {
 } from "src/utils/number-helpers";
 import { usePricesStore } from "./prices-store";
 import { importCbpTrades } from "src/services/coinbase-provider";
+import { getTradeHistory } from "src/services/kraken-provider";
 import { sortByTimeStampThenIdThenSort } from "src/utils/array-helpers";
 
 const keyFunc = (r) =>
   hasValue(r.exchangeId) ? r.exchangeId : getId(r, keyFields);
+
+const normalizeKrakenAsset = (asset) => {
+  if (!asset) return "";
+  const value = asset.toString().toUpperCase().split(".")[0];
+  const map = {
+    XXBT: "BTC",
+    XBT: "BTC",
+    XETH: "ETH",
+    ETH2: "ETH",
+    XXDG: "DOGE",
+    XDG: "DOGE",
+    ZUSD: "USD",
+    ZEUR: "EUR",
+    ZGBP: "GBP",
+    ZCAD: "CAD",
+    ZAUD: "AUD",
+    ZUSDT: "USDT",
+  };
+  if (map[value]) return map[value];
+  if (value.length === 4 && (value.startsWith("X") || value.startsWith("Z"))) {
+    return value.substring(1);
+  }
+  return value;
+};
+
+const parseKrakenPair = (pair) => {
+  if (!pair) return { asset: "", currency: "USD" };
+  const cleaned = pair.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const normalized = cleaned
+    .replace(/XXBT/g, "BTC")
+    .replace(/XBT/g, "BTC")
+    .replace(/XETH/g, "ETH")
+    .replace(/XXDG/g, "DOGE")
+    .replace(/XDG/g, "DOGE")
+    .replace(/ZUSD/g, "USD")
+    .replace(/ZEUR/g, "EUR")
+    .replace(/ZGBP/g, "GBP")
+    .replace(/ZCAD/g, "CAD")
+    .replace(/ZAUD/g, "AUD")
+    .replace(/ZUSDT/g, "USDT");
+
+  const quotes = [
+    "USDT",
+    "USDC",
+    "USD",
+    "EUR",
+    "GBP",
+    "CAD",
+    "AUD",
+    "BTC",
+    "ETH",
+  ];
+  for (const quote of quotes) {
+    if (normalized.endsWith(quote) && normalized.length > quote.length) {
+      const base = normalized.substring(0, normalized.length - quote.length);
+      return {
+        asset: normalizeKrakenAsset(base),
+        currency: normalizeKrakenAsset(quote),
+      };
+    }
+  }
+
+  if (pair.includes("/") || pair.includes("-")) {
+    const delim = pair.includes("/") ? "/" : "-";
+    const [base, quote] = pair.split(delim);
+    return {
+      asset: normalizeKrakenAsset(base),
+      currency: normalizeKrakenAsset(quote),
+    };
+  }
+
+  return {
+    asset: normalizeKrakenAsset(normalized.substring(0, 3)),
+    currency: normalizeKrakenAsset(normalized.substring(3)),
+  };
+};
+
+const mapKrakenTrade = (tradeId, trade, accountName) => {
+  const { asset, currency } = parseKrakenPair(trade.pair);
+  const action = (trade.type ?? "BUY").toUpperCase();
+  const amount = parseFloat(trade.vol ?? 0.0);
+  const fee = parseFloat(trade.fee ?? 0.0);
+  const net = parseFloat(trade.cost ?? 0.0);
+  let gross = net;
+  if (currency && currency === normalizeKrakenAsset(currency)) {
+    gross += action == "SELL" ? fee : -fee;
+  }
+  const timestampMs = Math.floor(parseFloat(trade.time ?? 0.0) * 1000);
+  const tradeDate = new Date(timestampMs);
+  const memo = [trade.ordertype, trade.pair]
+    .filter((v) => hasValue(v))
+    .join(" ");
+
+  return {
+    action,
+    memo,
+    price: parseFloat(trade.price ?? 0.0),
+    currency,
+    date: date.formatDate(tradeDate, "YYYY-MM-DD"),
+    time: date.formatDate(tradeDate, "HH:mm:ss"),
+    exchangeId: tradeId,
+    id: tradeId,
+    amount,
+    account: accountName,
+    fee,
+    feeCurrency: currency,
+    asset,
+    gross,
+    net,
+  };
+};
 
 export const useExchangeTradesStore = defineStore("exchange-trades", {
   state: () => ({
@@ -321,6 +433,64 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
       this.records = recs;
       app.importing = false;
       this.sort();
+    },
+    async importKrakenTradeHistory(params = {}, accountName = "Kraken") {
+      const app = useAppStore();
+      app.importing = true;
+      app.importingMessage = "Importing Kraken trade history...";
+      try {
+        const pageSize = parseInt(params.pageSize ?? 50);
+        const queryParams = { ...params };
+        delete queryParams.pageSize;
+        const lastTrade = this.records
+          .filter((r) => r.account == accountName)
+          .sort((a, b) => b.timestamp - a.timestamp)[0];
+        if (lastTrade) {
+          queryParams.start = lastTrade.timestamp;
+        }
+        let ofs = parseInt(queryParams.ofs ?? 0);
+        let imported = 0;
+
+        while (true) {
+          const result = await getTradeHistory({
+            ...queryParams,
+            ofs,
+          });
+
+          const trades = result?.trades ?? {};
+          const entries = Object.entries(trades);
+          if (entries.length === 0) break;
+
+          for (let i = 0; i < entries.length; i++) {
+            const [tradeId, trade] = entries[i];
+            const op = mapKrakenTrade(tradeId, trade, accountName);
+            const errorMsg = this.set(op);
+            if (errorMsg != "") {
+              throw new Error(
+                errorMsg.replace("<br>", ", ") +
+                  " on Kraken trade id " +
+                  tradeId
+              );
+            }
+            imported++;
+          }
+
+          ofs += entries.length;
+          const totalCount = parseInt(result?.count ?? 0);
+          if (
+            (totalCount > 0 && ofs >= totalCount) ||
+            entries.length < pageSize
+          ) {
+            break;
+          }
+        }
+
+        this.sort();
+        return imported;
+      } finally {
+        app.importing = false;
+        app.importingMessage = "";
+      }
     },
   },
 });

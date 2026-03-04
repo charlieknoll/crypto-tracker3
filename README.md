@@ -4,7 +4,6 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- add staking to income
 - add ledgers to running-balances
 - add ledgers to cost-basis
 
