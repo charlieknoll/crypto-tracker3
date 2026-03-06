@@ -38,7 +38,7 @@ function validateBuyTx(tx, source) {
     handleError(tx, source, "Buy tx missing type");
   }
 }
-export function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
+export function getBuyTxs(chainTxs, exchangeTrades, openingPositions, ledgers) {
   //TODO Add received gifts?
 
   let buyTxs = chainTxs.filter(
@@ -113,6 +113,21 @@ export function getBuyTxs(chainTxs, exchangeTrades, openingPositions) {
     return oTx;
   });
   buyTxs = buyTxs.concat(_openingPostions);
+
+  let _ledgers = ledgers.map((tx) => {
+    const oTx = {};
+    oTx.account = tx.account;
+    oTx.timestamp = tx.timestamp;
+    oTx.asset = tx.asset;
+    oTx.amount = floatToWei(tx.amount);
+    oTx.price = tx.price;
+    oTx.fee = tx.fee;
+    oTx.id = tx.id;
+    oTx.type = "LEDGER-" + tx.action;
+    validateBuyTx(oTx, tx);
+    return oTx;
+  });
+  buyTxs = buyTxs.concat(_ledgers);
 
   buyTxs = buyTxs.map((tx) => {
     tx.taxTxType = "BUY";

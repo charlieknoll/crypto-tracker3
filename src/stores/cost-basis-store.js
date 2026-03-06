@@ -4,6 +4,7 @@ import { useOffchainTransfersStore } from "./offchain-transfers-store";
 import { useChainTxsStore } from "./chain-txs-store";
 import { useExchangeTradesStore } from "./exchange-trades-store";
 import { useRunningBalancesStore } from "./running-balances-store";
+import { useLedgersStore } from "./ledgers-store";
 import { useAppStore } from "./app-store";
 import {
   sortByTimeStampThenIdThenSort,
@@ -40,6 +41,7 @@ function getTransactions() {
   //TODO this probably will include rewards for Kraken
   const exchangeFees = useExchangeTradesStore().fees;
   console.timeEnd("getStores-exchangeTrades");
+  const ledgers = useLedgersStore().ledgers;
 
   console.time("Sells");
   let sellTxs = getSellTxs(
@@ -50,7 +52,12 @@ function getTransactions() {
   );
   console.timeEnd("Sells");
   console.time("Buys");
-  let buyTxs = getBuyTxs(chainTransactions, exchangeTrades, openingPositions);
+  let buyTxs = getBuyTxs(
+    chainTransactions,
+    exchangeTrades,
+    openingPositions,
+    ledgers
+  );
   console.timeEnd("Buys");
 
   console.time("CostBasisTxs");

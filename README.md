@@ -4,9 +4,7 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- add ledgers to cost-basis
-
-- there is something wrong with importing chain tx's after they've been imported, it throws off running balances (maybe just tokens?)
+- there is something wrong with importing chain tx's after they've been imported, it throws off running balances (maybe just tokens being duplicated?), maybe no start block?
 
 - figure out how to show unclaimed rewards: https://debank.com/profile/0xd6d16b110ea9173d7ceb6cfe8ca4060749a75f5c
 
@@ -25,8 +23,9 @@ Track crypto balances, gains and losses
 
 ## Nice to have
 
+- Running Balances is wonky, when filtering on an account the "Current Balance" shows the asset balance as of the time of the last tx for that account, maybe rename headers?
 - Optimize performance and LocalStorage data sizes
-- Add BNB support
+- Add BNB Chain support (CDAI has a BNB balance)
 - Check ENS expiration dates (charlieknoll, bikeparts) use addresses tab manage, add expiration check programatically
 - Test unlocking frozen using offline-tx-signer, copy json files to USB
 - Migrate to indexedDb or SQLLit or SQLLite encrypted to handle LocalStorage 5MB limit
@@ -46,6 +45,7 @@ Track crypto balances, gains and losses
 
 ## DONE
 
+- add ledgers to cost-basis
 - Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (Shutdown in 3/2023), Binance)
 - Add support for TF: tx's in capital gains or balances won't match (CDAI testing)
 - show current account on unrealized, add unique id to each lot so that it can be back traced through capital gains
