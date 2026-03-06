@@ -17,6 +17,8 @@ import {
 } from "src/utils/number-helpers";
 import { sortByTimeStampThenTxIdThenSort } from "src/utils/array-helpers";
 import { id } from "ethers";
+import { useLedgersStore } from "./ledgers-store";
+import { parse } from "vue/compiler-sfc";
 
 function getMappedData() {
   let mappedData = [];
@@ -26,6 +28,7 @@ function getMappedData() {
   const chainTransactions = useChainTxsStore().accountTxs;
   const exchangeTrades = useExchangeTradesStore().split;
   const exchangeFees = useExchangeTradesStore().fees;
+  const ledgers = useLedgersStore().ledgers;
   const prices = usePricesStore();
   //opening positions
   for (const tx of openingPositions) {
@@ -91,6 +94,19 @@ function getMappedData() {
         price,
       });
     }
+  }
+  for (const tx of ledgers) {
+    mappedData.push({
+      txId: "Le-" + tx.id,
+      timestamp: tx.timestamp,
+      account: tx.account,
+      date: tx.date,
+      amount: formatEther(tx.biAmount),
+      asset: tx.asset,
+      type: "Ledger",
+      action: tx.type,
+      price: tx.price,
+    });
   }
   //chain transactions not token
   for (const tx of chainTransactions.filter((tx) =>

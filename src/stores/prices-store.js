@@ -314,7 +314,7 @@ export const usePricesStore = defineStore("prices", {
     async getCurrentPrices() {
       const runningBalancesStore = useRunningBalancesStore();
       const assets = runningBalancesStore.runningBalances.assets.filter(
-        (a) => a.amount > 0.1
+        (a) => a.amount > 0.00001
       );
       // const assets = [
       //   { asset: "BTC" },
@@ -374,6 +374,7 @@ export const usePricesStore = defineStore("prices", {
               (a.price ?? 0.0) * parseFloat(formatEther(a.biAmount)),
           };
         })
+        .filter((a) => a.currentValue > 0.1)
         .sort((a, b) => b.currentValue - a.currentValue);
       const tv = this.assetPrices.reduce(
         (sum, ap) => sum + (ap.currentValue ?? 0.0),

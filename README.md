@@ -4,14 +4,10 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- add ledgers to running-balances
 - add ledgers to cost-basis
 
 - there is something wrong with importing chain tx's after they've been imported, it throws off running balances (maybe just tokens?)
 
-- add exchange Trades support for Kraken
-
-- Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (Shutdown in 3/2023), Binance)
 - figure out how to show unclaimed rewards: https://debank.com/profile/0xd6d16b110ea9173d7ceb6cfe8ca4060749a75f5c
 
 - Add wallet functionaltiy
@@ -50,6 +46,7 @@ Track crypto balances, gains and losses
 
 ## DONE
 
+- Reconcile closed brokerage accounts (Poloniex, Coinbase Pro, Bittrex (Shutdown in 3/2023), Binance)
 - Add support for TF: tx's in capital gains or balances won't match (CDAI testing)
 - show current account on unrealized, add unique id to each lot so that it can be back traced through capital gains
 - Verify balance redo (just do it at the end) and add a message

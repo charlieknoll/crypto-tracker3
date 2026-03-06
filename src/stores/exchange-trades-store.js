@@ -22,6 +22,7 @@ import {
   multiplyCurrency,
   floatToStr,
   floatToStrAbs,
+  currency,
 } from "src/utils/number-helpers";
 import { usePricesStore } from "./prices-store";
 import { importCbpTrades } from "src/services/coinbase-provider";
@@ -205,10 +206,11 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
             tx.date,
             tx.timestamp
           );
-          if (!currencyUSDPrice)
-            throw new Error(
+          if (!currencyUSDPrice) {
+            console.error(
               `${tx.currency} price needed on ${tx.date} to calculate non USD BUY/SELL`
             );
+          }
 
           const currencyPrice = tx.price;
 
@@ -216,7 +218,10 @@ export const useExchangeTradesStore = defineStore("exchange-trades", {
             tx.gross ?? multiplyCurrency([tx.amount, tx.price]);
           tx.sort = 0;
           //tx.sort = tx.action == "BUY" ? 2 : 0;
-          tx.price = currencyPrice * currencyUSDPrice;
+          tx.price =
+            currencyPrice != 0.0
+              ? currencyPrice * currencyUSDPrice
+              : (tx.gross / tx.amount) * currencyUSDPrice;
           tx.fee = tx.action == "SELL" ? usdFee : 0.0;
           tx.gross = multiplyCurrency([tx.amount, tx.price]);
           tx.net = tx.gross - tx.fee; //fee only non-zero for sell

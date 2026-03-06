@@ -99,8 +99,18 @@ const currentColumns = computed(() => {
   if (balanceGrouping.value == "Asset") return totalColumns;
   return columns;
 });
+const allTxs = computed(() => {
+  let txs
+  try {
+    txs = runningBalancesStore.runningBalances?.mappedData;
+  } catch (e) {
+    console.log("Error computing all transactions: ", e);
+    return [];
+  }
+  return txs || [];
+});
 const filtered = computed(() => {
-  let txs = runningBalancesStore.runningBalances.mappedData;
+  let txs = allTxs.value;
   if (!txs) return []
   let taxYear = appStore.taxYear;
   txs = filterByAssets(txs, appStore.selectedAssets);
@@ -199,7 +209,8 @@ const filtered = computed(() => {
 });
 const accounts = computed(() => {
   //const runningBalancesStore = useRunningBalancesStore();
-  let txs = runningBalancesStore.runningBalances.mappedData;
+  let txs = allTxs.value;
+
   if (!txs) return
   txs = filterByAssets(txs, appStore.selectedAssets);
   txs = filterByYear(txs, appStore.taxYear);
