@@ -69,7 +69,7 @@ const errorMessage = computed(() => {
   const noInventoryCount = costBasisStore.costBasisData.noInventoryTxs.length;
   let message = "";
   if (unreconciledCount > 0) {
-    message += `${unreconciledCount} unreconciled transactions. `;
+    message += `${unreconciledCount} unreconciled accounts. `;
   }
   if (noInventoryCount > 0) {
     message += `${noInventoryCount} transactions with no inventory.`;
@@ -89,7 +89,7 @@ const currentColumns = computed(() => {
 const showUnreconciled = () => {
   console.log("Unreconciled Accounts:");
   console.log(costBasisStore.costBasisData.unreconciledAccounts.map(a =>
-    `Account: ${a.account}, Asset: ${a.asset}, Date/Time: ${new Date(a.timestamp * 1000).toISOString()}, timestamp:${a.timestamp}`).join("\n"));
+    `Account: ${a.account}, Asset: ${a.asset}, Date/Time: ${new Date(a.date)}, timestamp:${a.date}`).join("\n"));
   console.log("No Inventory Transactions:");
   console.log(costBasisStore.costBasisData.noInventoryTxs)
 }

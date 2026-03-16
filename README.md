@@ -4,10 +4,6 @@ Track crypto balances, gains and losses
 
 ## TODO
 
-- there is something wrong with importing chain tx's after they've been imported, it throws off running balances (maybe just tokens being duplicated?), maybe no start block?
-
-- figure out how to show unclaimed rewards: https://debank.com/profile/0xd6d16b110ea9173d7ceb6cfe8ca4060749a75f5c
-
 - Add wallet functionaltiy
 - only set wallet name after 1/1/2025 and then set account using tx.fromWallet ?? tx.fromName
 - WALLET capital gains starting in 2025

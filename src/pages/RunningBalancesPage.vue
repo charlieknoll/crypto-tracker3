@@ -68,7 +68,7 @@ const showDelta = async (evt, row, index) => {
     });
     if (tokenAddress) {
       const balance = await getTokenBalanceAtBlock(row.asset, tokenAddress.address, addresss.address, row.blockNumber);
-      if (balance && balance != row.biRunningAccountBalance) {
+      if (balance != row.biRunningAccountBalance) {
         delta = formatEther(row.biRunningAccountBalance - balance);
         row.delta = `Calculated ${row.asset} balance ${formatEther(row.biRunningAccountBalance)} does not match address balance ${formatEther(balance)}. Delta: ${delta}`;
       } else row.delta = null
@@ -76,7 +76,7 @@ const showDelta = async (evt, row, index) => {
     }
 
   }
-  console.log(row)
+  //console.log(row)
   row.status = row.delta ? "red" : "green";
 
   tableKey.value += 1
