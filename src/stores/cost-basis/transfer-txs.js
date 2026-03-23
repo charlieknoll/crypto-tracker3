@@ -42,8 +42,8 @@ export function getTransferTxs(chainTransactions, offchainTransfers) {
   );
   chainTransfers = chainTransfers.map((tx) => {
     const transferTx = {};
-    transferTx.fromAccount = tx.fromWalletName ?? tx.fromAccountName;
-    transferTx.toAccount = tx.toWalletName ?? tx.toAccountName;
+    transferTx.fromAccount = tx.fromAccountName;
+    transferTx.toAccount = tx.toAccountName;
     transferTx.timestamp = tx.timestamp;
     transferTx.asset = tx.asset;
     transferTx.amount = BigInt(tx.value ?? "0");

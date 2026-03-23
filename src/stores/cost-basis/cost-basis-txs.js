@@ -42,7 +42,7 @@ export function getCostBasisTxs(
   );
   tokenFeeTxs = tokenFeeTxs.map((tx) => {
     const tokenFeeTx = {};
-    tokenFeeTx.account = tx.fromWalletName ?? tx.fromAccountName;
+    tokenFeeTx.account = tx.fromAccountName;
     tokenFeeTx.timestamp = tx.timestamp;
     //assign cost basis after initiating tx
     tokenFeeTx.sort = 1;

@@ -1,6 +1,30 @@
 import { formatEther } from "ethers";
 import { currencyRounded } from "src/utils/number-helpers";
 
+export function assignWalletNamesToTxs(txs, addresses) {
+  const addressToWalletMap = {};
+  addresses.forEach((addr) => {
+    if (addr.wallet && addr.name) {
+      addressToWalletMap[addr.name] = addr.wallet;
+    }
+  });
+
+  return txs.map((tx) => {
+    if (tx.taxTxType === "TRANSFER") {
+      return {
+        ...tx,
+        fromAccount: addressToWalletMap[tx.fromAccount] || tx.fromAccount,
+        toAccount: addressToWalletMap[tx.toAccount] || tx.toAccount,
+      };
+    } else {
+      return {
+        ...tx,
+        account: addressToWalletMap[tx.account] || tx.account,
+      };
+    }
+  });
+}
+
 export function redistributeLotsToAccounts(
   undisposedLotsParam,
   runningBalances,

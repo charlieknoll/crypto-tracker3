@@ -61,7 +61,7 @@ export function getSellTxs(
   txs.forEach((tx) => {
     //if (BigInt(tx.value) == BigInt("0")) return;
     const spendTx = {};
-    spendTx.account = tx.fromWalletName ?? tx.fromAccountName;
+    spendTx.account = tx.fromAccountName;
     spendTx.timestamp = tx.timestamp;
     spendTx.asset = tx.asset;
     spendTx.amount = BigInt(tx.value) ?? BigInt("0");
@@ -82,7 +82,7 @@ export function getSellTxs(
   );
   giftTxs = giftTxs.map((tx) => {
     const giftTx = {};
-    giftTx.account = tx.fromWalletName ?? tx.fromAccountName;
+    giftTx.account = tx.fromAccountName;
     giftTx.timestamp = tx.timestamp;
     giftTx.asset = tx.asset;
     giftTx.amount = BigInt(tx.value) ?? BigInt("0");
@@ -100,7 +100,7 @@ export function getSellTxs(
   );
   sellAssetTxs = sellAssetTxs.map((tx) => {
     const sellAssetTx = {};
-    sellAssetTx.account = tx.fromWalletName ?? tx.fromAccountName;
+    sellAssetTx.account = tx.fromAccountName;
     sellAssetTx.timestamp = tx.timestamp;
     sellAssetTx.asset = tx.asset;
     sellAssetTx.amount = BigInt(tx.value) ?? BigInt("0");
@@ -147,7 +147,7 @@ export function getSellTxs(
   gasFeeTxs = gasFeeTxs.map((tx) => {
     const feeTx = {};
     feeTx.id = tx.id;
-    feeTx.account = tx.fromWalletName ?? tx.fromAccountName;
+    feeTx.account = tx.fromAccountName;
     feeTx.asset = tx.gasType;
     //TODO add sort intead of timestamp hack
     feeTx.timestamp = tx.timestamp;

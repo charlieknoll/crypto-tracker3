@@ -6,6 +6,7 @@ import { useExchangeTradesStore } from "./exchange-trades-store";
 import { useRunningBalancesStore } from "./running-balances-store";
 import { useLedgersStore } from "./ledgers-store";
 import { useAppStore } from "./app-store";
+import { useAddressStore } from "./address-store";
 import {
   sortByTimeStampThenIdThenSort,
   sortByTimeStampThenSort,
@@ -17,7 +18,10 @@ import { getBuyTxs } from "./cost-basis/buy-txs.js";
 import { getTransferTxs } from "./cost-basis/transfer-txs.js";
 import { processTxs } from "./cost-basis/process-txs";
 import constants from "src/constants";
-import { redistributeLotsToAccounts } from "./cost-basis/lot-redistribution.js";
+import {
+  redistributeLotsToAccounts,
+  assignWalletNamesToTxs,
+} from "./cost-basis/lot-redistribution.js";
 import {
   verifyAssetBalance,
   verifyBalances,
@@ -84,7 +88,7 @@ function filterAndConcatTxs(txArrays, cutoff, comparator) {
     .sort(sortByTimeStampThenIdThenSort);
 }
 
-function getCostBasis(transactions) {
+function getCostBasis(transactions, addresses) {
   // Deep clone to prevent mutation of cached getter values
   const { sellTxs, buyTxs, costBasisTxs, transferTxs } =
     structuredClone(transactions);
@@ -98,7 +102,7 @@ function getCostBasis(transactions) {
   let runningBalances = [
     ...runningBalancesStore.runningBalances.mappedData,
   ].sort(sortByTimeStampThenIdThenSort);
-  //no transfers on first pass
+  //no transfers on first pass up to cutoff, cost basis is portfolio wide, transfers between accounts don't matter
   let mappedData = filterAndConcatTxs(
     [sellTxs, buyTxs, costBasisTxs],
     constants.WALLET_TIMESTAMP_CUTOFF,
@@ -143,6 +147,10 @@ function getCostBasis(transactions) {
     constants.WALLET_TIMESTAMP_CUTOFF,
     (ts, cutoff) => ts >= cutoff && ts < taxYearCutoff
   );
+
+  mappedData = assignWalletNamesToTxs(mappedData, addresses);
+  //TODO set account to wallet for addresses with wallet names for undisposed lots
+  undisposedLots = assignWalletNamesToTxs(undisposedLots, addresses);
   let tmpNoInventoryTxs = [];
   ({
     undisposedLots,
@@ -179,7 +187,8 @@ export const useCostBasisStore = defineStore("costBasis", {
 
     costBasisData() {
       try {
-        return getCostBasis(this.transactions);
+        const addresses = useAddressStore().records;
+        return getCostBasis(this.transactions, addresses);
       } catch (err) {
         console.error(err);
         throw err;
