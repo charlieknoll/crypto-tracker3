@@ -78,11 +78,11 @@ const importKraken = async () => {
 
 const updateMissingPrices = async () => {
   try {
-    const updated = await store.updateZeroPricesFromCoinDesk();
+    const updated = await store.updateZeroPricesFromKraken();
     $q.notify({
       color: "green",
       icon: "done",
-      message: `Updated ${updated} ledger prices from CoinDesk.`,
+      message: `Updated ${updated} ledger prices from Kraken.`,
     });
   } catch (err) {
     $q.notify({

@@ -22,7 +22,10 @@ import { multiplyCurrency, floatToStrAbs } from "src/utils/number-helpers";
 import { parseEther } from "ethers";
 import { usePricesStore } from "./prices-store";
 import { sortByTimeStampThenIdThenSort } from "src/utils/array-helpers";
-import { getLedgerEntries } from "src/services/kraken-provider";
+import {
+  getLedgerEntries,
+  getPriceAtTimestamp as getKrakenPriceAtTimestamp,
+} from "src/services/kraken-provider";
 import { getPrice as getCoinDeskPrice } from "src/services/coindesk-provider";
 
 const keyFunc = (r) =>
@@ -302,6 +305,46 @@ export const useLedgersStore = defineStore("ledgers", {
           this.records = recs;
           this.sort();
         }
+        return updated;
+      } finally {
+        app.importing = false;
+        app.importingMessage = "";
+      }
+    },
+    async updateZeroPricesFromKraken() {
+      const app = useAppStore();
+      app.importing = true;
+      app.importingMessage = "Updating ledger prices from Kraken...";
+      try {
+        let updated = 0;
+        const recs = JSON.parse(JSON.stringify(this.records));
+        for (let i = 0; i < recs.length; i++) {
+          const record = recs[i];
+          if (parseFloat(record.price ?? 0.0) !== 0.0) continue;
+
+          if ((record.asset ?? "").toUpperCase() === "USD") {
+            record.price = 1.0;
+            updated++;
+            continue;
+          }
+
+          const timestamp = record.timestamp;
+          const price = await getKrakenPriceAtTimestamp(
+            record.asset,
+            timestamp
+          );
+          if (price > 0.0) {
+            record.price = price;
+            updated++;
+          }
+        }
+
+        if (updated > 0) {
+          app.needsBackup = true;
+          this.records = recs;
+          this.sort();
+        }
+
         return updated;
       } finally {
         app.importing = false;

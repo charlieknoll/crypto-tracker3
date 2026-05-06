@@ -200,6 +200,100 @@ const getCurrentPrice = async function (
   }
 };
 
+const getPriceAtTimestamp = async function (
+  asset,
+  timestamp,
+  usdPairs = ["USDC", "USDT", "CRVUSD", "DAI", "BUSD", "TUSD", "USDG", "USD"]
+) {
+  if (!asset) {
+    return 0.0;
+  }
+
+  const normalizedAsset = asset.toUpperCase();
+  if (usdPairs.includes(normalizedAsset)) {
+    return 1.0;
+  }
+
+  const pairMaps = {
+    ETH: ["ETHUSD", "XETHZUSD"],
+    BTC: ["XBTUSD", "XXBTZUSD"],
+    LTC: ["LTCUSD", "XLTCZUSD"],
+    XRP: ["XRPUSD", "XXRPZUSD"],
+  };
+
+  const pairCandidates = pairMaps[normalizedAsset] ?? [
+    `${normalizedAsset}USD`,
+    `X${normalizedAsset}ZUSD`,
+  ];
+
+  const inputTimestamp = Number(timestamp ?? 0);
+  if (!Number.isFinite(inputTimestamp) || inputTimestamp <= 0) {
+    return 0.0;
+  }
+
+  // Kraken expects the "since" cursor in nanoseconds for this endpoint.
+  const since = (
+    BigInt(Math.floor(inputTimestamp / 1000)) * 1000000000000n
+  ).toString();
+
+  for (let i = 0; i < pairCandidates.length; i++) {
+    const pair = pairCandidates[i];
+    const count = 1;
+    try {
+      const response = await request({
+        method: "GET",
+        path: "/0/public/Trades",
+        environment: "https://api.kraken.com",
+        query: { pair, since, count },
+      });
+
+      const payload = await response.json();
+      if (!response.ok || payload?.error?.length > 0) {
+        continue;
+      }
+
+      const result = payload?.result ?? {};
+      const tradeKey = Object.keys(result).find((k) => k !== "last");
+      const trades = tradeKey ? result[tradeKey] : [];
+      if (!Array.isArray(trades) || trades.length === 0) {
+        continue;
+      }
+
+      // Use the closest returned trade to the ledger timestamp.
+      let closestTrade = null;
+      let closestDiff = Number.POSITIVE_INFINITY;
+      for (let j = 0; j < trades.length; j++) {
+        const trade = trades[j];
+        const tradePrice = parseFloat(trade?.[0] ?? 0.0);
+        const tradeTimeMs = Math.floor(parseFloat(trade?.[2] ?? 0) * 1000);
+        if (!Number.isFinite(tradePrice) || tradePrice <= 0.0) {
+          continue;
+        }
+        if (!Number.isFinite(tradeTimeMs) || tradeTimeMs <= 0) {
+          continue;
+        }
+
+        const diff = Math.abs(tradeTimeMs - inputTimestamp);
+        if (diff < closestDiff) {
+          closestDiff = diff;
+          closestTrade = tradePrice;
+        }
+      }
+
+      if (closestTrade && closestTrade > 0.0) {
+        return closestTrade;
+      }
+    } catch (e) {
+      console.log(
+        `Error getting trade price for ${normalizedAsset} (${pair}) at ${inputTimestamp}`,
+        e
+      );
+    }
+  }
+
+  return 0.0;
+};
+
 const getLedgerEntries = async function (params = {}) {
   if (startTimeStamp == 0) {
     startTimeStamp = Date.now();
@@ -214,4 +308,9 @@ const getTradeHistory = async function (params = {}) {
   return await privateRequest("/0/private/TradesHistory", params);
 };
 
-export { getCurrentPrice, getLedgerEntries, getTradeHistory };
+export {
+  getCurrentPrice,
+  getPriceAtTimestamp,
+  getLedgerEntries,
+  getTradeHistory,
+};
